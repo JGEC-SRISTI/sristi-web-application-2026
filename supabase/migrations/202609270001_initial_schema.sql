@@ -11,13 +11,13 @@ create extension if not exists pgcrypto;
 -- 2. Common updated_at trigger
 -- ------------------------------------------------------------
 create
-or replace function public.set_updated_at() returns trigger language plpgsql as $ $ begin new.updated_at = now();
+or replace function public.set_updated_at() returns trigger language plpgsql as $$ begin new.updated_at = now();
 
 return new;
 
 end;
 
-$ $;
+$$;
 
 -- ------------------------------------------------------------
 -- 3. Profiles
@@ -497,7 +497,7 @@ values
 create
 or replace function public.is_admin() returns boolean language sql security definer
 set
-    search_path = public stable as $ $
+    search_path = public stable as $$
 select
     exists (
         select
@@ -509,7 +509,7 @@ select
             and status = 'active'
     );
 
-$ $;
+$$;
 
 -- ------------------------------------------------------------
 -- Check whether the current user is a SUPER_ADMIN
@@ -517,7 +517,7 @@ $ $;
 create
 or replace function public.is_super_admin() returns boolean language sql security definer
 set
-    search_path = public stable as $ $
+    search_path = public stable as $$
 select
     exists (
         select
@@ -530,7 +530,7 @@ select
             and status = 'active'
     );
 
-$ $;
+$$;
 
 -- ------------------------------------------------------------
 -- Check whether the current user has a profile
@@ -538,7 +538,7 @@ $ $;
 create
 or replace function public.has_profile() returns boolean language sql security definer
 set
-    search_path = public stable as $ $
+    search_path = public stable as $$
 select
     exists (
         select
@@ -549,7 +549,7 @@ select
             id = auth.uid()
     );
 
-$ $;
+$$;
 
 -- ------------------------------------------------------------
 -- Check whether the current user has a verified payment
@@ -557,7 +557,7 @@ $ $;
 create
 or replace function public.is_verified_user() returns boolean language sql security definer
 set
-    search_path = public stable as $ $
+    search_path = public stable as $$
 select
     exists (
         select
@@ -569,7 +569,7 @@ select
             and status = 'verified'
     );
 
-$ $;
+$$;
 
 -- ------------------------------------------------------------
 -- 21. Enable Row Level Security
@@ -1029,7 +1029,7 @@ create policy "Admins can delete audit logs" on public.audit_logs for delete to 
 create
 or replace function public.is_admin() returns boolean language sql security definer
 set
-    search_path = public stable as $ $
+    search_path = public stable as $$
 select
     exists (
         select
@@ -1041,7 +1041,7 @@ select
             and status = 'active'
     );
 
-$ $;
+$$;
 
 -- ------------------------------------------------------------
 -- 37. Super Admin Security Helper
@@ -1051,7 +1051,7 @@ $ $;
 create
 or replace function public.is_super_admin() returns boolean language sql security definer
 set
-    search_path = public stable as $ $
+    search_path = public stable as $$
 select
     exists (
         select
@@ -1064,7 +1064,7 @@ select
             and status = 'active'
     );
 
-$ $;
+$$;
 
 -- ------------------------------------------------------------
 -- 38. Verified User Security Helper
@@ -1074,7 +1074,7 @@ $ $;
 create
 or replace function public.is_verified_user() returns boolean language sql security definer
 set
-    search_path = public stable as $ $
+    search_path = public stable as $$
 select
     exists (
         select
@@ -1086,7 +1086,7 @@ select
             and status = 'verified'
     );
 
-$ $;
+$$;
 
 -- ------------------------------------------------------------
 -- 39. Security Helper Function Permissions
@@ -1132,7 +1132,7 @@ grant execute on function public.is_verified_user() to authenticated;
 create
 or replace function public.prevent_multiple_teams_per_event() returns trigger language plpgsql security definer
 set
-    search_path = public as $ $ declare v_event_id uuid;
+    search_path = public as $$ declare v_event_id uuid;
 
 begin
 select
@@ -1178,7 +1178,7 @@ return new;
 
 end;
 
-$ $;
+$$;
 
 create trigger prevent_multiple_teams_per_event before
 insert
@@ -1193,7 +1193,7 @@ update
 create
 or replace function public.is_team_size_valid(p_team_id uuid) returns boolean language sql security definer
 set
-    search_path = public stable as $ $
+    search_path = public stable as $$
 select
     count(*) between 3
     and 5
@@ -1202,7 +1202,7 @@ from
 where
     team_id = p_team_id;
 
-$ $;
+$$;
 
 -- Allow authenticated users to use the team-size helper.
 revoke execute on function public.is_team_size_valid(uuid)
@@ -1219,7 +1219,7 @@ grant execute on function public.is_team_size_valid(uuid) to authenticated;
 create
 or replace function public.can_register_team(p_team_id uuid) returns boolean language sql security definer
 set
-    search_path = public stable as $ $
+    search_path = public stable as $$
 select
     exists (
         select
@@ -1233,7 +1233,7 @@ select
             and public.is_team_size_valid(t.id)
     );
 
-$ $;
+$$;
 
 -- Allow authenticated users to use the team-registration helper.
 revoke execute on function public.can_register_team(uuid)
@@ -1249,7 +1249,7 @@ grant execute on function public.can_register_team(uuid) to authenticated;
 create
 or replace function public.register_team(p_team_id uuid) returns boolean language plpgsql security definer
 set
-    search_path = public as $ $ begin -- Serialize team registration with concurrent membership changes.
+    search_path = public as $$ begin -- Serialize team registration with concurrent membership changes.
     perform pg_advisory_xact_lock(
         hashtextextended(p_team_id :: text, 0)
     );
@@ -1270,7 +1270,7 @@ return true;
 
 end;
 
-$ $;
+$$;
 
 -- Allow authenticated users to call team registration.
 revoke execute on function public.register_team(uuid)
@@ -1298,7 +1298,7 @@ grant execute on function public.register_team(uuid) to authenticated;
 create
 or replace function public.can_register_solo_event(p_event_id uuid) returns boolean language sql security definer
 set
-    search_path = public stable as $ $
+    search_path = public stable as $$
 select
     exists (
         select
@@ -1311,7 +1311,7 @@ select
     )
     and public.is_verified_user();
 
-$ $;
+$$;
 
 -- Restrict execution of the helper.
 revoke execute on function public.can_register_solo_event(uuid)
@@ -1331,7 +1331,7 @@ grant execute on function public.can_register_solo_event(uuid) to authenticated;
 create
 or replace function public.register_solo_event(p_event_id uuid) returns uuid language plpgsql security definer
 set
-    search_path = public as $ $ declare v_registration_id uuid;
+    search_path = public as $$ declare v_registration_id uuid;
 
 begin if not public.can_register_solo_event(p_event_id) then raise exception 'User cannot register for this solo event';
 
@@ -1356,7 +1356,7 @@ return v_registration_id;
 
 end;
 
-$ $;
+$$;
 
 -- Restrict execution of the registration function.
 revoke execute on function public.register_solo_event(uuid)
@@ -1377,7 +1377,7 @@ grant execute on function public.register_solo_event(uuid) to authenticated;
 create
 or replace function public.can_register_team_event(p_team_id uuid) returns boolean language sql security definer
 set
-    search_path = public stable as $ $
+    search_path = public stable as $$
 select
     exists (
         select
@@ -1394,7 +1394,7 @@ select
     )
     and public.is_verified_user();
 
-$ $;
+$$;
 
 -- Restrict execution of the helper.
 revoke execute on function public.can_register_team_event(uuid)
@@ -1414,7 +1414,7 @@ grant execute on function public.can_register_team_event(uuid) to authenticated;
 create
 or replace function public.register_team_event(p_team_id uuid) returns uuid language plpgsql security definer
 set
-    search_path = public as $ $ declare v_event_id uuid;
+    search_path = public as $$ declare v_event_id uuid;
 
 v_registration_id uuid;
 
@@ -1448,7 +1448,7 @@ return v_registration_id;
 
 end;
 
-$ $;
+$$;
 
 -- Restrict execution of the registration function.
 revoke execute on function public.register_team_event(uuid)
@@ -1485,7 +1485,7 @@ or replace function public.create_team(
     p_team_code text
 ) returns uuid language plpgsql security definer
 set
-    search_path = public as $ $ declare v_team_id uuid;
+    search_path = public as $$ declare v_team_id uuid;
 
 begin -- User must have verified payment.
 if not public.is_verified_user() then raise exception 'User is not verified';
@@ -1543,7 +1543,7 @@ return v_team_id;
 
 end;
 
-$ $;
+$$;
 
 -- Restrict execution of the team creation function.
 revoke execute on function public.create_team(uuid, text, text)
@@ -1564,7 +1564,7 @@ grant execute on function public.create_team(uuid, text, text) to authenticated;
 create
 or replace function public.join_team(p_team_code text) returns uuid language plpgsql security definer
 set
-    search_path = public as $ $ declare v_team_id uuid;
+    search_path = public as $$ declare v_team_id uuid;
 
 v_member_count integer;
 
@@ -1613,7 +1613,7 @@ return v_team_id;
 
 end;
 
-$ $;
+$$;
 
 -- Restrict execution of the team join function.
 revoke execute on function public.join_team(text)
@@ -1633,7 +1633,7 @@ grant execute on function public.join_team(text) to authenticated;
 create
 or replace function public.register_team_event(p_team_id uuid) returns uuid language plpgsql security definer
 set
-    search_path = public as $ $ declare v_event_id uuid;
+    search_path = public as $$ declare v_event_id uuid;
 
 v_registration_id uuid;
 
@@ -1680,7 +1680,7 @@ return v_registration_id;
 
 end;
 
-$ $;
+$$;
 
 -- Keep execution restricted to authenticated users.
 revoke execute on function public.register_team_event(uuid)
@@ -1700,7 +1700,7 @@ grant execute on function public.register_team_event(uuid) to authenticated;
 create
 or replace function public.register_solo_event(p_event_id uuid) returns uuid language plpgsql security definer
 set
-    search_path = public as $ $ declare v_registration_id uuid;
+    search_path = public as $$ declare v_registration_id uuid;
 
 begin if not public.can_register_solo_event(p_event_id) then raise exception 'User cannot register for this solo event';
 
@@ -1738,7 +1738,7 @@ return v_registration_id;
 
 end;
 
-$ $;
+$$;
 
 -- Keep execution restricted to authenticated users.
 revoke execute on function public.register_solo_event(uuid)
@@ -1762,7 +1762,7 @@ or replace function public.create_team(
     p_team_code text
 ) returns uuid language plpgsql security definer
 set
-    search_path = public as $ $ declare v_team_id uuid;
+    search_path = public as $$ declare v_team_id uuid;
 
 begin -- User must have verified payment.
 if not public.is_verified_user() then raise exception 'User is not verified';
@@ -1833,7 +1833,7 @@ return v_team_id;
 
 end;
 
-$ $;
+$$;
 
 -- Keep execution restricted to authenticated users.
 revoke execute on function public.create_team(uuid, text, text)
@@ -1849,19 +1849,13 @@ grant execute on function public.create_team(uuid, text, text) to authenticated;
 -- ------------------------------------------------------------
 -- 56. Team Code Generator
 -- ------------------------------------------------------------
--- Generates a random 8-character team code.
+-- Generates a 16-character team code from 64 bits of cryptographic randomness.
 create
 or replace function public.generate_team_code() returns text language plpgsql security definer
 set
-    search_path = public as $ $ declare v_code text;
+    search_path = public as $$ declare v_code text;
 
-begin loop v_code := upper(
-    substr(
-        md5(random() :: text || clock_timestamp() :: text),
-        1,
-        8
-    )
-);
+begin loop v_code := upper(encode(extensions.gen_random_bytes(8), 'hex'));
 
 exit
 when not exists (
@@ -1879,7 +1873,7 @@ return v_code;
 
 end;
 
-$ $;
+$$;
 
 -- Restrict direct execution.
 revoke execute on function public.generate_team_code()
@@ -1898,7 +1892,7 @@ grant execute on function public.generate_team_code() to authenticated;
 create
 or replace function public.create_team(p_event_id uuid, p_team_name text) returns uuid language plpgsql security definer
 set
-    search_path = public as $ $ declare v_team_id uuid;
+    search_path = public as $$ declare v_team_id uuid;
 
 v_team_code text;
 
@@ -1969,7 +1963,7 @@ return v_team_id;
 
 end;
 
-$ $;
+$$;
 
 -- Restrict execution of the new function signature.
 revoke execute on function public.create_team(uuid, text)
@@ -1988,7 +1982,7 @@ grant execute on function public.create_team(uuid, text) to authenticated;
 create
 or replace function public.join_team(p_team_code text) returns uuid language plpgsql security definer
 set
-    search_path = public as $ $ declare v_team_id uuid;
+    search_path = public as $$ declare v_team_id uuid;
 
 v_member_count integer;
 
@@ -2050,7 +2044,7 @@ return v_team_id;
 
 end;
 
-$ $;
+$$;
 
 -- Keep execution restricted to authenticated users.
 revoke execute on function public.join_team(text)
@@ -2114,7 +2108,7 @@ drop policy if exists "Users can update own registrations" on public.registratio
 create
 or replace function public.can_register_team(p_team_id uuid) returns boolean language sql security definer
 set
-    search_path = public stable as $ $
+    search_path = public stable as $$
 select
     exists (
         select
@@ -2129,7 +2123,7 @@ select
             and public.is_team_size_valid(t.id)
     );
 
-$ $;
+$$;
 
 revoke execute on function public.can_register_team(uuid)
 from
@@ -2226,7 +2220,7 @@ or replace function public.issue_verification_code(
     p_custom_code text default null
 ) returns uuid language plpgsql security definer
 set
-    search_path = public as $ $ declare v_code text;
+    search_path = public as $$ declare v_code text;
 
 v_code_id uuid;
 
@@ -2267,13 +2261,7 @@ if p_custom_code is not null
 and length(trim(p_custom_code)) > 0 then v_code := upper(trim(p_custom_code));
 
 else -- Generate a code automatically.
-v_code := upper(
-    substr(
-        md5(random() :: text || clock_timestamp() :: text),
-        1,
-        8
-    )
-);
+v_code := upper(encode(extensions.gen_random_bytes(8), 'hex'));
 
 end if;
 
@@ -2308,7 +2296,7 @@ return v_code_id;
 
 end;
 
-$ $;
+$$;
 
 revoke execute on function public.issue_verification_code(uuid, uuid, text)
 from
@@ -2335,7 +2323,7 @@ drop policy if exists "Users can view own verification codes" on public.verifica
 create
 or replace function public.verify_participant_code(p_code text) returns boolean language plpgsql security definer
 set
-    search_path = public as $ $ declare v_code_id uuid;
+    search_path = public as $$ declare v_code_id uuid;
 
 begin -- Code must not be empty.
 if p_code is null
@@ -2372,7 +2360,7 @@ return true;
 
 end;
 
-$ $;
+$$;
 
 revoke execute on function public.verify_participant_code(text)
 from
@@ -2393,7 +2381,7 @@ grant execute on function public.verify_participant_code(text) to authenticated;
 create
 or replace function public.is_verified_user() returns boolean language sql security definer
 set
-    search_path = public stable as $ $
+    search_path = public stable as $$
 select
     exists (
         select
@@ -2408,7 +2396,7 @@ select
             and vc.status = 'used'
     );
 
-$ $;
+$$;
 
 revoke execute on function public.is_verified_user()
 from
@@ -2443,7 +2431,7 @@ or replace function public.verify_offline_payment(
     p_payment_reference text default null
 ) returns uuid language plpgsql security definer
 set
-    search_path = public as $ $ declare v_payment_id uuid;
+    search_path = public as $$ declare v_payment_id uuid;
 
 v_fest_fee numeric(10, 2);
 
@@ -2517,7 +2505,7 @@ return v_payment_id;
 
 end;
 
-$ $;
+$$;
 
 revoke execute on function public.verify_offline_payment(uuid, text)
 from
@@ -2540,7 +2528,7 @@ or replace function public.verify_offline_payment(
     p_payment_reference text default null
 ) returns uuid language plpgsql security definer
 set
-    search_path = public as $ $ declare v_payment_id uuid;
+    search_path = public as $$ declare v_payment_id uuid;
 
 v_fest_fee numeric(10, 2);
 
@@ -2640,7 +2628,7 @@ return v_payment_id;
 
 end;
 
-$ $;
+$$;
 
 revoke execute on function public.verify_offline_payment(uuid, text)
 from
@@ -2664,7 +2652,7 @@ or replace function public.issue_verification_code(
     p_custom_code text default null
 ) returns uuid language plpgsql security definer
 set
-    search_path = public as $ $ declare v_code text;
+    search_path = public as $$ declare v_code text;
 
 v_code_id uuid;
 
@@ -2707,13 +2695,7 @@ and length(trim(p_custom_code)) > 0;
 
 if v_is_custom then v_code := upper(trim(p_custom_code));
 
-else v_code := upper(
-    substr(
-        md5(random() :: text || clock_timestamp() :: text),
-        1,
-        8
-    )
-);
+else v_code := upper(encode(extensions.gen_random_bytes(8), 'hex'));
 
 end if;
 
@@ -2773,7 +2755,7 @@ return v_code_id;
 
 end;
 
-$ $;
+$$;
 
 revoke execute on function public.issue_verification_code(uuid, uuid, text)
 from
@@ -2793,7 +2775,7 @@ grant execute on function public.issue_verification_code(uuid, uuid, text) to au
 create
 or replace function public.verify_participant_code(p_code text) returns boolean language plpgsql security definer
 set
-    search_path = public as $ $ declare v_code_id uuid;
+    search_path = public as $$ declare v_code_id uuid;
 
 begin if auth.uid() is null then raise exception 'Authentication required';
 
@@ -2835,7 +2817,7 @@ return true;
 
 end;
 
-$ $;
+$$;
 
 revoke execute on function public.verify_participant_code(text)
 from
@@ -2988,7 +2970,7 @@ or replace function public.declare_result(
     p_position smallint default null
 ) returns uuid language plpgsql security definer
 set
-    search_path = public as $ $ declare v_result_id uuid;
+    search_path = public as $$ declare v_result_id uuid;
 
 v_event_type text;
 
@@ -3133,7 +3115,7 @@ return v_result_id;
 
 end;
 
-$ $;
+$$;
 
 revoke execute on function public.declare_result(uuid, uuid, uuid, smallint)
 from
@@ -3158,7 +3140,7 @@ or replace function public.mark_attendance(
     p_status text default 'present'
 ) returns uuid language plpgsql security definer
 set
-    search_path = public as $ $ declare v_attendance_id uuid;
+    search_path = public as $$ declare v_attendance_id uuid;
 
 v_event_type text;
 
@@ -3329,7 +3311,7 @@ return v_attendance_id;
 
 end;
 
-$ $;
+$$;
 
 revoke execute on function public.mark_attendance(uuid, uuid, uuid, text)
 from
@@ -3390,7 +3372,7 @@ create policy "Admins can delete event files" on storage.objects for delete to a
 create
 or replace function public.set_leaderboard_visibility(p_is_public boolean) returns boolean language plpgsql security definer
 set
-    search_path = public as $ $ begin -- Only active admins can publish or unpublish the leaderboard.
+    search_path = public as $$ begin -- Only active admins can publish or unpublish the leaderboard.
     if not public.is_admin() then raise exception 'Only admins can change leaderboard visibility';
 
 end if;
@@ -3437,7 +3419,7 @@ return true;
 
 end;
 
-$ $;
+$$;
 
 revoke execute on function public.set_leaderboard_visibility(boolean)
 from
@@ -3459,7 +3441,7 @@ or replace function public.create_admin(
     p_role text default 'ADMIN'
 ) returns uuid language plpgsql security definer
 set
-    search_path = public as $ $ declare v_admin_id uuid;
+    search_path = public as $$ declare v_admin_id uuid;
 
 begin if not public.is_super_admin() then raise exception 'Only super admins can create admins';
 
@@ -3532,7 +3514,7 @@ return v_admin_id;
 
 end;
 
-$ $;
+$$;
 
 -- Update an existing admin's role/status.
 create
@@ -3542,7 +3524,7 @@ or replace function public.update_admin(
     p_status text
 ) returns boolean language plpgsql security definer
 set
-    search_path = public as $ $ begin if not public.is_super_admin() then raise exception 'Only super admins can update admins';
+    search_path = public as $$ begin if not public.is_super_admin() then raise exception 'Only super admins can update admins';
 
 end if;
 
@@ -3600,13 +3582,13 @@ return true;
 
 end;
 
-$ $;
+$$;
 
 -- Remove an admin.
 create
 or replace function public.delete_admin(p_admin_id uuid) returns boolean language plpgsql security definer
 set
-    search_path = public as $ $ begin if not public.is_super_admin() then raise exception 'Only super admins can delete admins';
+    search_path = public as $$ begin if not public.is_super_admin() then raise exception 'Only super admins can delete admins';
 
 end if;
 
@@ -3662,7 +3644,7 @@ return true;
 
 end;
 
-$ $;
+$$;
 
 -- Functions must not be callable by anonymous users.
 revoke execute on function public.create_admin(uuid, text)
@@ -3773,7 +3755,7 @@ where
 create
 or replace function public.join_team(p_team_code text) returns uuid language plpgsql security definer
 set
-    search_path = public as $ $ declare v_team_id uuid;
+    search_path = public as $$ declare v_team_id uuid;
 
 v_member_count integer;
 
@@ -3841,7 +3823,7 @@ return v_team_id;
 
 end;
 
-$ $;
+$$;
 
 revoke execute on function public.join_team(text)
 from
@@ -3877,7 +3859,7 @@ from
 create
 or replace function public.join_team(p_team_code text) returns uuid language plpgsql security definer
 set
-    search_path = public as $ $ declare v_team_id uuid;
+    search_path = public as $$ declare v_team_id uuid;
 
 v_event_id uuid;
 
@@ -3990,7 +3972,7 @@ return v_team_id;
 
 end;
 
-$ $;
+$$;
 
 revoke execute on function public.join_team(text)
 from
