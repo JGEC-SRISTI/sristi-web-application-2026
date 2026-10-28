@@ -1,111 +1,1127 @@
+@import url("https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Black+Han+Sans&family=Creepster&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Special+Elite&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
+
+@import "tailwindcss";
+
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
-
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
-
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
+  background: #080808;
+  color: #ffffff;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
-}
-
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
+/* * {
+  margin: 0;
+  padding: 0;
   box-sizing: border-box;
+} */
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: #080808;
 }
 
-h1,
-h2 {
-  font-family: var(--heading);
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* -------------------------------- */
+/* Typography System                */
+/* -------------------------------- */
+
+.font-regular {
+  font-family: "Poppins", sans-serif;
+}
+
+.font-style {
+  font-family: "Orbitron", sans-serif;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
   font-weight: 500;
-  color: var(--text-h);
 }
 
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
+.font-display {
+  font-family: "Bebas Neue", sans-serif;
+}
+
+.font-heavy {
+  font-family: "Black Han Sans", sans-serif;
+}
+
+.font-body {
+  font-family: "Inter", sans-serif;
+}
+
+.font-ui {
+  font-family: "Space Grotesk", sans-serif;
+}
+
+.font-mono {
+  font-family: "JetBrains Mono", monospace;
+}
+
+.font-special {
+  font-family: "Special Elite", monospace;
+}
+
+.font-creepy {
+  font-family: "Creepster", cursive;
+}
+
+/*-----------------------------------------*/
+
+/* ========================================= */
+/* NAVIGATION SHAPE ANIMATION                */
+/* ========================================= */
+
+.nav-shape {
+  fill: transparent;
+  fill-opacity: 0;
+
+  stroke: currentColor;
+  stroke-width: 5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+
+  transition:
+    stroke 0.3s ease,
+    filter 0.3s ease;
+}
+
+
+/* Draw + fill when hovering */
+
+.group:hover .nav-shape {
+  animation: draw-nav-shape 0.8s ease forwards;
+}
+
+
+/* Drawing animation */
+
+@keyframes draw-nav-shape {
+  0% {
+    stroke-dashoffset: 100;
+    fill-opacity: 0;
+    filter: drop-shadow(0 0 0 transparent);
+  }
+
+  65% {
+    stroke-dashoffset: 0;
+    fill-opacity: 0;
+  }
+
+  100% {
+    stroke-dashoffset: 0;
+    fill: rgba(236, 72, 153, 0.2);
+    fill-opacity: 1;
+
+    filter:
+      drop-shadow(0 0 4px rgba(236, 72, 153, 1))
+      drop-shadow(0 0 10px rgba(236, 72, 153, 0.8))
+      drop-shadow(0 0 20px rgba(236, 72, 153, 0.6));
   }
 }
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
+
+/* =========================================
+   SRISTI NAV TEXT ROLL
+========================================= */
+
+.nav-text-wrap {
+  display: grid;
+
+  /*
+    Both text layers share the same cell.
+    Grid still calculates the width correctly.
+  */
+  width: max-content;
+
+  height: 20px;
+
+  overflow: hidden;
+
+  line-height: 20px;
+
+  flex-shrink: 0;
+}
+
+.nav-text,
+.nav-text-pink {
+  /*
+    Put both texts in exactly the same position.
+  */
+  grid-area: 1 / 1;
+
+  display: block;
+
+  height: 20px;
+
+  line-height: 20px;
+
+  white-space: nowrap;
+
+  transition:
+    transform 0.45s cubic-bezier(0.76, 0, 0.24, 1);
+}
+
+
+/* =========================================
+   NORMAL WHITE TEXT
+========================================= */
+
+.nav-text {
+  color: inherit;
+
+  transform: translateY(0);
+}
+
+
+/* =========================================
+   PINK TEXT
+   Completely hidden BELOW the container
+========================================= */
+
+.nav-text-pink {
+  color: #ff5ca8;
+
+  text-shadow:
+    0 0 5px rgba(236, 72, 153, 0.5),
+    0 0 12px rgba(236, 72, 153, 0.3);
+
+  transform: translateY(100%);
+}
+
+
+/* =========================================
+   HOVER ROLL
+========================================= */
+
+/*
+   White text rolls UP and disappears.
+*/
+
+.group:hover .nav-text {
+  transform: translateY(-100%);
+}
+
+
+/*
+   Pink text rolls UP from below
+   into the exact position of the white text.
+*/
+
+.group:hover .nav-text-pink {
+  transform: translateY(0);
+}
+
+/*-----------------------------------------*/
+
+/* =========================================
+   SQUID GAME CURSOR TRAIL
+========================================= */
+
+.cursor-particle {
+  position: fixed;
+
+  pointer-events: none;
+
+  border: 1.5px solid #ff5ca8;
+
+  opacity: 0;
+
+  transform:
+    translate(-50%, -50%)
+    rotate(var(--rotation))
+    scale(0.3);
+
+  animation: cursor-particle-float 0.9s ease-out forwards;
+
+  filter:
+    drop-shadow(0 0 4px rgba(236, 72, 153, 0.8))
+    drop-shadow(0 0 8px rgba(236, 72, 153, 0.4));
+}
+
+/* Circle */
+
+.cursor-circle {
+  border-radius: 50%;
+}
+
+/* Square */
+
+.cursor-square {
+  border-radius: 1px;
+}
+
+/* Triangle */
+
+.cursor-triangle {
+  border: none;
+
+  width: 0 !important;
+  height: 0 !important;
+
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-bottom: 12px solid #ff5ca8;
+
+  background: transparent;
+}
+
+/* Floating animation */
+
+@keyframes cursor-particle-float {
+  0% {
+    opacity: 0;
+
+    transform:
+      translate(-50%, -50%)
+      rotate(var(--rotation))
+      scale(0.3);
+  }
+
+  15% {
+    opacity: 0.9;
+  }
+
+  60% {
+    opacity: 0.65;
+
+    transform:
+      translate(
+        calc(-50% + var(--drift-x, 8px)),
+        calc(-50% - 12px)
+      )
+      rotate(calc(var(--rotation) + 90deg))
+      scale(1);
+  }
+
+  100% {
+    opacity: 0;
+
+    transform:
+      translate(
+        calc(-50% + var(--drift-x, 18px)),
+        calc(-50% - 35px)
+      )
+      rotate(calc(var(--rotation) + 180deg))
+      scale(0.5);
   }
 }
-p {
+
+/*-----------------------------------------*/
+
+/* =========================================
+   CUSTOM SQUID GAME CURSOR
+========================================= */
+
+* {
+  cursor: none;
+}
+
+.custom-cursor {
+  position: fixed;
+
+  width: 24px;
+  height: 24px;
+
+  transform: translate(-50%, -50%);
+
+  pointer-events: none;
+
+  z-index: 10000;
+
+  transition:
+    width 0.2s ease,
+    height 0.2s ease;
+}
+
+.cursor-ring {
+  position: absolute;
+
+  inset: 0;
+
+  border: 1px solid rgba(255, 92, 168, 0.8);
+
+  border-radius: 50%;
+
+  box-shadow:
+    0 0 6px rgba(236, 72, 153, 0.8),
+    0 0 15px rgba(236, 72, 153, 0.4);
+
+  animation: cursor-spin 3s linear infinite;
+}
+
+.cursor-dot {
+  position: absolute;
+
+  left: 50%;
+  top: 50%;
+
+  width: 5px;
+  height: 5px;
+
+  transform: translate(-50%, -50%);
+
+  background: #ff5ca8;
+
+  border-radius: 50%;
+
+  box-shadow:
+    0 0 6px #ff5ca8,
+    0 0 15px rgba(236, 72, 153, 0.8);
+}
+
+/* Hover state */
+
+.custom-cursor.cursor-hover {
+  width: 0px;
+  height: 0px;
+}
+
+.cursor-hover .cursor-ring {
+  border-color: #ff5ca8;
+
+  box-shadow:
+    0 0 8px #ff5ca8,
+    0 0 20px rgba(236, 72, 153, 0.8),
+    0 0 35px rgba(236, 72, 153, 0.4);
+}
+
+.cursor-hover .cursor-dot {
+  /* transform: translate(-50%, -50%) scale(1.4); */
+  display: none;
+}
+
+/* Rotation */
+
+@keyframes cursor-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Don't show custom cursor on touch devices */
+
+@media (hover: none) and (pointer: coarse) {
+  * {
+    cursor: auto;
+  }
+
+  .custom-cursor {
+    display: none;
+  }
+}
+
+/*-----------------------------------------*/
+
+/* =========================================
+   SRISTI LOGO NEON LIGHT SWEEP
+========================================= */
+
+.sristi-logo {
+  position: relative;
+  isolation: isolate;
+}
+
+.sristi-neon-sweep {
+  position: absolute;
+  inset: 0;
+
+  pointer-events: none;
+  z-index: 20;
+
+  /*
+    The logo itself becomes the mask.
+    Only the actual logo pixels
+    will receive the neon light.
+  */
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: contain;
+
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  -webkit-mask-size: contain;
+
+  background: linear-gradient(
+    110deg,
+    transparent 0%,
+    transparent 35%,
+
+    rgba(255, 92, 168, 0.15) 42%,
+    rgba(255, 92, 168, 0.5) 47%,
+    rgba(255, 255, 255, 1) 50%,
+    rgba(255, 92, 168, 0.5) 53%,
+    rgba(255, 92, 168, 0.15) 58%,
+
+    transparent 65%,
+    transparent 100%
+  );
+
+  filter:
+    blur(1px)
+    drop-shadow(0 0 5px rgba(255, 92, 168, 0.9))
+    drop-shadow(0 0 15px rgba(255, 92, 168, 0.7))
+    drop-shadow(0 0 30px rgba(255, 92, 168, 0.35));
+
+  background-size: 220% 100%;
+
+  animation: sristi-neon-travel 10s linear infinite;
+
+  mix-blend-mode: screen;
+}
+
+@keyframes sristi-neon-travel {
+  0% {
+    background-position: 180% 0;
+    opacity: 0;
+  }
+
+  8% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  92% {
+    opacity: 1;
+  }
+
+  100% {
+    background-position: -80% 0;
+    opacity: 0;
+  }
+}
+
+/*-----------------------------------------*/
+
+/* =========================================
+   SPONSOR SLIDER
+========================================= */
+
+.sponsor-slider-track {
+  display: flex;
+  width: max-content;
+
+  animation: sponsor-slide 25s linear infinite;
+}
+
+
+/* =========================================
+   SPONSOR CARD
+========================================= */
+
+.sponsor-card {
+  box-shadow:
+    0 0 0 rgba(236, 72, 153, 0);
+}
+
+.sponsor-card:hover {
+  border-color: rgba(236, 72, 153, 0.6);
+
+  box-shadow:
+    0 0 15px rgba(236, 72, 153, 0.25),
+    0 0 35px rgba(236, 72, 153, 0.12);
+}
+
+
+/* =========================================
+   INFINITE SLIDE
+========================================= */
+
+@keyframes sponsor-slide {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+
+/* =========================================
+   PAUSE ON HOVER
+========================================= */
+
+.sponsor-slider-track:hover {
+  animation-play-state: paused;
+}
+
+/*----------------------------------------------------*/
+
+/* =========================================
+   SRISTI GALLERY
+========================================= */
+
+.gallery-scan-line {
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(236, 72, 153, 0.9),
+    transparent
+  );
+
+  box-shadow:
+    0 0 8px rgba(236, 72, 153, 0.8),
+    0 0 20px rgba(236, 72, 153, 0.4);
+
+  opacity: 0.6;
+
+  animation: gallery-scan 3s ease-in-out infinite;
+}
+
+
+/* =========================================
+   SCAN ANIMATION
+========================================= */
+
+@keyframes gallery-scan {
+  0%,
+  100% {
+    transform: scaleY(0.4);
+    opacity: 0.25;
+  }
+
+  50% {
+    transform: scaleY(1);
+    opacity: 0.8;
+  }
+}
+
+
+/* =========================================
+   FLIP CARD
+========================================= */
+
+.gallery-flip-card {
+  transform-style: preserve-3d;
+  transform-origin: center center;
+  will-change: transform;
+}
+
+
+/* =========================================
+   FLIP INNER
+========================================= */
+
+.gallery-flip-inner {
+  transform-style: preserve-3d;
+}
+
+
+/* =========================================
+   BOTH FACES
+========================================= */
+
+.gallery-flip-face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform-style: preserve-3d;
+}
+
+
+/* =========================================
+   FRONT
+========================================= */
+
+.gallery-flip-front {
+  transform: rotateY(0deg);
+}
+
+
+/* =========================================
+   BACK
+
+   This contains the next/previous image.
+========================================= */
+
+.gallery-flip-back {
+  transform: rotateY(180deg);
+}
+
+
+/* =========================================
+   NEXT FLIP
+
+   Mixed X + Y + Z axis
+========================================= */
+
+.gallery-flip-card.is-flipping.flip-next {
+  animation: gallery-flip-next 0.3s
+    cubic-bezier(0.2, 0, 0.1, 0.3)
+    forwards;
+}
+
+
+/* =========================================
+   PREVIOUS FLIP
+
+   Opposite direction
+========================================= */
+
+.gallery-flip-card.is-flipping.flip-previous {
+  animation: gallery-flip-previous 0.3s
+    cubic-bezier(0.2, 0, 0.1, 0.3)
+    forwards;
+}
+
+
+/* =========================================
+   NEXT KEYFRAMES
+========================================= */
+
+@keyframes gallery-flip-next {
+  0% {
+    transform:
+      rotateX(0deg)
+      rotateY(0deg)
+      rotateZ(0deg);
+  }
+
+  18% {
+    transform:
+      rotateX(-7deg)
+      rotateY(32deg)
+      rotateZ(4deg);
+  }
+
+  42% {
+    transform:
+      rotateX(-12deg)
+      rotateY(92deg)
+      rotateZ(8deg);
+  }
+
+  50% {
+    transform:
+      rotateX(-10deg)
+      rotateY(90deg)
+      rotateZ(6deg);
+  }
+
+  65% {
+    transform:
+      rotateX(-7deg)
+      rotateY(148deg)
+      rotateZ(3deg);
+  }
+
+  82% {
+    transform:
+      rotateX(-3deg)
+      rotateY(178deg)
+      rotateZ(1deg);
+  }
+
+  100% {
+    transform:
+      rotateX(0deg)
+      rotateY(180deg)
+      rotateZ(0deg);
+  }
+}
+
+
+/* =========================================
+   PREVIOUS KEYFRAMES
+========================================= */
+
+@keyframes gallery-flip-previous {
+  0% {
+    transform:
+      rotateX(0deg)
+      rotateY(0deg)
+      rotateZ(0deg);
+  }
+
+  18% {
+    transform:
+      rotateX(7deg)
+      rotateY(-32deg)
+      rotateZ(-4deg);
+  }
+
+  42% {
+    transform:
+      rotateX(12deg)
+      rotateY(-92deg)
+      rotateZ(-8deg);
+  }
+
+  50% {
+    transform:
+      rotateX(10deg)
+      rotateY(-90deg)
+      rotateZ(-6deg);
+  }
+
+  65% {
+    transform:
+      rotateX(7deg)
+      rotateY(-148deg)
+      rotateZ(-3deg);
+  }
+
+  82% {
+    transform:
+      rotateX(3deg)
+      rotateY(-178deg)
+      rotateZ(-1deg);
+  }
+
+  100% {
+    transform:
+      rotateX(0deg)
+      rotateY(-180deg)
+      rotateZ(0deg);
+  }
+}
+
+
+/* =========================================
+   GALLERY HOVER
+========================================= */
+
+.gallery-flip-card:hover
+  .gallery-flip-front {
+  border-color: rgba(236, 72, 153, 0.7);
+
+  box-shadow:
+    0 0 20px rgba(236, 72, 153, 0.15),
+    0 0 50px rgba(236, 72, 153, 0.08);
+}
+
+
+/* =========================================
+   HIDE SCROLLBAR
+========================================= */
+
+.gallery-track::-webkit-scrollbar {
+  display: none;
+}
+
+.gallery-track {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+
+/* =========================================
+   REDUCED MOTION
+========================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .gallery-flip-card.is-flipping {
+    animation-duration: 0.01ms;
+  }
+
+  .gallery-scan-line {
+    animation: none;
+  }
+}
+
+/*---*/
+
+/* =========================================
+   PHOTO DESCRIPTION
+========================================= */
+
+.gallery-description {
+  overflow: hidden;
+
+  /*
+    Smoky black gradient.
+    The top is almost transparent and
+    becomes darker toward the bottom.
+  */
+
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.88) 0%,
+    rgba(0, 0, 0, 0.68) 45%,
+    rgba(0, 0, 0, 0.25) 75%,
+    transparent 100%
+  );
+
+  /*
+    Initially pushed below the photo.
+  */
+
+  transform: translateY(100%);
+
+  opacity: 0;
+
+  transition:
+    transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.35s ease;
+}
+
+
+/* =========================================
+   DESCRIPTION TEXT
+========================================= */
+
+.gallery-description-text {
   margin: 0;
+
+  max-width: 650px;
+
+  color: rgba(255, 255, 255, 0.92);
+
+  font-family: "Inter", sans-serif;
+
+  font-size: 0.78rem;
+
+  line-height: 1.65;
+
+  letter-spacing: 0.02em;
+
+  text-shadow:
+    0 1px 8px rgba(0, 0, 0, 0.9),
+    0 2px 16px rgba(0, 0, 0, 0.7);
+
+  transform: translateY(18px);
+
+  opacity: 0;
+
+  transition:
+    transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.3s ease;
 }
 
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
+
+/* =========================================
+   HOVER → DESCRIPTION SLIDES UP
+========================================= */
+
+.gallery-flip-front:hover
+  .gallery-description {
+  transform: translateY(0);
+  opacity: 1;
 }
 
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+
+.gallery-flip-front:hover
+  .gallery-description-text {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+
+/* =========================================
+   DESKTOP DESCRIPTION SIZE
+========================================= */
+
+@media (min-width: 768px) {
+  .gallery-description-text {
+    font-size: 0.85rem;
+    line-height: 1.7;
+  }
+}
+
+
+/* =========================================
+   REDUCED MOTION
+========================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .gallery-description,
+  .gallery-description-text {
+    transition: none;
+    transform: none;
+  }
+
+  .gallery-description {
+    opacity: 1;
+  }
+
+  .gallery-description-text {
+    opacity: 1;
+  }
+}
+
+/*-----------------------------------------*/
+/* =========================================
+   CONTACT SECTION
+========================================= */
+
+.contact-section {
+  position: relative;
+}
+
+
+/* =========================================
+   CONTACT CARDS
+========================================= */
+
+.contact-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 2rem;
+
+  min-height: 96px;
+
+  padding: 1.5rem 2.5rem;
+
+  border: 1px solid rgba(255, 255, 255, 0.12);
+
+  border-radius: 16px;
+
+  background: rgba(0, 0, 0, 0.2);
+
+  transition:
+    border-color 0.3s ease,
+    background 0.3s ease;
+}
+
+.contact-card:hover {
+  border-color: rgba(236, 72, 153, 0.5);
+
+  background: rgba(0, 0, 0, 0.35);
+}
+
+
+.contact-phone {
+  color: #3b9cff;
+
+  font-family: "Space Grotesk", sans-serif;
+
+  font-size: 1rem;
+
+  font-weight: 500;
+
+  transition:
+    color 0.3s ease,
+    text-shadow 0.3s ease;
+}
+
+.contact-phone:hover {
+  color: #ff5ca8;
+
+  text-shadow:
+    0 0 8px rgba(236, 72, 153, 0.8),
+    0 0 20px rgba(236, 72, 153, 0.4);
+}
+
+
+/* =========================================
+   SRISTI SCROLL WORDMARK
+========================================= */
+
+.contact-wordmark-wrapper {
+  position: relative;
+
+  width: 100%;
+
+  margin-top: 10rem;
+
+  display: flex;
+
+  justify-content: center;
+
+  /* overflow: hidden; */
+}
+
+
+.contact-wordmark {
+  width: 100%;
+
+  text-align: center;
+
+  font-family: "Black Han Sans", sans-serif;
+
+  font-size: clamp(
+    6rem,
+    20vw,
+    22rem
+  );
+
+  line-height: 0.8;
+
+  letter-spacing: -0.05em;
+
+  white-space: nowrap;
+
+  user-select: none;
+}
+
+
+/* =========================================
+   OUTLINE LAYER
+========================================= */
+
+.contact-wordmark-outline {
+  color: transparent;
+
+  -webkit-text-stroke:
+    2px rgba(255, 255, 255, 0.55);
+}
+
+
+/* =========================================
+   FILLED LAYER
+========================================= */
+
+.contact-wordmark-fill {
+  position: absolute;
+
+  left: 0;
+  bottom: 0;
+
+  color: rgba(255, 255, 255);
+
+  -webkit-text-stroke:
+    2px rgba(255, 255, 255);
+
+  pointer-events: none;
+
+  will-change: clip-path;
+
+  /*
+    IMPORTANT:
+    Do NOT add another clip-path here.
+
+    React controls the clip-path directly.
+  */
+}
+
+/* =========================================
+   MOBILE
+========================================= */
+
+@media (max-width: 640px) {
+  .contact-card {
+    flex-direction: column;
+
+    align-items: flex-start;
+
+    gap: 0.75rem;
+
+    padding: 1.25rem 1.5rem;
+  }
+
+  .contact-wordmark-wrapper {
+    margin-top: 7rem;
+  }
+
+  .contact-wordmark {
+    font-size: 24vw;
+  }
 }
