@@ -1,8 +1,27 @@
 @import url("https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Black+Han+Sans&family=Creepster&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Special+Elite&display=swap");
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
 
 @import "tailwindcss";
+
+
+@font-face {
+  font-family: "Game Of Squids";
+  src: url("./assets/fonts/Game Of Squids.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "PP Neue Montreal";
+  src: url("https://a24.raviklaassens.com/fonts/PPNeueMontreal-Medium.woff2")
+    format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
 
 :root {
   background: #080808;
@@ -23,6 +42,22 @@ body {
   min-width: 320px;
   min-height: 100vh;
   background: #080808;
+}
+
+.events-page {
+  position: relative;
+  isolation: isolate;
+  background: #080b1b;
+}
+
+.liquid-gradient-background {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
 }
 
 button,
@@ -72,6 +107,19 @@ a {
 .font-creepy {
   font-family: "Creepster", cursive;
 }
+
+.font-squid {
+  font-family: "Game Of Squids", sans-serif;
+}
+
+.font-space-mono {
+  font-family: "Space Mono", monospace;
+}
+
+.font-a24 {
+  font-family: "PP Neue Montreal", Arial, sans-serif;
+}
+
 
 /*-----------------------------------------*/
 
@@ -1123,5 +1171,151 @@ a {
 
   .contact-wordmark {
     font-size: 24vw;
+  }
+}
+
+
+.events-splash-wrap {
+  --splash-x: 50%;
+  --splash-y: 50%;
+}
+
+.events-splash-overlay {
+  position: absolute;
+  inset: 0;
+
+  color: #ff5ca8;
+
+
+  mask-image: radial-gradient(
+    circle 110px at var(--splash-x) var(--splash-y),
+    black 0%,
+    black 95%,
+    transparent 100%
+  );
+  -webkit-mask-image: radial-gradient(
+    circle 40px at var(--splash-x) var(--splash-y),
+    black 0%,
+    black 55%,
+    transparent 100%
+  );
+
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+
+.events-splash-overlay.is-visible {
+  opacity: 1;
+}
+
+
+
+.dropdown-menu {
+  clip-path: inset(0 0 100% 0);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-0.5rem) scale(0.98);
+  transform-origin: top left;
+  transition:
+    clip-path 0.42s cubic-bezier(0.76, 0, 0.24, 1),
+    opacity 0.25s ease,
+    transform 0.42s cubic-bezier(0.76, 0, 0.24, 1),
+    visibility 0.42s;
+  visibility: hidden;
+}
+
+.dropdown-menu.is-open {
+  clip-path: inset(0 0 0 0);
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+  visibility: visible;
+}
+
+.dropdown-item {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  opacity: 0;
+  color: #f2f2f2;
+  transition:
+    color 0.25s ease,
+    opacity 0.35s ease;
+}
+
+.dropdown-item::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  content: "";
+  background: #f2f2f2;
+  opacity: 0;
+  transform: translateX(-101%);
+  transition:
+    opacity 0.2s ease,
+    transform 0.45s cubic-bezier(0.76, 0, 0.24, 1);
+}
+
+.dropdown-item-label {
+  position: relative;
+  z-index: 1;
+  display: inline-block;
+}
+
+.dropdown-menu.is-open .dropdown-item {
+  opacity: 1;
+}
+
+.dropdown-item:hover,
+.dropdown-item:focus-visible {
+  color: #171717;
+}
+
+.dropdown-item:hover::before,
+.dropdown-item:focus-visible::before {
+  opacity: 1;
+  transform: translateX(0);
+  animation: dropdown-background-shake 0.8s 0.18s ease-in-out infinite;
+}
+
+.dropdown-item.is-selected {
+  color: #171717;
+  box-shadow: inset 2px 0 0 #f2f2f2;
+}
+
+.dropdown-item.is-selected::before {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+@keyframes dropdown-background-shake {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+
+  12% {
+    transform: translate(-1px, 0.6px);
+  }
+
+  24% {
+    transform: translate(0.8px, -0.8px);
+  }
+
+  39% {
+    transform: translate(-0.6px, -0.4px);
+  }
+
+  53% {
+    transform: translate(1.1px, 0.9px);
+  }
+
+  68% {
+    transform: translate(-0.8px, 0.3px);
+  }
+
+  82% {
+    transform: translate(0.45px, -0.7px);
   }
 }

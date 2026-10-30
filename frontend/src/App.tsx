@@ -2,6 +2,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import "boxicons/css/boxicons.min.css";
 
 import Home from "./pages/Home.tsx";
+import Events from "./pages/Events.tsx";
 import CursorTrail from "./components/CursorTrail.tsx";
 import CustomCursor from "./components/CustomCursor.tsx";
 
@@ -13,6 +14,7 @@ function App() {
 
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/events" element={<Events />} />
       </Routes>
     </BrowserRouter>
   );
