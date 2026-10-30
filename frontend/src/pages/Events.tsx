@@ -93,7 +93,7 @@ const Dropdown = ({ label, value, options, onChange }: DropdownProps) => {
             min-w-[180px]
             rounded-lg overflow-hidden
             border border-[#f2f2f2]/20
-            bg-black/95 backdrop-blur-2xl
+            bg-black/35 backdrop-blur-xl
             shadow-[0_16px_48px_rgba(0,0,0,0.7)]
             ${open ? "is-open" : ""}
           `}
@@ -132,14 +132,15 @@ const Dropdown = ({ label, value, options, onChange }: DropdownProps) => {
   );
 };
 
-// EVENT CARDSS
+// EVENT CARDS
 interface EventCardProps {
   event: Event;
-  position:  number; // -2, -1, 0, 1, 2
+  position: number; // -2, -1, 0, 1, 2
   onClick: () => void;
 }
 
 const EventCard = ({ event, position, onClick }: EventCardProps) => {
+  const sceneRef = useRef<HTMLDivElement>(null);
   const isCenter = position === 0;
   const abs = Math.abs(position);
   const imageIndex = [...event.id].reduce(
@@ -172,9 +173,34 @@ const EventCard = ({ event, position, onClick }: EventCardProps) => {
 
   // center card is widest and others are smaller
   const widthMap: Record<number, string> = {
-    0: "280px",
-    1: "220px",
-    2: "180px",
+    0: "360px",
+    1: "240px",
+    2: "190px",
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!sceneRef.current || e.pointerType !== "mouse") return;
+
+    const rect = sceneRef.current.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width * 2 - 1;
+    const y = (e.clientY - rect.top) / rect.height * 2 - 1;
+    const sheenX = ((e.clientX - rect.left) / rect.width) * 100;
+    const sheenY = ((e.clientY - rect.top) / rect.height) * 100;
+    const rotateX = y * 7;
+    const rotateY = -x * 9;
+
+    sceneRef.current.style.setProperty("--card-sheen-x", `${sheenX.toFixed(2)}%`);
+    sceneRef.current.style.setProperty("--card-sheen-y", `${sheenY.toFixed(2)}%`);
+    sceneRef.current.style.transform =
+      `rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg)`;
+  };
+
+  const resetTilt = () => {
+    if (sceneRef.current) {
+      sceneRef.current.style.setProperty("--card-sheen-x", "50%");
+      sceneRef.current.style.setProperty("--card-sheen-y", "35%");
+      sceneRef.current.style.transform = "rotateX(0deg) rotateY(0deg)";
+    }
   };
 
   return (
@@ -182,7 +208,7 @@ const EventCard = ({ event, position, onClick }: EventCardProps) => {
       onClick={!isCenter ? onClick : undefined}
       className={`
         flex-shrink-0
-        transition-all duration-600 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]
+        transition-[transform,width,filter,opacity] duration-1200 ease-[cubic-bezier(0.02,1,0.7,1)]
         ${isCenter ? "z-20 cursor-default" : "z-10 cursor-pointer"}
       `}
       style={{
@@ -190,111 +216,100 @@ const EventCard = ({ event, position, onClick }: EventCardProps) => {
         transform: `scale(${t.scale})`,
         filter: `blur(${t.blur})`,
         opacity: t.opacity,
+        perspective: "1200px",
       }}
     >
       <div
-        className="
-          relative rounded-2xl overflow-hidden
-          border border-white/[0.07]
-          bg-[#111116]/90 backdrop-blur-md
-          transition-all duration-500
-        "
+        ref={sceneRef}
+        onPointerMove={handlePointerMove}
+        onPointerLeave={resetTilt}
+        className="event-card-scene"
         style={{
-          boxShadow: isCenter
-            ? `0 0 40px ${accent}15, 0 20px 60px rgba(0,0,0,0.6)`
-            : "0 8px 32px rgba(0,0,0,0.4)",
+          transform: "rotateX(0deg) rotateY(0deg)",
+          color: accent,
         }}
       >
-        
         <div
-          className="h-[3px] w-full"
-          style={{ background: `linear-gradient(90deg, transparent, ${accent}, transparent)` }}
-        />
-
-        
-        <div
-          className="
-            relative overflow-hidden flex items-center justify-center
-            h-52 sm:h-60
-          "
+          className="event-card-shell relative rounded-2xl backdrop-blur-md transition-all duration-500"
           style={{
-            background: `radial-gradient(ellipse at 50% 30%, ${accent}18 0%, transparent 70%)`,
+            background: "#111116ee",
+            color: accent,
+            border: `1px solid ${accent}`,
+            boxShadow: isCenter
+              ? `0 0 40px ${accent}20, 0 24px 64px rgba(0,0,0,0.7), inset 0 0 0 1px ${accent}18`
+              : `0 8px 32px rgba(0,0,0,0.4), inset 0 0 0 1px ${accent}12`,
           }}
         >
-          {eventImage && (
-            <img
-              src={eventImage}
-              alt={`${event.title} event`}
-              className="absolute inset-0 h-full w-full object-cover opacity-75"
-            />
-          )}
-          <div className="absolute inset-0 bg-black/35" />
-
-          
-          <span
+          <div
             className="
-              absolute top-3 left-3
-              px-2.5 py-1 rounded-md
-              font-space-mono text-[8px] font-bold tracking-[0.18em] uppercase
-              bg-black/40 border border-white/10
+              relative overflow-hidden rounded-t-2xl flex items-center justify-center
+              h-52 sm:h-72
             "
-            style={{ color: accent }}
+            style={{
+              background: `radial-gradient(ellipse at 50% 30%, ${accent}18 0%, transparent 70%)`,
+            }}
           >
-            {event.category}
-          </span>
+            {eventImage && (
+              <img
+                src={eventImage}
+                alt={`${event.title} event`}
+                className="absolute inset-0 h-full w-full object-cover opacity-75"
+              />
+            )}
+            <div className="absolute inset-0 bg-black/35" />
 
-          
-          <span
-            className={`
-              absolute top-3 right-3
-              w-2 h-2 rounded-full
-              ${event.registration_open ? "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" : "bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.6)]"}
-            `}
-          />
+            <span
+              className="
+                absolute top-3 left-3
+                px-2.5 py-1 rounded-md
+                font-space-mono text-[8px] font-bold tracking-[0.18em] uppercase
+                bg-black/40 border border-white/10
+              "
+            >
+              {event.category}
+            </span>
 
-        </div>
+          </div>
 
-        <div className="px-4 pb-5 pt-3 space-y-2.5">
-          
-          <h3
-            className="font-squid text-base sm:text-lg text-white leading-tight tracking-wide"
-          >
-            {event.title}
-          </h3>
+          <div className="px-4 pb-5 pt-3 space-y-2.5">
+            <h3 className="font-squid text-xl sm:text-2xl text-white leading-tight tracking-wide">
+              {event.title}
+            </h3>
 
-          {isCenter && (
-            <p className="font-space-mono text-[10px] text-white/35 leading-relaxed line-clamp-2 uppercase tracking-wider">
-              {event.description}
-            </p>
-          )}
+            {isCenter && (
+              <p className="font-space-mono text-[10px] text-white/35 leading-relaxed line-clamp-2 uppercase tracking-wider">
+                {event.description}
+              </p>
+            )}
 
-          {isCenter && (
-            <div className="grid grid-cols-2 gap-1.5 pt-1">
-              <div className="flex items-center gap-1.5 text-white/35 text-[9px] font-space-mono uppercase tracking-[0.12em]">
-                <Calendar size={10} style={{ color: accent }} />
-                <span>
-                  {new Date(event.date).toLocaleDateString("en-IN", {
-                    day: "numeric",
-                    month: "short",
-                  }).toUpperCase()}
-                </span>
+            {isCenter && (
+              <div className="grid grid-cols-2 gap-1.5 pt-1">
+                <div className="flex items-center gap-1.5 text-white/35 text-[9px] font-space-mono uppercase tracking-[0.12em]">
+                  <Calendar size={10} style={{ color: accent }} />
+                  <span>
+                    {new Date(event.date).toLocaleDateString("en-IN", {
+                      day: "numeric",
+                      month: "short",
+                    }).toUpperCase()}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 text-white/35 text-[9px] font-space-mono uppercase tracking-[0.12em]">
+                  <MapPin size={10} style={{ color: accent }} />
+                  <span className="truncate">{event.venue.toUpperCase()}</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-white/35 text-[9px] font-space-mono uppercase tracking-[0.12em]">
+                  <Trophy size={10} style={{ color: accent }} />
+                  <span>{event.prize_pool}</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-white/35 text-[9px] font-space-mono uppercase tracking-[0.12em]">
+                  <Users size={10} style={{ color: accent }} />
+                  <span>{event.team_size.toUpperCase()}</span>
+                </div>
               </div>
-              <div className="flex items-center gap-1.5 text-white/35 text-[9px] font-space-mono uppercase tracking-[0.12em]">
-                <MapPin size={10} style={{ color: accent }} />
-                <span className="truncate">{event.venue.toUpperCase()}</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-white/35 text-[9px] font-space-mono uppercase tracking-[0.12em]">
-                <Trophy size={10} style={{ color: accent }} />
-                <span>{event.prize_pool}</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-white/35 text-[9px] font-space-mono uppercase tracking-[0.12em]">
-                <Users size={10} style={{ color: accent }} />
-                <span>{event.team_size.toUpperCase()}</span>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+            )}
+          </div>
+        </div>{/* /front face */}
+      </div>{/* /3d scene */}
     </div>
   );
 };
@@ -353,7 +368,7 @@ const SplashHeading = () => {
       onMouseEnter={handleEnter}
       onMouseLeave={handleLeave}
     >
-      <h1 className="font-squid text-5xl sm:text-6xl md:text-7xl lg:text-8xl text-white/90 leading-none tracking-wider select-none">
+      <h1 className="font-squid text-5xl sm:text-6xl md:text-7xl lg:text-8xl text-white/90 leading-none tracking-wider select-none py-4">
         events
       </h1>
       <h1
@@ -389,8 +404,16 @@ const Events = () => {
   const [categoryFilter, setCategoryFilter] = useState("ALL");
   const [participationFilter, setParticipationFilter] = useState("ALL");
   const [activeIndex, setActiveIndex] = useState(0);
+  const [showIntro, setShowIntro] = useState(true);
 
-  
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      setShowIntro(false);
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
   const filteredEvents = mockEvents.filter((e) => {
     const catOk =
       categoryFilter === "ALL" || e.category === categoryFilter;
@@ -506,7 +529,11 @@ const Events = () => {
             <div className="flex items-center justify-center gap-3 sm:gap-5 lg:gap-6">
               {visibleCards.map(({ event, position }) => (
                 <EventCard
-                  key={`${event.id}-${position}`}
+                  key={
+                    filteredEvents.length > 4
+                      ? event.id
+                      : `${event.id}-${position}`
+                  }
                   event={event}
                   position={position}
                   onClick={() => {
@@ -528,28 +555,14 @@ const Events = () => {
             </div>
           )}
         </div>
-
-        {filteredEvents.length > 1 && (
-          <div className="flex items-center justify-center gap-1.5 pt-2">
-            {filteredEvents.map((_, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => setActiveIndex(i)}
-                aria-label={`Go to event ${i + 1}`}
-                className={`
-                  rounded-full transition-all duration-300
-                  ${
-                    i === activeIndex
-                      ? "w-5 h-1.5 bg-[#c084fc] shadow-[0_0_8px_rgba(192,132,252,0.6)]"
-                      : "w-1.5 h-1.5 bg-white/15 hover:bg-white/30"
-                  }
-                `}
-              />
-            ))}
-          </div>
-        )}
       </div>
+
+      <div
+        aria-hidden="true"
+        className={`pointer-events-none fixed inset-0 z-[100] bg-black transition-opacity duration-700 ease-out ${
+          showIntro ? "opacity-100" : "opacity-0"
+        }`}
+      />
     </main>
   );
 };
