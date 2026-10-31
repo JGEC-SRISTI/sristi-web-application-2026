@@ -108,7 +108,9 @@ insert into
         description,
         event_type,
         category,
-        venue
+        venue,
+        min_team_size,
+        max_team_size
     )
 values
     (
@@ -119,7 +121,9 @@ values
         'Local test fixture; rolled back with this test.',
         'team',
         'Test',
-        'Local'
+        'Local',
+        3,
+        5
     );
 
 insert into
