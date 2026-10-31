@@ -67,6 +67,39 @@ The following RPCs require an active admin; the function enforces the role:
 
 `issue_verification_code` returns the row UUID, not the code text. An authorized admin may read the row by that UUID to retrieve the code for delivery. Participants cannot read verification-code rows directly; they submit the code through `verify_participant_code`.
 
+## Admin and event-management operations
+
+Admin operations use the signed-in Supabase session. RLS and each RPC enforce authorization; hiding admin controls in the UI is not an authorization check.
+
+| Operation | Supabase call | Access / behavior |
+| --- | --- | --- |
+| Read or manage events | `supabase.from('events').select/insert/update/delete` | Event reads are public; writes require an active admin. |
+| Read or manage fest settings | `supabase.from('fest_settings').select/insert/update/delete` | Reads are public; writes require an active admin. |
+| Read or manage event-file metadata | `supabase.from('event_files').select/insert/update/delete` | Reads are public; metadata writes require an active admin. Upload/delete the actual object through Supabase Storage; the bucket is private. |
+| Read profiles and payments for admin workflows | `supabase.from('profiles'/'payment_records').select` | Admins can read all rows; participants remain limited by RLS. |
+| Read admin accounts | `supabase.from('admin_users').select` | Requires an active admin. Do not write this table directly. |
+| Create an admin | `supabase.rpc('create_admin', { p_user_id, p_role })` | Super admin only. `p_role` is `ADMIN` or `SUPER_ADMIN` and defaults to `ADMIN`; returns the admin row UUID. |
+| Change an admin role/status | `supabase.rpc('update_admin', { p_admin_id, p_role, p_status })` | Super admin only; status is `active` or `inactive`; returns `boolean`. |
+| Deactivate an admin | `supabase.rpc('deactivate_admin', { p_admin_id })` | Super admin only; prevents self-deactivation and records the action; returns `boolean`. Admin deletion is not supported. |
+| Mark attendance | `supabase.rpc('mark_attendance', { p_event_id, p_user_id, p_team_id, p_status })` | Active admin only. Supply the participant or team target appropriate to the event; status is `present` or `absent` and defaults to `present`; returns the attendance UUID. |
+| Declare a result | `supabase.rpc('declare_result', { p_event_id, p_user_id, p_team_id, p_position })` | Active admin only. Supply either a participant or team target appropriate to the event; `p_position` is the placing; returns the result UUID. |
+| Publish or hide the leaderboard | `supabase.rpc('set_leaderboard_visibility', { p_is_public })` | Active admin only; returns `boolean`. |
+
+For optional SQL arguments, pass `null` for the unused participant/team target where needed. Check every returned `error`; do not treat a successful client-side role check as proof that a write was authorized.
+
+Example admin RPC call:
+
+```ts
+const { data, error } = await supabase.rpc('mark_attendance', {
+  p_event_id: eventId,
+  p_user_id: participantId,
+  p_team_id: null,
+  p_status: 'present',
+});
+```
+
+The frontend must not write directly to `admin_users` or `audit_logs`. Admin account changes must use the RPCs above; audit logs are read-only through the Data API.
+
 ## Current integration boundaries
 
 - Public event and fest-setting reads are available through their tables under RLS.
