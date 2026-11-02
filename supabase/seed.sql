@@ -1,0 +1,2 @@
+-- No seed records are defined yet.
+-- Add deterministic development-only fixture data here when the app needs it.
