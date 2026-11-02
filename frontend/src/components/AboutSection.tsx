@@ -66,14 +66,20 @@ const AboutSection = () => {
     const [typedCharacters, setTypedCharacters] = useState(0);
 
     const sristiParagraphs = [
-      `SRISTI is the techno-management fest of Jalpaiguri Government Engineering College, bringing together technology, innovation, management and creativity under one arena.`,
+      `SRISTI is the techno-management fest of Jalpaiguri Government Engineering College, bringing together technology, innovation, management and creativity under one arena. A platform where students come together to compete, collaborate, experiment and showcase their skills through a diverse range of technical, management and creative events.`,
 
-      `It is a platform where students come together to compete, collaborate, experiment and showcase their skills through a diverse range of technical, management and creative events.`,
-
-      `SRISTI 2K26 takes this spirit into a new arena, bringing the energy of technology and competition into an experience designed to challenge, connect and inspire the next generation`,
+      `15 Years of excellence in Tech and Innovation. <`,
+      `25+ Unique events with attractive prizes. <`,
+      `Above ₹2,00,000 worth prizes & gifts. <`,
+      `A fabolous week of Workshops and Pre-events. <`,
+      `05 days all with technology. <`,
+      `15+ partner institutes involved. <`,
     ];
 
-    const totalCharacters = sristiParagraphs.join("").length;
+    const totalCharacters = sristiParagraphs.reduce(
+      (total, paragraph) => total + paragraph.length,
+      0
+    );
 
     const jgecParagraphs = [
       `Jalpaiguri Government Engineering College is an institution dedicated to engineering education, innovation and creativity. It provides students with an environment where ideas can take shape and technology can be transformed into meaningful solutions.`,
@@ -239,6 +245,37 @@ const AboutSection = () => {
       const seconds = Math.floor(time % 60);
 
       return `${minutes}:${String(seconds).padStart(2, "0")}`;
+    };
+
+    const highlightWords = [
+      "15",
+      "25+",
+      "₹2,00,000",
+      "Workshops and Pre-events",
+      "05",
+      "15+",
+    ];
+
+    const renderHighlightedText = (text: string) => {
+      const pattern = new RegExp(
+        `(${highlightWords
+          .sort((a, b) => b.length - a.length)
+          .map((word) => word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+          .join("|")})`,
+        "gi"
+      );
+
+      return text.split(pattern).map((part, index) =>
+        highlightWords.some(
+          (word) => word.toLowerCase() === part.toLowerCase()
+        ) ? (
+          <span key={index} className="text-pink-500 font-semibold">
+            {part}
+          </span>
+        ) : (
+          part
+        )
+      );
     };
 
   return (
@@ -534,47 +571,53 @@ const AboutSection = () => {
               <div className="sristi-text-layer">
 
                 <div className="sristi-typing-content text-right border-r-4 border-pink-500 pr-4 rounded-md tracking-tight">
+                  {sristiParagraphs.map((paragraph, index) => {
+                    const startIndex = sristiParagraphs
+                      .slice(0, index)
+                      .reduce((total, text) => total + text.length, 0);
 
-                  <p className="font-body text-sm sm:text-base md:text-lg lg:text-xl leading-7 md:leading-9 text-white/75">
-                    {sristiParagraphs[0].slice(0, typedCharacters)}
+                    const endIndex = startIndex + paragraph.length;
 
-                    {typedCharacters <= sristiParagraphs[0].length && (
-                      <span className="typing-cursor" />
-                    )}
-                  </p>
+                    const visibleCharacters = Math.max(
+                      0,
+                      Math.min(paragraph.length, typedCharacters - startIndex)
+                    );
 
-                  {typedCharacters > sristiParagraphs[0].length && (
-                    <p className="font-body mt-7 text-sm sm:text-base md:text-lg lg:text-xl leading-7 md:leading-9 text-white/75">
-                      {sristiParagraphs[1].slice(
-                        0,
-                        typedCharacters - sristiParagraphs[0].length
-                      )}
+                    if (index !== 0 && typedCharacters <= startIndex) return null;
 
-                      {typedCharacters <=
-                        sristiParagraphs[0].length +
-                        sristiParagraphs[1].length && (
-                        <span className="typing-cursor" />
-                      )}
-                    </p>
-                  )}
+                    const visibleText = paragraph.slice(0, visibleCharacters);
+                    const arrowIndex = visibleText.lastIndexOf("<");
 
-                  {typedCharacters >
-                    sristiParagraphs[0].length +
-                    sristiParagraphs[1].length && (
-                    <p className="font-body mt-7 text-sm sm:text-base md:text-lg lg:text-xl leading-7 md:leading-9 text-white/75">
-                      {sristiParagraphs[2].slice(
-                        0,
-                        typedCharacters -
-                          sristiParagraphs[0].length -
-                          sristiParagraphs[1].length
-                      )}
+                    const textPart =
+                      arrowIndex !== -1
+                        ? visibleText.slice(0, arrowIndex).trimEnd()
+                        : visibleText;
 
-                      {typedCharacters < totalCharacters && (
-                        <span className="typing-cursor" />
-                      )}
-                    </p>
-                  )}
+                    const showArrow = arrowIndex !== -1;
 
+                    return (
+                      <p
+                        key={index}
+                        className={`font-body text-sm sm:text-base md:text-lg lg:text-xl leading-7 md:leading-9 text-white/75 ${
+                          index !== 0 ? "mt-1" : ""
+                        }`}
+                      >
+                        {renderHighlightedText(textPart)}
+
+                        {showArrow && (
+                          <span className="text-pink-500 font-bold ml-1">
+                            {"<"}
+                          </span>
+                        )}
+
+                        {typedCharacters < totalCharacters &&
+                          typedCharacters >= startIndex &&
+                          typedCharacters <= endIndex && (
+                            <span className="typing-cursor" />
+                          )}
+                      </p>
+                    );
+                  })}
                 </div>
 
 

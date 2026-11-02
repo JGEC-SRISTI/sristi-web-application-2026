@@ -7,9 +7,9 @@ import {
   CircleUserRound,
   UserRound,
   X,
-  Gamepad2,
   ShieldCheck,
-  LogOut
+  LogOut,
+  House,
 } from "lucide-react";
 import NavShape from "./NavShape";
 import jgeclogo from "../assets/icons/logo1.png";
@@ -106,7 +106,7 @@ const Navbar = () => {
             <NavLink to="/" className={navLinkClass}>
               <NavShape shape="square" />
 
-              <span className="nav-text-wrap font-title text-xl">
+              <span className="nav-text-wrap font-title text-md">
                 <span className="nav-text">HOME</span>
                 <span className="nav-text-pink">HOME</span>
               </span>
@@ -115,7 +115,7 @@ const Navbar = () => {
             <NavLink to="/events" className={navLinkClass}>
               <NavShape shape="circle" />
 
-              <span className="nav-text-wrap font-title text-xl">
+              <span className="nav-text-wrap font-title text-md">
                 <span className="nav-text">GAMES</span>
                 <span className="nav-text-pink">GAMES</span>
               </span>
@@ -124,9 +124,18 @@ const Navbar = () => {
             <NavLink to="/committee" className={navLinkClass}>
               <NavShape shape="triangle" />
 
-              <span className="nav-text-wrap font-title text-xl">
+              <span className="nav-text-wrap font-title text-md">
                 <span className="nav-text">STAFFS</span>
                 <span className="nav-text-pink">STAFFS</span>
+              </span>
+            </NavLink>
+
+            <NavLink to="/accommodation" className={navLinkClass}>
+              <NavShape shape="house" />
+
+              <span className="nav-text-wrap font-title text-md">
+                <span className="nav-text">ACCOMMODATION</span>
+                <span className="nav-text-pink">ACCOMMODATION</span>
               </span>
             </NavLink>
 
@@ -254,6 +263,15 @@ const Navbar = () => {
             </NavLink>
 
             <NavLink
+              to="/events"
+              className={navLinkClass}
+              onClick={() => setIsMenuOpen(false)}
+            >
+                <Circle size={16} className="inline-block mr-1" />
+                <span className="font-bold">GAMES</span>
+            </NavLink>
+
+            <NavLink
               to="/committee"
               className={navLinkClass}
               onClick={() => setIsMenuOpen(false)}
@@ -263,12 +281,12 @@ const Navbar = () => {
             </NavLink>
 
             <NavLink
-              to="/events"
+              to="/accommodation"
               className={navLinkClass}
               onClick={() => setIsMenuOpen(false)}
             >
-                <Circle size={16} className="inline-block mr-1" />
-                <span className="font-bold">GAMES</span>
+              <House size={16} className="inline-block mr-1" />
+              <span className="font-bold">ACCOMMODATION</span>
             </NavLink>
 
             <button
@@ -364,7 +382,33 @@ const Navbar = () => {
             p-6 mb-6
           ">
 
-            <div className="absolute top-0 right-0 opacity-10">
+            {/* LOGOUT BUTTON */}
+            <button
+              type="button"
+              // onClick={handleLogout}
+              title="Logout"
+              aria-label="Logout"
+              className="
+                absolute top-5 right-5
+                w-12 h-12
+                border-[3px] border-white/10
+                flex items-center justify-center
+                text-gray-500
+                hover:border-pink-500
+                hover:text-pink-500
+                hover:bg-pink-500/10
+                transition-all duration-300
+                group
+                z-20
+              "
+            >
+              <LogOut
+                size={16}
+                className="group-hover:rotate-[-15deg] transition-transform duration-300"
+              />
+            </button>
+
+            <div className="absolute top-8 right-9 opacity-10">
               <Circle size={130} />
             </div>
 

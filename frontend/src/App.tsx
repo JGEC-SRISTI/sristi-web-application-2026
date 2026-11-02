@@ -4,18 +4,26 @@ import "boxicons/css/boxicons.min.css";
 import Home from "./pages/Home.tsx";
 import Events from "./pages/Events.tsx";
 import EventDetail from "./pages/EventDetail.tsx";
+import Accommodation from "./pages/Accommodation.tsx";
+
 import CustomCursor from "./components/CustomCursor.tsx";
 
 function App() {
   return (
     <BrowserRouter>
       <CustomCursor />
-      {/* <CursorTrail /> */}
 
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/events" element={<Events />} />
-        <Route path="/events/:eventSlug" element={<EventDetail />} />
+        <Route
+          path="/events/:eventSlug"
+          element={<EventDetail />}
+        />
+        <Route
+          path="/accommodation"
+          element={<Accommodation />}
+        />
       </Routes>
     </BrowserRouter>
   );
