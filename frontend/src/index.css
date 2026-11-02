@@ -1,8 +1,20 @@
 @import url("https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Black+Han+Sans&family=Creepster&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Special+Elite&display=swap");
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Teko:wght@400;500;600;700&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=Stalinist+One&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Rubik+80s+Fade&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Chewy&family=Italianno&family=Jim+Nightshade&family=Limelight&family=Megrim&family=Permanent+Marker&family=Silkscreen:wght@400;700&family=Slackey&family=Unkempt:wght@400;700&display=swap');
 
 @import "tailwindcss";
+
+@font-face {
+  font-family: "SquidGame";
+  src: url("./assets/fonts/game_of_squids/GameOfSquids.otf") format("opentype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
 
 :root {
   background: #080808;
@@ -34,6 +46,20 @@ a {
 /* Typography System                */
 /* -------------------------------- */
 
+.font-title {
+  font-family: "SquidGame", sans-serif;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 400;
+}
+
+.font-heavy-title {
+  font-family: "SquidGame", sans-serif;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
 .font-regular {
   font-family: "Poppins", sans-serif;
 }
@@ -51,6 +77,12 @@ a {
 
 .font-heavy {
   font-family: "Black Han Sans", sans-serif;
+}
+
+.font-heavy-2 {
+  font-family: "Rubik 80s Fade", system-ui;
+  font-weight: 400;
+  font-style: normal;
 }
 
 .font-body {
@@ -72,6 +104,84 @@ a {
 .font-creepy {
   font-family: "Creepster", cursive;
 }
+
+.font-hero-2 {
+  font-family: "Teko", "Bebas Neue", sans-serif;
+  font-weight: 500;
+}
+
+.font-hero {
+  font-family: "Stalinist One", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.chewy-regular {
+  font-family: "Chewy", system-ui;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.unkempt-regular {
+  font-family: "Unkempt", cursive;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.unkempt-bold {
+  font-family: "Unkempt", cursive;
+  font-weight: 700;
+  font-style: normal;
+}
+
+.slackey-regular {
+  font-family: "Slackey", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.limelight-regular {
+  font-family: "Limelight", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.italianno-regular {
+  font-family: "Italianno", cursive;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.permanent-marker-regular {
+  font-family: "Permanent Marker", cursive;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.jim-nightshade-regular {
+  font-family: "Jim Nightshade", cursive;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.silkscreen-regular {
+  font-family: "Silkscreen", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.silkscreen-bold {
+  font-family: "Silkscreen", sans-serif;
+  font-weight: 700;
+  font-style: normal;
+}
+
+.megrim-regular {
+  font-family: "Megrim", system-ui;
+  font-weight: 400;
+  font-style: normal;
+}
+
 
 /*-----------------------------------------*/
 
@@ -226,7 +336,7 @@ a {
 /* =========================================
    SQUID GAME CURSOR TRAIL
 ========================================= */
-
+/* 
 .cursor-particle {
   position: fixed;
 
@@ -314,7 +424,7 @@ a {
       rotate(calc(var(--rotation) + 180deg))
       scale(0.5);
   }
-}
+} */
 
 /*-----------------------------------------*/
 
@@ -326,103 +436,70 @@ a {
   cursor: none;
 }
 
+/* =========================================
+   NEON TRIANGLE CUSTOM CURSOR
+========================================= */
+
 .custom-cursor {
   position: fixed;
+  top: 0;
+  left: 0;
 
-  width: 24px;
-  height: 24px;
+  width: 18px;
+  height: 18px;
 
-  transform: translate(-50%, -50%);
-
+  z-index: 99999;
   pointer-events: none;
 
-  z-index: 10000;
-
-  transition:
-    width 0.2s ease,
-    height 0.2s ease;
-}
-
-.cursor-ring {
-  position: absolute;
-
-  inset: 0;
-
-  border: 1px solid rgba(255, 92, 168, 0.8);
-
-  border-radius: 50%;
-
-  box-shadow:
-    0 0 6px rgba(236, 72, 153, 0.8),
-    0 0 15px rgba(236, 72, 153, 0.4);
-
-  animation: cursor-spin 3s linear infinite;
-}
-
-.cursor-dot {
-  position: absolute;
-
-  left: 50%;
-  top: 50%;
-
-  width: 5px;
-  height: 5px;
-
   transform: translate(-50%, -50%);
 
-  background: #ff5ca8;
-
-  border-radius: 50%;
-
-  box-shadow:
-    0 0 6px #ff5ca8,
-    0 0 15px rgba(236, 72, 153, 0.8);
+  transition:
+    width 0.25s ease,
+    height 0.25s ease;
 }
 
-/* Hover state */
+.cursor-triangle-outline {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+
+  filter:
+    drop-shadow(0 0 2px #f7428d)
+    drop-shadow(0 0 6px rgba(255, 92, 133, 0.9))
+    drop-shadow(0 0 13px rgba(255, 92, 133, 0.5));
+}
+
+/* Hover enlargement */
 
 .custom-cursor.cursor-hover {
-  width: 0px;
-  height: 0px;
+  width: 36px;
+  height: 36px;
 }
 
-.cursor-hover .cursor-ring {
-  border-color: #ff5ca8;
-
-  box-shadow:
-    0 0 8px #ff5ca8,
-    0 0 20px rgba(236, 72, 153, 0.8),
-    0 0 35px rgba(236, 72, 153, 0.4);
+.custom-cursor.cursor-hover .cursor-triangle-outline {
+  filter:
+    drop-shadow(0 0 3px #ff6685)
+    drop-shadow(0 0 9px #ff6685)
+    drop-shadow(0 0 20px rgba(255, 92, 133, 0.8));
 }
+/* Hide native cursor */
 
-.cursor-hover .cursor-dot {
-  /* transform: translate(-50%, -50%) scale(1.4); */
-  display: none;
-}
-
-/* Rotation */
-
-@keyframes cursor-spin {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
+@media (pointer: fine) {
+  body,
+  body * {
+    cursor: none !important;
   }
 }
 
 /* Don't show custom cursor on touch devices */
 
-@media (hover: none) and (pointer: coarse) {
-  * {
-    cursor: auto;
-  }
-
+@media (pointer: coarse) {
   .custom-cursor {
     display: none;
   }
 }
+/* Don't show custom cursor on touch devices */
+
 
 /*-----------------------------------------*/
 
@@ -1020,108 +1097,1285 @@ a {
     0 0 20px rgba(236, 72, 153, 0.4);
 }
 
-
 /* =========================================
-   SRISTI SCROLL WORDMARK
+   SRISTI SQUID GAME WORDMARK
 ========================================= */
 
 .contact-wordmark-wrapper {
   position: relative;
-
-  width: 100%;
-
-  margin-top: 10rem;
-
   display: flex;
-
+  align-items: center;
   justify-content: center;
 
-  /* overflow: hidden; */
-}
+  width: 100%;
+  max-width: 100%;
 
+  margin-top: clamp(4rem, 8vw, 8rem);
+  padding: 0.25em 0.02em;
+
+  overflow: visible;
+}
 
 .contact-wordmark {
   width: 100%;
+  margin: 0;
+  padding: 0;
 
+  font-family: "SquidGame", sans-serif !important;
+  font-size: clamp(3rem, 15vw, 16rem);
+  font-weight: 400;
+
+  line-height: 1.3;
+  letter-spacing: 0;
   text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
 
-  font-family: "Black Han Sans", sans-serif;
-
-  font-size: clamp(
-    6rem,
-    20vw,
-    22rem
+  background: linear-gradient(
+    to top,
+    #fff 0%,
+    #fff var(--fill-level, 0%),
+    transparent var(--fill-level, 0%),
+    transparent 100%
   );
 
-  line-height: 0.8;
+  background-clip: text;
+  -webkit-background-clip: text;
 
-  letter-spacing: -0.05em;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
 
-  white-space: nowrap;
+  -webkit-text-stroke: 1.5px rgba(255, 255, 255, 0.85);
 
   user-select: none;
 }
 
+/* Tablet */
 
-/* =========================================
-   OUTLINE LAYER
-========================================= */
-
-.contact-wordmark-outline {
-  color: transparent;
-
-  -webkit-text-stroke:
-    2px rgba(255, 255, 255, 0.55);
+@media (max-width: 1024px) {
+  .contact-wordmark {
+    font-size: 14vw;
+  }
 }
 
-
-/* =========================================
-   FILLED LAYER
-========================================= */
-
-.contact-wordmark-fill {
-  position: absolute;
-
-  left: 0;
-  bottom: 0;
-
-  color: rgba(255, 255, 255);
-
-  -webkit-text-stroke:
-    2px rgba(255, 255, 255);
-
-  pointer-events: none;
-
-  will-change: clip-path;
-
-  /*
-    IMPORTANT:
-    Do NOT add another clip-path here.
-
-    React controls the clip-path directly.
-  */
-}
-
-/* =========================================
-   MOBILE
-========================================= */
+/* Mobile */
 
 @media (max-width: 640px) {
-  .contact-card {
-    flex-direction: column;
-
-    align-items: flex-start;
-
-    gap: 0.75rem;
-
-    padding: 1.25rem 1.5rem;
-  }
-
   .contact-wordmark-wrapper {
-    margin-top: 7rem;
+    margin-top: 5rem;
+    padding: 0.2em 0.02em;
+    overflow: hidden;
   }
 
   .contact-wordmark {
-    font-size: 24vw;
+    font-size: 14vw;
+    line-height: 1.4;
+    -webkit-text-stroke-width: 1px;
+  }
+}
+
+@media (max-width: 380px) {
+  .contact-wordmark {
+    font-size: 13.5vw;
+  }
+}
+
+/* Footer content alignment */
+
+.footer-heading {
+  margin-bottom: 2px;
+}
+
+.footer-link {
+  display: block;
+  width: 100%;
+  overflow-wrap: break-word;
+  word-break: normal;
+  line-height: 1.8;
+}
+
+.footer-social {
+  flex-shrink: 0;
+}
+
+/* Brand description */
+
+.footer-brand-description {
+  max-width: 320px;
+  line-height: 1.7;
+}
+
+/* Location */
+
+.footer-location {
+  max-width: 340px;
+  line-height: 1.8;
+}
+
+
+/* =========================================
+   SRISTI CINEMATIC HERO
+========================================= */
+
+/* Hero entrance */
+.hero-content {
+  perspective: 1000px;
+}
+
+/* Intro label */
+.hero-eyebrow {
+  opacity: 0;
+  animation: hero-eyebrow-in 0.8s ease-out 0.1s forwards;
+}
+
+
+/* =========================================
+   SRISTI — EXPAND TO NORMAL WIDTH
+========================================= */
+
+.hero-title {
+  display: block;
+  width: 100%;
+  opacity: 0;
+  transform: scaleX(3.5);
+  transform-origin: center center;
+  filter: blur(12px);
+
+  animation: hero-word-reveal 0.8s
+    cubic-bezier(0.16, 1, 0.3, 1) 0.15s forwards;
+
+  will-change: transform, opacity, filter;
+
+  text-shadow:
+    0 0 25px rgba(255, 255, 255, 0.08),
+    0 0 60px rgba(236, 72, 153, 0.12);
+}
+
+/* =========================================
+   2K26 — SEPARATE REVEAL
+========================================= */
+
+.hero-year {
+  display: block;
+  width: 100%;
+  opacity: 0;
+  transform: scaleX(3.5);
+  transform-origin: center center;
+  filter: blur(12px);
+
+  animation: hero-word-reveal 0.8s
+    cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
+
+  will-change: transform, opacity, filter;
+
+  text-shadow:
+    0 0 12px rgba(255, 92, 168, 0.55),
+    0 0 35px rgba(236, 72, 153, 0.25);
+}
+
+/* Main animation */
+@keyframes hero-word-reveal {
+  0% {
+    opacity: 0;
+    transform: scaleX(3.5);
+    filter: blur(12px);
+  }
+
+  35% {
+    opacity: 0.35;
+    filter: blur(7px);
+  }
+
+  70% {
+    opacity: 0.8;
+    filter: blur(2px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scaleX(1);
+    filter: blur(0);
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .hero-title,
+  .hero-year {
+    animation: none;
+    opacity: 1;
+    transform: scaleX(1);
+    filter: none;
+  }
+}
+
+
+/* Pink divider */
+.hero-divider {
+  width: 0;
+  height: 2px;
+  background: #ff5ca8;
+  box-shadow:
+    0 0 8px rgba(255, 92, 168, 0.9),
+    0 0 24px rgba(236, 72, 153, 0.5);
+  animation: hero-divider-expand 0.7s ease-out 1.65s forwards;
+}
+
+/* Supporting text and button */
+.hero-tagline,
+.hero-explore {
+  opacity: 0;
+  z-index: 90;
+  transform: translateY(18px);
+  animation: hero-support-in 0.7s ease-out 1.75s forwards;
+}
+
+/* Scroll cue */
+.hero-scroll-indicator {
+  opacity: 0;
+  animation: hero-eyebrow-in 0.7s ease-out 2.2s forwards;
+}
+
+.hero-scroll-line {
+  display: block;
+  width: 1px;
+  height: 140px;
+  transform-origin: top;
+  background: linear-gradient(
+    to bottom,
+    #ff5ca8,
+    rgba(255, 92, 168, 0)
+  );
+  animation: hero-scroll-pulse 1.6s ease-in-out infinite;
+}
+
+/* Keyframes */
+@keyframes hero-eyebrow-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes hero-divider-expand {
+  to {
+    width: min(180px, 45vw);
+  }
+}
+
+@keyframes hero-support-in {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes hero-scroll-pulse {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scaleY(0.65);
+  }
+  50% {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .hero-eyebrow,
+  .hero-letter,
+  .hero-year-letter,
+  .hero-divider,
+  .hero-tagline,
+  .hero-explore,
+  .hero-scroll-indicator {
+    animation: none;
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+
+  .hero-divider {
+    width: min(180px, 45vw);
+  }
+}
+
+/* =========================================
+   HERO LAYERING
+========================================= */
+
+.hero-stage {
+  position: relative;
+  isolation: isolate;
+}
+
+/* SRISTI — Background layer */
+.hero-title {
+  position: relative;
+  z-index: 10;
+}
+
+/* PINK SOLDIER — Middle layer */
+.hero-soldier {
+  position: fixed;
+  top: 7vh;
+  bottom: auto;
+  right: -15%;
+
+  z-index: 20;
+
+  width: clamp(600px, 68vw, 1200px);
+
+  height: auto;
+  object-fit: contain;
+
+  pointer-events: none;
+  user-select: none;
+
+  opacity: 1;
+  transition: none;
+  will-change: transform, opacity;
+}
+
+/* 2K26 — Foreground layer */
+.hero-year,
+.hero-divider,
+.hero-tagline,
+.hero-explore{
+  position: relative;
+  z-index: 30;
+}
+
+/* Mobile positioning */
+@media (max-width: 768px) {
+  .hero-soldier {
+    width: clamp(160px, 43vw, 270px);
+    right: -3%;
+    top: 7vh;
+  }
+}
+
+/* =====================================================
+   JGEC — CINEMATIC INTRODUCTION
+===================================================== */
+
+.jgec-section {
+  isolation: isolate;
+}
+
+.jgec-ambient-glow {
+  position: absolute;
+  width: 650px;
+  height: 650px;
+  top: 10%;
+  left: -25%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(236, 72, 153, 0.09),
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+/* Eyebrow */
+
+.jgec-eyebrow {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.jgec-visible .jgec-eyebrow {
+  animation: jgec-text-reveal 0.8s ease-out 0.1s forwards;
+}
+
+/* College heading */
+
+.jgec-heading {
+  opacity: 0;
+  transform: translateX(-70px);
+  filter: blur(8px);
+}
+
+.jgec-visible .jgec-heading {
+  animation: jgec-heading-reveal 1.1s
+    cubic-bezier(0.16, 1, 0.3, 1) 0.25s forwards;
+}
+
+/* Pink divider */
+
+.jgec-divider {
+  width: 0;
+  height: 2px;
+  background: #ff5ca8;
+  box-shadow:
+    0 0 8px rgba(255, 92, 168, 0.9),
+    0 0 25px rgba(236, 72, 153, 0.5);
+}
+
+.jgec-visible .jgec-divider {
+  animation: jgec-divider-reveal 0.8s ease-out 0.9s forwards;
+}
+
+/* Description */
+
+.jgec-description {
+  opacity: 0;
+  transform: translateY(35px);
+  filter: blur(5px);
+}
+
+.jgec-visible .jgec-description {
+  animation: jgec-description-reveal 1s
+    cubic-bezier(0.16, 1, 0.3, 1) 1s forwards;
+}
+
+
+/* =====================================================
+   INVITATION COMPOSITION
+===================================================== */
+
+.jgec-invitation {
+  min-height: 580px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  perspective: 1200px;
+}
+
+.invitation-glow {
+  position: absolute;
+  width: 75%;
+  height: 65%;
+  border-radius: 50%;
+  background: rgba(236, 30, 100, 0.13);
+  filter: blur(100px);
+  opacity: 0;
+  transition: opacity 1.5s ease;
+}
+
+.jgec-visible .invitation-glow {
+  opacity: 1;
+}
+
+/* Cards */
+
+.invitation-card {
+  position: absolute;
+  width: clamp(170px, 23vw, 310px);
+  height: auto;
+  object-fit: contain;
+  opacity: 0;
+  filter: drop-shadow(0 15px 25px rgba(0, 0, 0, 0.5));
+  will-change: transform, opacity;
+}
+
+.invitation-card-one {
+  z-index: 2;
+  top: 5%;
+  left: 8%;
+  transform: translateY(100px) rotate(-12deg) scale(0.8);
+}
+
+.invitation-card-two {
+  z-index: 3;
+  top: 22%;
+  right: 0;
+  transform: translateY(100px) rotate(10deg) scale(0.8) ease-in-out;
+}
+
+/* Hand */
+
+.invitation-hand {
+  position: absolute;
+  z-index: 1;
+  width: 115%;
+  max-width: 680px;
+  height: auto;
+  object-fit: contain;
+  bottom: -10%;
+  right: -15%;
+  opacity: 0;
+  transform: translateY(120px) scale(0.92);
+  will-change: transform, opacity;
+}
+
+/* Entrance */
+
+.jgec-visible .invitation-card-one {
+  animation:
+    invitation-card-enter 1.1s
+    cubic-bezier(0.16, 1, 0.3, 1) 0.4s forwards,
+    invitation-float-one 5s ease-in-out 1.6s infinite;
+}
+
+.jgec-visible .invitation-card-two {
+  animation:
+    invitation-card-enter 1.1s
+    cubic-bezier(0.16, 1, 0.3, 1) 0.65s forwards,
+    invitation-float-two 6s ease-in-out 1.85s infinite;
+}
+
+.jgec-visible .invitation-hand {
+  animation:
+    invitation-hand-enter 1.3s
+    cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards,
+    invitation-hand-float 5s ease-in-out 1.7s infinite;
+}
+
+
+/* =====================================================
+   KEYFRAMES
+===================================================== */
+
+@keyframes jgec-text-reveal {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes jgec-heading-reveal {
+  to {
+    opacity: 1;
+    transform: translateX(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes jgec-divider-reveal {
+  to {
+    width: min(100px, 30vw);
+  }
+}
+
+@keyframes jgec-description-reveal {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes invitation-card-enter {
+  to {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg) scale(1);
+  }
+}
+
+@keyframes invitation-hand-enter {
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Independent card movement */
+
+@keyframes invitation-float-one {
+  0%, 100% {
+    transform: translateY(0) rotate(-12deg);
+  }
+  50% {
+    transform: translateY(-22px) rotate(-7deg);
+  }
+}
+
+@keyframes invitation-float-two {
+  0%, 100% {
+    transform: translateY(0) rotate(10deg);
+  }
+  50% {
+    transform: translateY(-32px) rotate(15deg);
+  }
+}
+
+/* Hand movement */
+
+@keyframes invitation-hand-float {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-12px) scale(1.015);
+  }
+}
+
+
+/* =====================================================
+   MOBILE
+===================================================== */
+
+@media (max-width: 1023px) {
+  .jgec-invitation {
+    min-height: 430px;
+    margin-top: 20px;
+  }
+
+  .invitation-hand {
+    width: 100%;
+    right: -5%;
+    bottom: -5%;
+  }
+
+  .invitation-card {
+    width: clamp(140px, 30vw, 240px);
+  }
+}
+
+@media (max-width: 640px) {
+  .jgec-invitation {
+    min-height: 350px;
+  }
+
+  .invitation-card-one {
+    top: 0;
+    left: 0;
+  }
+
+  .invitation-card-two {
+    top: 12%;
+    right: 0;
+  }
+
+  .invitation-hand {
+    width: 110%;
+    right: -10%;
+  }
+}
+
+
+/* Accessibility */
+
+@media (prefers-reduced-motion: reduce) {
+  .jgec-eyebrow,
+  .jgec-heading,
+  .jgec-divider,
+  .jgec-description,
+  .invitation-card,
+  .invitation-hand {
+    animation: none !important;
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+}
+
+/* =========================================
+   SRISTI — MULTI FONT CINEMATIC ANIMATION
+========================================= */
+
+.sristi-font-shift {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  height: 1.15em;
+  width: 3.5em;
+
+  white-space: nowrap;
+  vertical-align: middle;
+  line-height: 1;
+
+  transform-origin: center;
+  will-change: font-family, transform, letter-spacing, filter, color;
+}
+
+.sristi-visible .sristi-font-shift {
+  animation: sristi-font-sequence 3s steps(1, end) forwards;
+}
+
+@keyframes sristi-font-sequence {
+  /* First cycle */
+  0%   { font-family: "Chewy", cursive; }
+  3%   { font-family: "Megrim", cursive; }
+  6%   { font-family: "Poppins", sans-serif; }
+  9%   { font-family: "Italianno", cursive; }
+  12%  { font-family: "Silkscreen", sans-serif; }
+  15%  { font-family: "Bebas Neue", sans-serif; }
+  18%  { font-family: "Slackey", cursive; }
+  21%  { font-family: "Jim Nightshade", cursive; }
+  24%  { font-family: "Permanent Marker", cursive; }
+  27%  { font-family: "Limelight", cursive; }
+  30%  { font-family: "Unkempt", cursive; }
+
+  /* Second cycle */
+  33%  { font-family: "Permanent Marker", cursive; }
+  36%  { font-family: "Chewy", cursive; }
+  39%  { font-family: "Bebas Neue", sans-serif; }
+  42%  { font-family: "Slackey", cursive; }
+  45%  { font-family: "Limelight", cursive; }
+  48%  { font-family: "Poppins", sans-serif; }
+  51%  { font-family: "Jim Nightshade", cursive; }
+  54%  { font-family: "Unkempt", cursive; }
+  57%  { font-family: "Megrim", cursive; }
+  60%  { font-family: "Italianno", cursive; }
+  63%  { font-family: "Silkscreen", sans-serif; }
+
+  /* Third cycle */
+  66%  { font-family: "Silkscreen", sans-serif; }
+  69%  { font-family: "Jim Nightshade", cursive; }
+  72%  { font-family: "Chewy", cursive; }
+  75%  { font-family: "Limelight", cursive; }
+  78%  { font-family: "Italianno", cursive; }
+  81%  { font-family: "Slackey", cursive; }
+  84%  { font-family: "Poppins", sans-serif; }
+  87%  { font-family: "Permanent Marker", cursive; }
+  90%  { font-family: "Megrim", cursive; }
+  93%  { font-family: "Unkempt", cursive; }
+  96%  { font-family: "Bebas Neue", sans-serif; }
+
+  /* Final settled appearance */
+  100% {
+    font-family: "SquidGame", sans-serif;
+    transform: scale(1);
+    letter-spacing: inherit;
+    filter: blur(0);
+    color: rgb(231, 24, 121);
+  }
+}
+.sristi-section {
+  position: relative;
+  isolation: isolate;
+  overflow: visible;
+}
+
+/* Heading stays behind the soldier */
+.sristi-heading-layer {
+  position: relative;
+  z-index: 2;
+}
+
+.sristi-section h2 {
+  line-height: 1.15;
+  white-space: nowrap;
+  min-height: 1.15em;
+}
+
+/* =========================================
+   TYPING CURSOR
+========================================= */
+
+.typing-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 3px;
+  vertical-align: -2px;
+
+  background: #ff5ca8;
+  box-shadow: 0 0 10px #ff5ca8;
+
+  animation: typing-blink 0.7s steps(2, start) infinite;
+}
+
+@keyframes typing-blink {
+  to {
+    visibility: hidden;
+  }
+}
+
+
+/* =========================================
+   ACCESSIBILITY
+========================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .sristi-visible .sristi-font-shift {
+    animation: none;
+    font-family: "Bebas Neue", sans-serif;
+    transform: none;
+    filter: none;
+  }
+
+  .typing-cursor {
+    animation: none;
+  }
+}
+
+/* =========================================
+   SRISTI SOLDIER PHONE EXPERIENCE
+========================================= */
+
+.soldier-phone-stage {
+  width: 100%;
+  max-width: 760px;
+  aspect-ratio: 1;
+  margin-inline: auto;
+  position: relative;
+  isolation: isolate;
+  opacity: 0;
+  transform: translateY(90px) scale(0.82);
+  transition:
+    opacity 0.8s ease,
+    transform 1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.soldier-phone-stage.soldier-phone-enter {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.soldier-phone-image {
+  position: relative;
+  z-index: 3;
+  width: 125%;
+  max-width: none;
+  transform: translateY(-12.5%) scale(1.18);
+  transform-origin: center bottom;
+}
+
+.sristi-text-layer {
+  position: relative;
+  z-index: 4;
+}
+
+/* Exact phone screen overlay */
+
+.soldier-phone-screen {
+  position: absolute;
+  z-index: 5;
+
+  /* Screen alignment */
+  left: -1%;
+  width: 82%;
+  top: 8.5%;
+  height: 36%;
+
+  overflow: hidden;
+  border-radius: 33px;
+  background: #050505;
+
+  opacity: 0;
+  transition: opacity 0.5s ease 0.9s;
+}
+
+.sristi-visible .soldier-phone-screen {
+  opacity: 1;
+}
+
+.soldier-phone-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  object-position: center;
+}
+
+/* =========================================
+   PHONE VIDEO CONTROLS
+========================================= */
+
+.phone-controls {
+  position: absolute;
+  inset: auto 0 0;
+  z-index: 10;
+  width: 100%;
+
+  display: flex;
+  flex-direction: column;
+
+  padding: 2% 4% 3%;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.95),
+    rgba(0, 0, 0, 0.65),
+    transparent
+  );
+
+  color: white;
+}
+
+.phone-progress {
+  display: block;
+  width: 100%;
+  height: 3px;
+  margin-bottom: 4%;
+  appearance: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.phone-control-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 3%;
+}
+
+.phone-control-row button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.phone-control-row svg {
+  width: clamp(8px, 1.2vw, 15px);
+  height: clamp(8px, 1.2vw, 15px);
+}
+
+.phone-time {
+  font-family: "JetBrains Mono", monospace;
+  font-size: clamp(5px, 0.65vw, 9px);
+  white-space: nowrap;
+}
+
+/* Pink light behind the soldier */
+
+.soldier-phone-glow {
+  position: absolute;
+  z-index: 1;
+  width: 65%;
+  height: 65%;
+  left: 17%;
+  top: 20%;
+
+  background: rgba(236, 72, 153, 0.16);
+  filter: blur(90px);
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 1s ease 0.5s;
+  pointer-events: none;
+}
+
+.sristi-visible .soldier-phone-glow {
+  opacity: 1;
+}
+
+/* Accessibility */
+
+@media (prefers-reduced-motion: reduce) {
+  .soldier-phone-stage,
+  .soldier-phone-screen,
+  .soldier-phone-glow {
+    transition: none;
+  }
+}
+
+@media (max-width: 1024px) {
+  .soldier-phone-image {
+    width: 115%;
+    transform: scale(1.08);
+  }
+
+  .soldier-phone-screen{
+    left: 4%;
+    width: 69%;
+    top: 26%;
+    height: 30%;
+
+    border-radius: 30px;
+  }
+}
+
+@media (max-width: 640px) {
+  .sristi-about-section {
+    overflow: hidden;
+  }
+
+  .soldier-phone-image {
+    width: 100%;
+    transform: scale(1);
+  }
+
+  .sristi-heading-layer,
+  .sristi-text-layer {
+    position: relative;
+  }
+
+  .soldier-phone-screen{
+    left: 6.8%;
+    width: 56%;
+    top: 27%;
+    height: 25%;
+
+    border-radius: 15px;
+  }
+}
+
+/* =========================================
+   RESPONSIVE CONTACT FOOTER
+========================================= */
+
+.footer-heading {
+  width: fit-content;
+  color: rgba(255, 255, 255, 0.85);
+  font-family: "SquidGame", sans-serif;
+  letter-spacing: 0.2em;
+  font-size: 17px;
+  font-weight: 600;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.5);
+  padding: 0 20px 9px 4px;
+  white-space: nowrap;
+}
+
+.footer-link {
+  width: fit-content;
+  color: rgba(255, 255, 255, 0.6);
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+  transition: color 0.25s ease;
+}
+
+.footer-link:hover {
+  color: #ff5ca8;
+}
+
+.footer-social {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: clamp(30px, 3vw, 48px);
+  transition:
+    color 0.25s ease,
+    transform 0.25s ease;
+}
+
+.footer-social:hover {
+  color: #ff5ca8;
+  transform: scale(1.12);
+}
+
+@media (max-width: 380px) {
+  .footer-heading {
+    font-size: 12px;
+    padding-right: 10px;
+  }
+
+  .footer-link {
+    font-size: 12px;
+  }
+}
+
+/* =========================================
+   SRISTI 2K26 - 3D CIRCULAR GALLERY
+========================================= */
+
+.gallery-3d-stage {
+  --gallery-radius: clamp(420px, 48vw, 700px);
+
+  perspective: 1600px;
+  perspective-origin: 50% 45%;
+  transform-style: preserve-3d;
+  touch-action: pan-y;
+  overflow: visible;
+}
+
+.gallery-3d-panel {
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  will-change: transform, opacity;
+  cursor: pointer;
+}
+
+/* Keep the active photo visually sharp */
+.gallery-3d-panel img {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Reduced motion accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .gallery-3d-panel {
+    transition: none !important;
+  }
+}
+
+/* =========================================
+   FIX: 3D GALLERY HOVER DESCRIPTION
+========================================= */
+
+/* Keep description hidden initially */
+.gallery-3d-panel-active .gallery-hover-description {
+  opacity: 0;
+  transform: translateY(35px);
+  visibility: hidden;
+
+  transition:
+    opacity 500ms ease,
+    transform 600ms cubic-bezier(0.16, 1, 0.3, 1),
+    visibility 500ms ease;
+}
+
+/* Reveal the description container */
+.gallery-3d-panel-active:hover .gallery-hover-description {
+  opacity: 1;
+  transform: translateY(0);
+  visibility: visible;
+}
+
+/* IMPORTANT: Override the old hidden text styling */
+.gallery-3d-panel-active:hover
+.gallery-hover-description
+.gallery-description-text {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+  visibility: visible !important;
+
+  transition:
+    opacity 500ms ease 150ms,
+    transform 600ms ease 150ms;
+}
+
+.gallery-description-text {
+  color: white !important;
+  font-size: 0.5rem !important;
+  width: 80% !important;
+  font-family: "Inter", sans-serif !important;
+  line-height: 1.65;
+  letter-spacing: 0.02em;
+  padding: 0.5rem;
+}
+
+/* Zoom the image */
+.gallery-3d-panel-active .gallery-panel-image {
+  transition: transform 700ms ease, filter 700ms ease;
+}
+
+.gallery-3d-panel-active:hover .gallery-panel-image {
+  transform: scale(1.12);
+  filter: brightness(0.65);
+}
+
+/* Pink neon border */
+.gallery-3d-panel-active:hover {
+  border-color: #ec4899 !important;
+
+  box-shadow:
+    0 0 15px rgba(236, 72, 153, 0.5),
+    0 0 35px rgba(236, 72, 153, 0.25) !important;
+}
+
+/* =========================================
+   SRISTI GALLERY - INTERACTIVE 3D HOVER
+========================================= */
+
+/* Inner card handles the independent mouse tilt */
+.gallery-card-inner {
+  position: absolute;
+  inset: 0;
+
+  width: 100%;
+  height: 100%;
+
+  transform-style: preserve-3d;
+  transform-origin: center center;
+
+  transition:
+    transform 450ms cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  will-change: transform;
+}
+
+/* Smooth reset when mouse leaves */
+.gallery-3d-panel-active:not(:hover) .gallery-card-inner {
+  transform:
+    perspective(1000px)
+    rotateX(0deg)
+    rotateY(0deg)
+    translateZ(0px);
+}
+
+/* Image movement */
+.gallery-card-inner > img {
+  transition:
+    transform 500ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    filter 500ms ease;
+}
+
+.gallery-3d-panel-active:hover .gallery-card-inner > img {
+  transform: scale(1.07);
+  filter: brightness(0.78) saturate(1.12);
+}
+
+/* Moving light reflection */
+.gallery-card-glare {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+
+  pointer-events: none;
+
+  opacity: var(--glare-opacity, 0);
+
+  background: radial-gradient(
+    circle at var(--glare-x, 50%) var(--glare-y, 50%),
+    rgba(255, 255, 255, 0.35) 0%,
+    rgba(255, 92, 168, 0.18) 18%,
+    transparent 55%
+  );
+
+  mix-blend-mode: screen;
+
+  transition: opacity 250ms ease;
+}
+
+/* Pink edge and depth */
+.gallery-3d-panel-active {
+  overflow: visible !important;
+
+  transition:
+    border-color 400ms ease,
+    box-shadow 400ms ease;
+}
+
+.gallery-3d-panel-active:hover {
+  border-color: rgba(255, 92, 168, 0.95) !important;
+
+  box-shadow:
+    0 12px 35px rgba(0, 0, 0, 0.55),
+    0 0 15px rgba(236, 72, 153, 0.5),
+    0 0 40px rgba(236, 72, 153, 0.2) !important;
+}
+
+/* Description reveal */
+.gallery-3d-panel-active .gallery-hover-description {
+  opacity: 0;
+  transform: translateY(30px);
+  visibility: hidden;
+
+  transition:
+    opacity 450ms ease,
+    transform 550ms cubic-bezier(0.16, 1, 0.3, 1),
+    visibility 450ms ease;
+}
+
+.gallery-3d-panel-active:hover .gallery-hover-description {
+  opacity: 1;
+  transform: translateY(0);
+  visibility: visible;
+}
+
+.gallery-3d-panel-active:hover
+.gallery-hover-description
+.gallery-description-text {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+  visibility: visible !important;
+}
+
+/* Mobile: no mouse tilt */
+@media (hover: none) {
+  .gallery-card-inner {
+    transform: none !important;
+  }
+
+  .gallery-card-glare {
+    display: none;
   }
 }
