@@ -3,8 +3,8 @@ export interface GalleryItem {
   description: string;
 }
 
-const galleryImages = import.meta.glob(
-  "../assets/images/gallery/*",
+const galleryModules = import.meta.glob(
+  "../assets/images/gallery/*.{jpg,jpeg,png,webp}",
   {
     eager: true,
     query: "?url",
@@ -12,113 +12,50 @@ const galleryImages = import.meta.glob(
   }
 ) as Record<string, string>;
 
-export const galleryData: GalleryItem[] = [
-  {
-    image: galleryImages["../assets/images/gallery/1.jpg"],
-    description:
-      "Your dedicated 20–25 word description for photo 1 goes here.",
-  },
+const galleryImages = Object.entries(galleryModules)
+  .sort(([pathA], [pathB]) => {
+    const numberA = Number(
+      pathA.match(/(\d+)(?=\.[^.]+$)/)?.[1] ?? 0
+    );
 
-  {
-    image: galleryImages["../assets/images/gallery/2.jpg"],
-    description:
-      "Your dedicated 20–25 word description for photo 2 goes here.",
-  },
+    const numberB = Number(
+      pathB.match(/(\d+)(?=\.[^.]+$)/)?.[1] ?? 0
+    );
 
-  {
-    image: galleryImages["../assets/images/gallery/3.jpg"],
-    description:
-      "Your dedicated 20–25 word description for photo 3 goes here.",
-  },
+    return numberA - numberB;
+  });
 
-  {
-    image: galleryImages["../assets/images/gallery/4.jpg"],
-    description:
-      "Your dedicated 20–25 word description for photo 4 goes here.",
-  },
-  {
-    image: galleryImages["../assets/images/gallery/5.jpg"],
-    description:
-      "Your dedicated 20–25 word description for photo 5 goes here.",
-  },
-  {
-    image: galleryImages["../assets/images/gallery/6.jpg"],
-    description:
-      "Your dedicated 20–25 word description for photo 6 goes here.",
-  },
-  {
-    image: galleryImages["../assets/images/gallery/7.jpg"],
-    description:
-      "Your dedicated 20–25 word description for photo 7 goes here.",
-  },
-  {
-    image: galleryImages["../assets/images/gallery/8.jpg"],
-    description:
-      "Your dedicated 20–25 word description for photo 8 goes here.",
-  },
-  {
-    image: galleryImages["../assets/images/gallery/9.jpg"],
-    description:
-      "Your dedicated 20–25 word description for photo 9 goes here.",
-  },
-  {
-    image: galleryImages["../assets/images/gallery/10.jpg"],
-    description:
-      "Your dedicated 20–25 word description for photo 10 goes here.",
-  },
-  {
-    image: galleryImages["../assets/images/gallery/11.jpg"],
-    description:
-      "Your dedicated 20–25 word description for photo 11 goes here.",
-  },
-  {
-    image: galleryImages["../assets/images/gallery/12.jpg"],
-    description:
-      "Your dedicated 20–25 word description for photo 12 goes here.",
-  },
-  {
-    image: galleryImages["../assets/images/gallery/13.jpg"],
-    description:
-      "Your dedicated 20–25 word description for photo 13 goes here.",
-  },
-  {
-    image: galleryImages["../assets/images/gallery/14.jpg"],
-    description:
-      "Your dedicated 20–25 word description for photo 14 goes here.",
-  },
-  {
-    image: galleryImages["../assets/images/gallery/15.jpg"],
-    description:
-      "Your dedicated 20–25 word description for photo 15 goes here.",
-  },
-  {
-    image: galleryImages["../assets/images/gallery/16.jpg"],
-    description:
-      "Your dedicated 20–25 word description for photo 16 goes here.",
-  },
-  {
-    image: galleryImages["../assets/images/gallery/17.jpg"],
-    description:
-      "Your dedicated 20–25 word description for photo 17 goes here.",
-  },
-  {
-    image: galleryImages["../assets/images/gallery/18.jpg"],
-    description:
-      "Your dedicated 20–25 word description for photo 18 goes here.",
-  },
-  {
-    image: galleryImages["../assets/images/gallery/19.jpg"],
-    description:
-      "Your dedicated 20–25 word description for photo 19 goes here.",
-  },
-  {
-    image: galleryImages["../assets/images/gallery/20.jpg"],
-    description:
-      "Your dedicated 20–25 word description for photo 20 goes here.",
-  },
-  {
-    image: galleryImages["../assets/images/gallery/21.jpg"],
-    description:
-      "Your dedicated 20–25 word description for photo 21 goes here.",
-  },
+const descriptions = [
+  "Welcome you all to SRISTI - the largest techno-management fest of north bengal.",
+  "Sristi is the Glory of JGEC.",
+  "Create your team and participate to increase it.",
+  "Explore the world of innovation and creativity.",
+  "Make your bots play in your way.",
+  "Even your bot can literally slay others.",
+  "Make your ideas fly across the world.",
+  "Good at games, let's see.",
+  "Lets think of that move, we all dream of.",
+  "Slayers on the move, will you battle or run.",
+  "Team play, Dream play.",
+  "Sristi is not just about tech, it's also the beauty.",
+  "Be part of many insightful seminars.",
+  "Make it, Break it, Sristi - all about creation.",
+  "Win or Loose having fun is the most important, isn't it?",
+  "Make your bots take their own path.",
+  "Let's see how far can you go!",
+  "Some essence of fest is also needed. no?",
+  "It's not about creating only, first you learn how to create.",
+  "Selfie zones are also their to enlighten your social media.",
+  "Not only you the organizer also create the whole fest.",
+  "Can you cross the hardles?",
+  "Learn, Create, Compete.",
 ];
+
+export const galleryData: GalleryItem[] = galleryImages.map(
+  ([, image], index) => ({
+    image,
+    description:
+      descriptions[index] ??
+      "A captured moment from SRISTI 2K25.",
+  })
+);

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import SristiLogo from "../assets/icons/sristi_logo.png";
+import SristiLogo from "../assets/icons/logo.png";
 import JGECLogo from "../assets/icons/logo1.png";
 import { Link } from "react-router-dom";
 
@@ -13,42 +13,20 @@ const Contact = () => {
 
     const updateFill = () => {
       const wordmark = wordmarkRef.current;
-
       if (!wordmark) return;
 
-      /*
-       * Position of the wordmark relative to
-       * the entire document.
-       */
-      const wordmarkRect =
-        wordmark.getBoundingClientRect();
+      const rect = wordmark.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
 
-      const wordmarkTop =
-        wordmarkRect.top + window.scrollY;
+      // Start filling when the wordmark reaches 90% viewport height.
+      const startPoint = viewportHeight * 0.7;
 
-      /*
-       * The scroll range controls the fill.
-       *
-       * The animation starts when the user has
-       * scrolled to approximately the top of the
-       * SRISTI wordmark.
-       */
-      const startScroll =
-        wordmarkTop - window.innerHeight * 0.9;
-
-      /*
-       * The animation completes after the user
-       * scrolls another 70% of the viewport height.
-       */
-      const endScroll =
-        wordmarkTop - window.innerHeight * 0.5;
-
-      const scrollRange =
-        endScroll - startScroll;
+      // Complete filling when its top reaches 25% viewport height.
+      const endPoint = viewportHeight * 0.4;
 
       const progress =
-        (window.scrollY - startScroll) /
-        scrollRange;
+        (startPoint - rect.top) /
+        (startPoint - endPoint);
 
       const clampedProgress = Math.min(
         1,
@@ -67,32 +45,22 @@ const Contact = () => {
       });
     };
 
-    /*
-     * Initial calculation
-     */
     updateFill();
 
-    window.addEventListener(
-      "scroll",
-      handleScroll,
-      { passive: true }
-    );
+    window.addEventListener("scroll", handleScroll, {
+      passive: true,
+    });
 
-    window.addEventListener(
-      "resize",
-      updateFill
-    );
+    window.addEventListener("resize", handleScroll);
+
+    // Recalculate after the custom font has loaded.
+    document.fonts.ready.then(() => {
+      updateFill();
+    });
 
     return () => {
-      window.removeEventListener(
-        "scroll",
-        handleScroll
-      );
-
-      window.removeEventListener(
-        "resize",
-        updateFill
-      );
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", handleScroll);
 
       if (frameId) {
         window.cancelAnimationFrame(frameId);
@@ -108,8 +76,10 @@ const Contact = () => {
         overflow-hidden
         bg-black/40
         text-white
-        py-24
-        md:py-32
+        py-14
+        sm:py-20
+        md:py-28
+        lg:py-32
       "
     >
       {/* =========================================
@@ -120,12 +90,7 @@ const Contact = () => {
         className="
           relative
           z-10
-          mx-auto
-          max-w-7xl
-          px-4
-          sm:px-6
-          md:px-8
-          lg:px-10
+          w-full max-w-[1600px] mx-auto px-5 sm:px-8 lg:px-12
         "
       >
 
@@ -148,11 +113,13 @@ const Contact = () => {
           <h2
             className="
               mt-3
-              font-display
-              text-5xl
+              font-heavy-title
+              text-4xl
+              min-[380px]:text-5xl
               sm:text-6xl
               md:text-7xl
-              tracking-wider
+              lg:text-8xl
+              tracking-wide
             "
           >
             CONTACT US
@@ -169,8 +136,10 @@ const Contact = () => {
           className="
             grid
             grid-cols-1
-            lg:grid-cols-2
-            gap-15
+            md:grid-cols-2
+            gap-5
+            md:gap-8
+            lg:gap-12
           "
         >
           <div className="contact-card">
@@ -244,129 +213,136 @@ const Contact = () => {
 
         {/* FOOTER */}
 
-        <div className="flex flex-row justify-between
-        mt-5 md:mt-15 items-start">
-            <div className="logo-text 
-            flex flex-col gap-3
-            w-1/3">
-                <Link
-                    to="/"
-                    className="flex items-center gap-3 group"
-                >
+        <div
+          className="
+            grid
+            grid-cols-2
+            sm:grid-cols-3
+            lg:grid-cols-[1.35fr_0.8fr_1.2fr_0.85fr_0.65fr]
+            gap-x-5
+            md:gap-x-8
+            lg:gap-x-10
+            gap-y-10
+            mt-12
+            md:mt-16
+            lg:mt-20
+            items-start
+            w-full
+          "
+        >
+          {/* BRAND */}
 
-                    {/* jgec logo */}
-                    <img
-                    src={JGECLogo}
-                    alt="JGEC Logo"
-                    className="w-20 h-20 group-hover:scale-90 transition-transform duration-300"
-                    ></img>
+          <div className="col-span-2 sm:col-span-3 lg:col-span-1 flex flex-col gap-4 min-w-0">
+            <Link to="/" className="flex items-center gap-2 sm:gap-3 group w-fit">
+              <img
+                src={JGECLogo}
+                alt="JGEC Logo"
+                className="w-14 h-14 sm:w-16 sm:h-16 lg:w-14 lg:h-14 object-contain group-hover:scale-90 transition-transform duration-300"
+              />
 
-                    {/* Logo Text */}
-                    <div className="leading-none">
+              <img
+                src={SristiLogo}
+                alt="SRISTI Logo"
+                className="h-14 sm:h-16 lg:h-14 object-contain group-hover:scale-110 transition-transform duration-300"
+              />
+            </Link>
 
-                    <img src={SristiLogo} alt="SRISTI Logo" className="h-20 group-hover:scale-110 transition-transform duration-300" />
+            <h4 className="footer-brand-description font-regular text-sm sm:text-base text-white/80 font-regular leading-relaxed hover:text-pink-500 transition-colors">
+              SRISTI - The Creation, The root of Innovation and Competitive
+              Culture in Jalpaiguri Government Engineering College.
+            </h4>
+          </div>
 
-                    </div>
+          {/* NAVIGATION */}
 
-                </Link>
+          <div className="flex flex-col gap-4 min-w-0">
+            <h4 className="footer-heading">Navigation</h4>
 
-                <h4 className="font-regular 
-                hover:text-pink-500 text-white/80
-                transition-all 
-                text-md">
-                  SRISTI - The Creation, The root of Innovation and Competitive Culture in Jalpaiguri Government Engineering College.
-                </h4>
+            <div className="flex flex-col gap-3 pl-1">
+              <Link to="/" className="footer-link">Home</Link>
+              <Link to="/committee" className="footer-link">Staffs</Link>
+              <Link to="/events" className="footer-link">Games</Link>
+              <Link to="/profile" className="footer-link">Profile</Link>
             </div>
+          </div>
 
-            <div className="navigation flex flex-col gap-4 text-start items-start justify-baseline px-5 max-w-1/5">
-                <h4 className="font-style text-white/80
-                text-md
-                border-b-2 border-white/60 pb-2 pl-1 pr-10">
-                  Navigation
-                </h4>
-                <div className="naviglink flex flex-col gap-3 pl-1">
-                  <Link to="/" className="font-regular text-white/60 hover:text-pink-500 transition-colors text-md tracking-widest">
-                    Home
-                  </Link>
-                  <Link to="/committee" className="font-regular text-white/60 hover:text-pink-500 transition-colors text-md tracking-widest">
-                    Staffs
-                  </Link>
-                  <Link to="/events" className="font-regular text-white/60 hover:text-pink-500 transition-colors text-md tracking-widest">
-                    Games
-                  </Link>
-                  <Link to="/profile" className="font-regular text-white/60 hover:text-pink-500 transition-colors text-md tracking-widest">
-                    Profile
-                  </Link>
-                </div>
+          {/* LOCATION */}
+
+          <div className="flex flex-col gap-4 min-w-0">
+            <h4 className="footer-heading">Located At</h4>
+
+            <a
+              href="https://www.google.com/maps/place/Jalpaiguri+Government+Engineering+College/@26.5459447,88.7011792,17z/data=!3m1!5s0x39e47bce83e33715:0xa93214f833105cbf!4m14!1m7!3m6!1s0x39e47bce687f169d:0x4152036d0d736d37!2sJalpaiguri+Government+Engineering+College!8m2!3d26.5459447!4d88.7037541!16s%2Fg%2F122drs1t!3m5!1s0x39e47bce687f169d:0x4152036d0d736d37!8m2!3d26.5459447!4d88.7037541!16s%2Fg%2F122drs1t"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="footer-location footer-link leading-relaxed"
+            >
+              Jalpaiguri Government Engineering College,
+              Denguajhar, Jalpaiguri,
+              735102, West Bengal, India
+            </a>
+          </div>
+
+          {/* SOCIAL */}
+
+          <div className="flex flex-col gap-4 min-w-0">
+            <h4 className="footer-heading">Follow Us</h4>
+
+            <div className="flex flex-wrap gap-2 sm:gap-3">
+              <a
+                href="https://www.linkedin.com/company/sristi-jgec/"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="LinkedIn"
+                className="footer-social"
+              >
+                <i className="bx bxl-linkedin-square" />
+              </a>
+
+              <a
+                href="https://www.instagram.com/sristi.jgec/"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Instagram"
+                className="footer-social"
+              >
+                <i className="bx bxl-instagram" />
+              </a>
+
+              <a
+                href="https://www.youtube.com/@sristi-jgec"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="YouTube"
+                className="footer-social"
+              >
+                <i className="bx bxl-youtube" />
+              </a>
             </div>
+          </div>
 
-            <div className="location flex flex-col gap-4 text-start items-start justify-baseline px-5 max-w-1/5">
-                <h4 className="font-style text-white/80
-                text-md
-                border-b-2 border-white/60 pb-2 pl-1 pr-10">
-                  Located At
-                </h4>
-                <a href="https://www.google.com/maps/place/Jalpaiguri+Government+Engineering+College/@26.5459447,88.7011792,17z/data=!3m1!5s0x39e47bce83e33715:0xa93214f833105cbf!4m14!1m7!3m6!1s0x39e47bce687f169d:0x4152036d0d736d37!2sJalpaiguri+Government+Engineering+College!8m2!3d26.5459447!4d88.7037541!16s%2Fg%2F122drs1t!3m5!1s0x39e47bce687f169d:0x4152036d0d736d37!8m2!3d26.5459447!4d88.7037541!16s%2Fg%2F122drs1t?entry=ttu&g_ep=EgoyMDI2MDkzMC4wIKXMDSoASAFQAw%3D%3D" 
-                   target="_blank" rel="noopener noreferrer" 
-                   className="font-regular text-white/60 hover:text-pink-500 text-md">
-                  Jalpaiguri Government Engineering College, <br />
-                  Denguajhar, Jalpaiguri,<br />
-                  735102, <br />
-                  West Bengal, India
-                </a>
+          {/* LEGAL */}
+
+          <div className="flex flex-col gap-4 min-w-0">
+            <h4 className="footer-heading">Legal</h4>
+
+            <div className="flex flex-col gap-3 pl-1">
+              <a
+                href="/privacy-policy"
+                className="footer-link"
+              >
+                Privacy Policy
+              </a>
+
+              <Link to="/terms" className="footer-link">
+                Terms
+              </Link>
+
+              <Link to="/events" className="footer-link">
+                Games
+              </Link>
             </div>
-
-            <div className="follow flex flex-col gap-4 text-start items-start justify-baseline px-5 max-w-1/5">
-                <h4 className="font-style text-white/80
-                text-md
-                border-b-2 border-white/60 pb-2 pl-1 pr-11">
-                  Follow Us
-                </h4>
-                <div className="social flex flex-row gap-1">
-                  <a href="https://www.linkedin.com/company/sristi-jgec/" 
-                  target="_blank" rel="noopener noreferrer" 
-                  className="font-regular text-white/60 
-                  hover:text-pink-500 hover:scale-105 
-                  transition-all duration-250">
-                    <i className="bx bxl-linkedin-square text-6xl"></i>
-                  </a>
-
-                  <a href="https://www.instagram.com/sristi.jgec/" 
-                  target="_blank" rel="noopener noreferrer" 
-                  className="font-regular text-white/60 
-                  hover:text-pink-500 hover:scale-105 
-                  transition-all duration-250">
-                    <i className="bx bxl-instagram text-6xl"></i>
-                  </a>
-
-                  <a href="https://www.youtube.com/@sristi-jgec" 
-                  target="_blank" rel="noopener noreferrer" 
-                  className="font-regular text-white/60 
-                  hover:text-pink-500 hover:scale-105 
-                  transition-all duration-250">
-                    <i className="bx bxl-youtube text-6xl"></i>
-                  </a>
-                </div>
-            </div>
-
-            <div className="legal flex flex-col gap-4 text-start items-start justify-baseline px-5 max-w-1/5">
-                <h4 className="font-style text-white/80
-                text-md
-                border-b-2 border-white/60 pb-2 pl-1 pr-10">
-                  Legal
-                </h4>
-                <div className="legal-links flex flex-col gap-3 pl-1">
-                  <a href="/privacy-policy" className="font-regular text-white/60 hover:text-pink-500 transition-colors text-md tracking-widest">
-                    Privacy Policy
-                  </a>
-                  <Link to="/terms" className="font-regular text-white/60 hover:text-pink-500 transition-colors text-md tracking-widest">
-                    Terms
-                  </Link>
-                  <Link to="/events" className="font-regular text-white/60 hover:text-pink-500 transition-colors text-md tracking-widest">
-                    Games
-                  </Link>
-                </div>
-            </div>
+          </div>
         </div>
 
         {/* =========================================
@@ -375,43 +351,16 @@ const Contact = () => {
 
         <div
           ref={wordmarkRef}
-          className="
-            contact-wordmark-wrapper
-          "
+          className="contact-wordmark-wrapper"
         >
-
-          {/* OUTLINE */}
-
           <div
-            className="
-              contact-wordmark
-              contact-wordmark-outline
-            "
-          >
-            sristi'26
-          </div>
-
-
-          {/* FILLED VERSION */}
-
-          <div
-            className="
-              contact-wordmark
-              contact-wordmark-fill
-            "
-            aria-hidden="true"
+            className="contact-wordmark"
             style={{
-              clipPath: `inset(
-                ${80 - fillProgress * 100}%
-                0
-                0
-                0
-              )`,
-            }}
+              "--fill-level": `${fillProgress * 100}%`,
+            } as React.CSSProperties}
           >
             sristi'26
           </div>
-
         </div>
 
       </div>

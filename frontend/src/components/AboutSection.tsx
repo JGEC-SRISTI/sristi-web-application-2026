@@ -1,244 +1,342 @@
 import RevealOnScroll from "./RevealOnScroll";
-import { Volume2, VolumeX } from "lucide-react";
+import {
+  Play,
+  Pause,
+  Volume2,
+  VolumeX,
+  Maximize2,
+} from "lucide-react";
 
-// import sristiVideo from "../assets/videos/sristi_about.mp4";
+import pinkSoldier from "../assets/images/pink_sol_phone.png";
+import sristiVideo from "../assets/videos/sristi_about.mp4";
+import handImage from "../assets/images/hand.png";
+import card1Image from "../assets/images/card1.png";
+import card2Image from "../assets/images/card2.png";
+
 import { useEffect, useRef, useState } from "react";
 
-declare global {
-  interface Window {
-    YT: any;
-    onYouTubeIframeAPIReady: () => void;
-  }
-}
-
 const AboutSection = () => {
-    const youtubePlayerRef = useRef<any>(null);
-    const [isMuted, setIsMuted] = useState(true);
+    const jgecRef = useRef<HTMLElement>(null);
+    const [jgecVisible, setJgecVisible] = useState(false);
+    const [jgecTypedCharacters, setJgecTypedCharacters] = useState(0);
 
     useEffect(() => {
-    const loadYouTubeAPI = () => {
-        if (window.YT && window.YT.Player) {
-        createPlayer();
-        return;
+      const section = jgecRef.current;
+      if (!section) return;
+
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          setJgecVisible(entry.isIntersecting);
+        },
+        {
+          threshold: 0.2,
         }
+      );
 
-        const existingScript = document.querySelector(
-        'script[src="https://www.youtube.com/iframe_api"]'
-        );
+      observer.observe(section);
 
-        if (!existingScript) {
-        const script = document.createElement("script");
-
-        script.src =
-            "https://www.youtube.com/iframe_api";
-
-        script.async = true;
-
-        document.body.appendChild(script);
-        }
-
-        window.onYouTubeIframeAPIReady = createPlayer;
-    };
-
-    const createPlayer = () => {
-        youtubePlayerRef.current =
-        new window.YT.Player("sristi-youtube-player", {
-            events: {
-            onReady: (event: any) => {
-                event.target.mute();
-                event.target.playVideo();
-            },
-            },
-        });
-    };
-
-    loadYouTubeAPI();
-
-    return () => {
-        if (youtubePlayerRef.current) {
-        youtubePlayerRef.current.destroy();
-        youtubePlayerRef.current = null;
-        }
-    };
+      return () => observer.disconnect();
     }, []);
 
-    const toggleVideoSound = () => {
-        const player = youtubePlayerRef.current;
+    useEffect(() => {
+      if (!jgecVisible) {
+        setJgecTypedCharacters(0);
+        return;
+      }
 
-        if (!player) return;
+      setJgecTypedCharacters(0);
 
-        if (isMuted) {
-            player.unMute();
-            player.setVolume(100);
-            setIsMuted(false);
-        } else {
-            player.mute();
-            setIsMuted(true);
+      const timer = window.setInterval(() => {
+        setJgecTypedCharacters((current) => {
+          if (current >= totalJgecCharacters) {
+            window.clearInterval(timer);
+            return totalJgecCharacters;
+          }
+
+          return current + 1;
+        });
+      }, 16);
+
+      return () => window.clearInterval(timer);
+    }, [jgecVisible]);
+
+    // About SRISTI animation
+    const sristiSectionRef = useRef<HTMLElement>(null);
+    const [sristiVisible, setSristiVisible] = useState(false);
+    const [typedCharacters, setTypedCharacters] = useState(0);
+
+    const sristiParagraphs = [
+      `SRISTI is the techno-management fest of Jalpaiguri Government Engineering College, bringing together technology, innovation, management and creativity under one arena.`,
+
+      `It is a platform where students come together to compete, collaborate, experiment and showcase their skills through a diverse range of technical, management and creative events.`,
+
+      `SRISTI 2K26 takes this spirit into a new arena, bringing the energy of technology and competition into an experience designed to challenge, connect and inspire the next generation`,
+    ];
+
+    const totalCharacters = sristiParagraphs.join("").length;
+
+    const jgecParagraphs = [
+      `Jalpaiguri Government Engineering College is an institution dedicated to engineering education, innovation and creativity. It provides students with an environment where ideas can take shape and technology can be transformed into meaningful solutions.`,
+
+      `With a strong academic environment and a vibrant student community, the college continues to create opportunities for students to explore, compete, collaborate and build the skills required for the future.`,
+    ];
+
+    const totalJgecCharacters = jgecParagraphs.join("").length;
+
+    // Detect when About SRISTI enters or leaves the viewport
+    useEffect(() => {
+      const section = sristiSectionRef.current;
+      if (!section) return;
+
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          setSristiVisible(entry.isIntersecting);
+
+          if (!entry.isIntersecting) {
+            setTypedCharacters(0);
+          }
+        },
+        {
+          threshold: 0.15,
         }
+      );
+
+      observer.observe(section);
+
+      return () => observer.disconnect();
+    }, []);
+
+
+    // Typing animation
+    useEffect(() => {
+      if (!sristiVisible) return;
+
+      setTypedCharacters(0);
+
+      const timer = window.setInterval(() => {
+        setTypedCharacters((current) => {
+          if (current >= totalCharacters) {
+            window.clearInterval(timer);
+            return totalCharacters;
+          }
+
+          return current + 1;
+        });
+      }, 16);
+
+      return () => window.clearInterval(timer);
+    }, [sristiVisible]);
+
+    const videoRef = useRef<HTMLVideoElement>(null);
+
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [isMuted, setIsMuted] = useState(true);
+    const [progress, setProgress] = useState(0);
+    const [duration, setDuration] = useState(0);
+
+    useEffect(() => {
+      const section = sristiSectionRef.current;
+      if (!section) return;
+
+      let playTimer: number | undefined;
+
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            setSristiVisible(true);
+
+            // Let the soldier and phone entrance animation finish.
+            playTimer = window.setTimeout(() => {
+              videoRef.current?.play().catch(() => {
+                // Playback may require the visitor to press Play.
+              });
+            }, 1200);
+          } else {
+            setSristiVisible(false);
+
+            if (playTimer) {
+              window.clearTimeout(playTimer);
+            }
+
+            const video = videoRef.current;
+
+            if (video) {
+              video.pause();
+              video.currentTime = 0;
+            }
+
+            setIsPlaying(false);
+            setProgress(0);
+          }
+        },
+        { threshold: 0.2 }
+      );
+
+      observer.observe(section);
+
+      return () => {
+        observer.disconnect();
+
+        if (playTimer) {
+          window.clearTimeout(playTimer);
+        }
+      };
+    }, []);
+
+    const togglePlay = () => {
+      const video = videoRef.current;
+      if (!video) return;
+
+      if (video.paused) {
+        video.play().catch(() => {});
+      } else {
+        video.pause();
+      }
+    };
+
+    const toggleMute = () => {
+      const video = videoRef.current;
+      if (!video) return;
+
+      video.muted = !video.muted;
+      setIsMuted(video.muted);
+    };
+
+    const updateProgress = () => {
+      const video = videoRef.current;
+      if (!video || !video.duration) return;
+
+      setProgress((video.currentTime / video.duration) * 100);
+    };
+
+    const seekVideo = (value: number) => {
+      const video = videoRef.current;
+      if (!video || !video.duration) return;
+
+      video.currentTime = (value / 100) * video.duration;
+      setProgress(value);
+    };
+
+    const toggleFullscreen = async () => {
+      const video = videoRef.current;
+      if (!video) return;
+
+      try {
+        if (document.fullscreenElement) {
+          await document.exitFullscreen();
+        } else {
+          await video.requestFullscreen();
+        }
+      } catch {
+        // Fullscreen may not be supported by the current browser.
+      }
+    };
+
+    const formatTime = (time: number) => {
+      if (!Number.isFinite(time)) return "0:00";
+
+      const minutes = Math.floor(time / 60);
+      const seconds = Math.floor(time % 60);
+
+      return `${minutes}:${String(seconds).padStart(2, "0")}`;
     };
 
   return (
     <section className="relative z-10 w-full overflow-hidden">
 
       {/* =====================================================
-          ABOUT JGEC
+          ABOUT JGEC — CINEMATIC INVITATION
       ===================================================== */}
 
       <section
-        className="
-          relative
-          min-h-[85vh]
-          flex
-          items-center
-          px-6
-          sm:px-10
-          md:px-16
-          lg:px-24
-          py-24
-          md:py-32
-          overflow-hidden
-        "
+        ref={jgecRef}
+        className={`jgec-section relative min-h-[90vh] flex items-center px-6 sm:px-10 md:px-16 lg:px-24 overflow-hidden ${
+          jgecVisible ? "jgec-visible" : ""
+        }`}
       >
+        {/* Ambient pink lighting */}
+        <div className="jgec-ambient-glow" />
 
-        <div
-          className="
-            relative
-            z-10
-            w-full
-            max-w-7xl
-            mx-auto
-          "
-        >
+        <div className="relative z-10 w-full max-w-7xl mx-auto">
 
-          {/* ABOUT */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 items-center gap-10 lg:gap-5">
 
-          <RevealOnScroll direction="up">
+            {/* LEFT — COLLEGE INFORMATION */}
 
-            <p
-              className="
-                font-mono
-                text-xs
-                sm:text-sm
-                md:text-base
-                tracking-[0.45em]
-                uppercase
-                text-pink-500
-                mb-5
-              "
-            >
-              About
-            </p>
+            <div className="relative z-10">
 
-          </RevealOnScroll>
-
-
-          {/* COLLEGE NAME */}
-
-          <RevealOnScroll
-            direction="left"
-            delay={150}
-          >
-
-            <h2
-              className="
-                font-heavy
-                text-4xl
-                sm:text-5xl
-                md:text-6xl
-                lg:text-7xl
-                xl:text-8xl
-                leading-[0.95]
-                tracking-wide
-                text-white
-                max-w-6xl
-              "
-            >
-              JALPAIGURI
-              <br />
-              GOVERNMENT
-              <br />
-              ENGINEERING COLLEGE
-            </h2>
-
-          </RevealOnScroll>
-
-
-          {/* DIVIDER */}
-
-          <RevealOnScroll
-            direction="up"
-            delay={300}
-          >
-
-            <div
-              className="
-                w-24
-                h-0.5
-                bg-pink-500
-                mt-10
-                mb-8
-                shadow-[0_0_15px_rgba(236,72,153,0.8)]
-              "
-            />
-
-          </RevealOnScroll>
-
-
-          {/* DESCRIPTION */}
-
-          <RevealOnScroll
-            direction="up"
-            delay={400}
-          >
-
-            <div className="max-w-5xl">
-
-              <p
-                className="
-                  font-body
-                  text-sm
-                  sm:text-base
-                  md:text-lg
-                  lg:text-xl
-                  leading-7
-                  md:leading-9
-                  text-white/75
-                "
-              >
-                Jalpaiguri Government Engineering College is
-                an institution dedicated to engineering
-                education, innovation and creativity. It
-                provides students with an environment where
-                ideas can take shape and technology can be
-                transformed into meaningful solutions.
+              <p className="jgec-eyebrow font-mono text-xs sm:text-sm tracking-[0.45em] uppercase text-pink-500 mb-5">
+                About
               </p>
 
-              <p
-                className="
-                  font-body
-                  mt-6
-                  text-sm
-                  sm:text-base
-                  md:text-lg
-                  lg:text-xl
-                  leading-7
-                  md:leading-9
-                  text-white/75
-                "
-              >
-                With a strong academic environment and a
-                vibrant student community, the college
-                continues to create opportunities for students
-                to explore, compete, collaborate and build
-                the skills required for the future.
-              </p>
+              <h2 className="jgec-heading font-heavy-title text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl leading-[0.95] tracking-wide text-white">
+                JALPAIGURI
+                <br />
+                GOVERNMENT
+                <br />
+                ENGINEERING COLLEGE
+              </h2>
+
+              <div className="jgec-divider mt-10 mb-8" />
+
+              <div className="jgec-description max-w-2xl space-y-6 text-left border-l-4 border-pink-500 pl-4 rounded-md tracking-tight">
+                <p className="font-body text-sm sm:text-base md:text-lg lg:text-xl leading-7 md:leading-9 text-white/75">
+                  {jgecParagraphs[0].slice(0, jgecTypedCharacters)}
+
+                  {jgecTypedCharacters <= jgecParagraphs[0].length && (
+                    <span className="typing-cursor" />
+                  )}
+                </p>
+
+                {jgecTypedCharacters > jgecParagraphs[0].length && (
+                  <p className="font-body text-sm sm:text-base md:text-lg lg:text-xl leading-7 md:leading-9 text-white/75">
+                    {jgecParagraphs[1].slice(
+                      0,
+                      jgecTypedCharacters - jgecParagraphs[0].length
+                    )}
+
+                    {jgecTypedCharacters < totalJgecCharacters && (
+                      <span className="typing-cursor" />
+                    )}
+                  </p>
+                )}
+              </div>
 
             </div>
 
-          </RevealOnScroll>
 
+            {/* RIGHT — HOLD THE CARD COMPOSITION */}
+
+            <div className="jgec-invitation relative w-full">
+
+              {/* Ambient glow behind the hand */}
+              <div className="invitation-glow" />
+
+              {/* Floating card 1 */}
+              <img
+                src={card1Image}
+                alt="Squid Game invitation card"
+                className="invitation-card invitation-card-one"
+              />
+
+              {/* Floating card 2 */}
+              <img
+                src={card2Image}
+                alt="Squid Game invitation card"
+                className="invitation-card invitation-card-two"
+              />
+
+              {/* Hand */}
+              <img
+                src={handImage}
+                alt="Pink soldier presenting the invitation"
+                className="invitation-hand"
+              />
+
+            </div>
+
+          </div>
         </div>
-
       </section>
 
 
@@ -247,16 +345,10 @@ const AboutSection = () => {
       ===================================================== */}
 
       <section
-        className="
-          relative
-          w-full
-          px-6
-          sm:px-10
-          md:px-16
-          lg:px-24
-          py-24
-          md:py-32
-        "
+        ref={sristiSectionRef}
+        className={`sristi-section relative w-full px-6 sm:px-10 md:px-16 lg:px-24 py-24 md:py-32 ${
+          sristiVisible ? "sristi-visible" : ""
+        }`}
       >
 
         <div
@@ -292,8 +384,9 @@ const AboutSection = () => {
 
               <h2
                 className="
-                  font-display
-                  text-6xl
+                  font-heavy-title
+                  sristi-heading-layer
+                  text-4xl
                   sm:text-7xl
                   md:text-8xl
                   lg:text-9xl
@@ -301,7 +394,8 @@ const AboutSection = () => {
                   text-white
                 "
               >
-                ABOUT SRISTI
+                ABOUT{" "} 
+                <span className="sristi-font-shift">SRISTI</span>
               </h2>
 
             </div>
@@ -325,158 +419,107 @@ const AboutSection = () => {
           >
 
             {/* =========================================
-                YOUTUBE VIDEO
+              VIDEO
             ========================================= */}
 
-            <RevealOnScroll
-            direction="left"
-            >
-            <div
-                className="
-                relative
-                w-full
-                aspect-4/3
-                overflow-hidden
-                group
-                bg-black
-                "
-            >
+            <RevealOnScroll direction="left">
+              <div
+                className={`
+                  soldier-phone-stage
+                  relative
+                  w-full
+                  mx-auto
+                  ${sristiVisible ? "soldier-phone-enter" : ""}
+                `}
+              >
+                {/* COMPLETE SOLDIER + PHONE FRAME */}
 
-                {/* YouTube Embed */}
-
-                <iframe
-                id="sristi-youtube-player"
-                className="
-                    absolute
-                    inset-0
-                    w-full
-                    h-full
-                "
-                src="https://www.youtube.com/embed/GFUPBPlxJy8?enablejsapi=1&autoplay=1&mute=1&controls=0&rel=0&iv_load_policy=3&playsinline=1&loop=1&playlist=GFUPBPlxJy8"
-                title="SRISTI 2K26"
-                allow="autoplay; encrypted-media; picture-in-picture"
-                allowFullScreen
+                <img
+                  src={pinkSoldier}
+                  alt="Pink soldier presenting the SRISTI video"
+                  className="soldier-phone-image"
                 />
 
-                {/* =========================================
-                    CUSTOM SOUND BUTTON
-                ========================================= */}
+                {/* VIDEO INSIDE THE PHONE SCREEN */}
 
-                <button
-                type="button"
-                onClick={toggleVideoSound}
-                aria-label={
-                    isMuted
-                    ? "Turn video sound on"
-                    : "Mute video"
-                }
-                className="
-                    absolute
-                    bottom-5
-                    right-5
-                    z-30
-                    w-11
-                    h-11
-                    flex
-                    items-center
-                    justify-center
-                    rounded-full
-                    border
-                    border-white/20
-                    bg-black/60
-                    backdrop-blur-xl
-                    text-white
-                    transition-all
-                    duration-300
-                    hover:border-pink-500
-                    hover:text-pink-500
-                    hover:bg-black/80
-                    hover:shadow-[0_0_20px_rgba(236,72,153,0.45)]
-                "
-                >
-                {isMuted ? (
-                    <VolumeX size={18} />
-                ) : (
-                    <Volume2 size={18} />
-                )}
-                </button>
+                <div className="soldier-phone-screen">
+                  <video
+                    ref={videoRef}
+                    src={sristiVideo}
+                    muted={isMuted}
+                    autoPlay={false}
+                    playsInline
+                    preload="auto"
+                    className="soldier-phone-video"
+                    onPlay={() => setIsPlaying(true)}
+                    onPause={() => setIsPlaying(false)}
+                    onLoadedMetadata={(event) =>
+                      setDuration(event.currentTarget.duration)
+                    }
+                    onTimeUpdate={updateProgress}
+                    onEnded={() => setIsPlaying(false)}
+                  />
 
+                  {/* CUSTOM PHONE CONTROLS */}
 
-                {/* Pink Border */}
+                  <div className="phone-controls">
 
-                <div
-                className="
-                    absolute
-                    inset-0
-                    pointer-events-none
-                    border
-                    border-pink-500/40
-                    group-hover:border-pink-500
-                    transition-all
-                    duration-500
-                    group-hover:shadow-[0_0_35px_rgba(236,72,153,0.3)]
-                "
-                />
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      value={progress}
+                      onChange={(event) =>
+                        seekVideo(Number(event.target.value))
+                      }
+                      aria-label="Video progress"
+                      className="phone-progress"
+                      style={{
+                        background: `linear-gradient(to right, #ec4899 ${progress}%, rgba(255,255,255,0.3) ${progress}%)`,
+                      }}
+                    />
 
+                    <div className="phone-control-row">
 
-                {/* Top-left Corner */}
+                      <button
+                        type="button"
+                        onClick={togglePlay}
+                        aria-label={isPlaying ? "Pause video" : "Play video"}
+                      >
+                        {isPlaying ? <Pause /> : <Play />}
+                      </button>
 
-                <div
-                className="
-                    absolute
-                    top-0
-                    left-0
-                    w-20
-                    h-0.5
-                    bg-pink-500
-                    z-10
-                    pointer-events-none
-                "
-                />
+                      <span className="phone-time">
+                        {formatTime(videoRef.current?.currentTime ?? 0)}
+                        {" / "}
+                        {formatTime(duration)}
+                      </span>
 
-                <div
-                className="
-                    absolute
-                    top-0
-                    left-0
-                    w-0.5
-                    h-20
-                    bg-pink-500
-                    z-10
-                    pointer-events-none
-                "
-                />
+                      <button
+                        type="button"
+                        onClick={toggleMute}
+                        aria-label={isMuted ? "Unmute video" : "Mute video"}
+                      >
+                        {isMuted ? <VolumeX /> : <Volume2 />}
+                      </button>
 
+                      <button
+                        type="button"
+                        onClick={toggleFullscreen}
+                        aria-label="Fullscreen video"
+                      >
+                        <Maximize2 />
+                      </button>
 
-                {/* Bottom-right Corner */}
+                    </div>
+                  </div>
+                </div>
 
-                <div
-                className="
-                    absolute
-                    bottom-0
-                    right-0
-                    w-20
-                    h-0.5   
-                    bg-pink-500
-                    z-10
-                    pointer-events-none
-                "
-                />
+                {/* DECORATIVE PINK GLOW */}
 
-                <div
-                className="
-                    absolute
-                    bottom-0
-                    right-0
-                    w-0.5
-                    h-20
-                    bg-pink-500
-                    z-10
-                    pointer-events-none
-                "
-                />
-
-            </div>
+                <div className="soldier-phone-glow" />
+              </div>
             </RevealOnScroll>
 
             {/* =========================================
@@ -488,67 +531,51 @@ const AboutSection = () => {
               delay={200}
             >
 
-              <div>
+              <div className="sristi-text-layer">
 
-                <p
-                  className="
-                    font-body
-                    text-sm
-                    sm:text-base
-                    md:text-lg
-                    lg:text-xl
-                    leading-7
-                    md:leading-9
-                    text-white/75
-                  "
-                >
-                  SRISTI is the techno-management fest of
-                  Jalpaiguri Government Engineering College,
-                  bringing together technology, innovation,
-                  management and creativity under one arena.
-                </p>
+                <div className="sristi-typing-content text-right border-r-4 border-pink-500 pr-4 rounded-md tracking-tight">
 
+                  <p className="font-body text-sm sm:text-base md:text-lg lg:text-xl leading-7 md:leading-9 text-white/75">
+                    {sristiParagraphs[0].slice(0, typedCharacters)}
 
-                <p
-                  className="
-                    font-body
-                    mt-7
-                    text-sm
-                    sm:text-base
-                    md:text-lg
-                    lg:text-xl
-                    leading-7
-                    md:leading-9
-                    text-white/75
-                  "
-                >
-                  It is a platform where students come
-                  together to compete, collaborate,
-                  experiment and showcase their skills
-                  through a diverse range of technical,
-                  management and creative events.
-                </p>
+                    {typedCharacters <= sristiParagraphs[0].length && (
+                      <span className="typing-cursor" />
+                    )}
+                  </p>
 
+                  {typedCharacters > sristiParagraphs[0].length && (
+                    <p className="font-body mt-7 text-sm sm:text-base md:text-lg lg:text-xl leading-7 md:leading-9 text-white/75">
+                      {sristiParagraphs[1].slice(
+                        0,
+                        typedCharacters - sristiParagraphs[0].length
+                      )}
 
-                <p
-                  className="
-                    font-body
-                    mt-7
-                    text-sm
-                    sm:text-base
-                    md:text-lg
-                    lg:text-xl
-                    leading-7
-                    md:leading-9
-                    text-white/75
-                  "
-                >
-                  SRISTI 2K26 takes this spirit into a new
-                  arena, bringing the energy of technology
-                  and competition into an experience designed
-                  to challenge, connect and inspire the next
-                  generation.
-                </p>
+                      {typedCharacters <=
+                        sristiParagraphs[0].length +
+                        sristiParagraphs[1].length && (
+                        <span className="typing-cursor" />
+                      )}
+                    </p>
+                  )}
+
+                  {typedCharacters >
+                    sristiParagraphs[0].length +
+                    sristiParagraphs[1].length && (
+                    <p className="font-body mt-7 text-sm sm:text-base md:text-lg lg:text-xl leading-7 md:leading-9 text-white/75">
+                      {sristiParagraphs[2].slice(
+                        0,
+                        typedCharacters -
+                          sristiParagraphs[0].length -
+                          sristiParagraphs[1].length
+                      )}
+
+                      {typedCharacters < totalCharacters && (
+                        <span className="typing-cursor" />
+                      )}
+                    </p>
+                  )}
+
+                </div>
 
 
                 {/* =====================================
@@ -558,12 +585,31 @@ const AboutSection = () => {
                 <div
                   className="
                     mt-10
+                    w-full
                     flex
                     flex-wrap
+                    justify-end
+                    text-right
                     gap-x-8
                     gap-y-4
                   "
                 >
+                  <div>
+                    <p
+                      className="
+                        font-mono
+                        text-xs
+                        text-pink-500
+                        tracking-widest
+                      "
+                    >
+                      CATEGORY
+                    </p>
+
+                    <p className="font-ui text-white mt-1">
+                      Techno-Management
+                    </p>
+                  </div>
 
                   <div>
                     <p
@@ -600,23 +646,6 @@ const AboutSection = () => {
                     </p>
                   </div>
 
-
-                  <div>
-                    <p
-                      className="
-                        font-mono
-                        text-xs
-                        text-pink-500
-                        tracking-widest
-                      "
-                    >
-                      CATEGORY
-                    </p>
-
-                    <p className="font-ui text-white mt-1">
-                      Techno-Management
-                    </p>
-                  </div>
 
                 </div>
 
