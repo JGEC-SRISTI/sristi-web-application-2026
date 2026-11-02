@@ -3,9 +3,10 @@ import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import "boxicons/css/boxicons.min.css";
 
 import Home from "./pages/Home.tsx";
+import Events from "./pages/Events.tsx";
+import EventDetail from "./pages/EventDetail.tsx";
 import AdminOverview from "./pages/admin/AdminOverview.tsx";
 import AdminEvents from "./pages/admin/AdminEvents.tsx";
-import CursorTrail from "./components/CursorTrail.tsx";
 import CustomCursor from "./components/CustomCursor.tsx";
 
 function AppRoutes() {
@@ -19,9 +20,10 @@ function AppRoutes() {
   return (
     <>
       {!isAdminRoute && <CustomCursor />}
-      {!isAdminRoute && <CursorTrail />}
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/events" element={<Events />} />
+        <Route path="/events/:eventSlug" element={<EventDetail />} />
         <Route path="/admin" element={<AdminOverview />} />
         <Route path="/admin/events" element={<AdminEvents />} />
       </Routes>

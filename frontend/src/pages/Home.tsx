@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Volume2,
@@ -11,17 +11,18 @@ import Navbar from "../components/Navbar";
 
 import homeBg from "../assets/images/home_bg.jpeg";
 import homeVideo from "../assets/videos/home_bg_vid.mp4";
-import Sristi from "../assets/icons/logo_updated.png";
 import SponsorSlider from "../components/SponsorSlider";
 import AboutSection from "../components/AboutSection";
 import Gallery from "../components/Gallary";
 import Contact from "../components/Contact";
+import pinkSoldier from "../assets/images/pink_soldier.png";
 
 const Home = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const [isVideo, setIsVideo] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
+  const [soldierScroll, setSoldierScroll] = useState(0);
 
   const toggleBackground = () => {
     setIsVideo((previous) => !previous);
@@ -35,6 +36,56 @@ const Home = () => {
     video.muted = !video.muted;
     setIsMuted(video.muted);
   };
+
+  const heroRef = useRef<HTMLDivElement>(null);
+  const [heroAnimationKey, setHeroAnimationKey] = useState(0);
+
+  useEffect(() => {
+    const hero = heroRef.current;
+    if (!hero) return;
+
+    let wasVisible = false;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const isVisible = entry.isIntersecting;
+
+        if (isVisible && !wasVisible) {
+          setHeroAnimationKey((prev) => prev + 1);
+        }
+
+        wasVisible = isVisible;
+      },
+      {
+        threshold: 0.35,
+      }
+    );
+
+    observer.observe(hero);
+
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const hero = heroRef.current;
+      if (!hero) return;
+
+      const heroHeight = hero.offsetHeight;
+      const scrollProgress = Math.min(
+        Math.max(window.scrollY / heroHeight, 0),
+        1
+      );
+
+      setSoldierScroll(scrollProgress);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    handleScroll();
+
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
     <main className="min-h-screen bg-[#080808] text-white">
@@ -61,7 +112,7 @@ const Home = () => {
             duration-700
             ${
               isVideo
-                ? "opacity-100"
+                ? "opacity-40"
                 : "opacity-0"
             }
           `}
@@ -86,7 +137,7 @@ const Home = () => {
             ${
               isVideo
                 ? "opacity-0"
-                : "opacity-100"
+                : "opacity-80"
             }
           `}
           style={{
@@ -106,281 +157,70 @@ const Home = () => {
 
         <Navbar />
 
-       {/* =========================================
-            HERO
-        ========================================= */}
-
+        {/* CINEMATIC HERO */}
         <div
-          className="
-            relative
-            z-10
-            min-h-screen
-            flex
-            items-center
-            justify-center
-            text-center
-            px-6
-            pt-10
-          "
-        >
-          <div
-            className="
-              flex
-              flex-col
-              items-center
-              justify-center
-              w-full
-              max-w-6xl
-            "
-          >
+        ref={heroRef}
+        className="hero-stage relative z-10 min-h-screen flex items-center justify-center px-5 pt-30 pb-16">
+          <div className="hero-content w-full max-w-7xl mx-auto text-center">
 
-            {/* =========================================
-                TOP TEXT
-            ========================================= */}
-
-            <p
-              className="
-                font-mono
-                text-xs
-                sm:text-sm
-                md:text-base
-                tracking-[0.35em]
-                sm:tracking-[0.5em]
-                uppercase
-                text-white/80
-              "
-            >
-              Players enter the arena
+            {/* Intro label */}
+            <p className="hero-eyebrow font-mono text-[10px] sm:text-xs md:text-sm tracking-[0.35em] sm:tracking-[0.6em] uppercase text-white/60 mb-2">
+              <span>Players</span>{" "}
+              <span className="text-pink-500">enter</span>{" "}
+              <span>the arena</span>
             </p>
 
-
-            {/* =========================================
-                SRISTI
-            ========================================= */}
-
-            <div
-              className="
-                sristi-logo
-                relative
-                w-90
-                sm:w-100
-                md:w-110
-                lg:w-120
-                mt-10
-                mb-10
-              "
+            {/* SRISTI — horizontal expansion animation */}
+            <h1
+              key={`sristi-${heroAnimationKey}`}
+              className="hero-title font-title text-[clamp(4rem,15vw,13rem)] leading-[0.85] tracking-[0.04em] text-white"
             >
-              {/* Original logo */}
-              <img
-                src={Sristi}
-                alt="SRISTI"
-                className="relative z-10 w-full h-auto"
-              />
+              SRISTI
+            </h1>
 
-              {/* Animated light masked by the logo */}
-              <span
-                className="sristi-neon-sweep"
-                style={{
-                  maskImage: `url(${Sristi})`,
-                  WebkitMaskImage: `url(${Sristi})`,
-                }}
-              />
+            <img
+              key={`soldier-${heroAnimationKey}`}
+              src={pinkSoldier}
+              alt="Pink Soldier"
+              className="hero-soldier"
+              style={{
+                transform: `translateY(${soldierScroll * 300}vh)`,
+                opacity: Math.max(0, 1 - soldierScroll),
+              }}
+            />
+
+            {/* 2K26 — separate horizontal expansion animation */}
+            <div
+              key={`year-${heroAnimationKey}`}
+              className="hero-year font-title mt-2 sm:mt-3 text-[clamp(3rem,10vw,9rem)] leading-none tracking-[0.3em] text-pink-500"
+            >
+              2K26
             </div>
 
+            {/* Neon divider */}
+            <div className="hero-divider mx-auto mt-2 sm:mt-4" />
 
-            {/* =========================================
-                CIRCLE — SQUARE — TRIANGLE
-            ========================================= */}
-
-            <div
-              className="
-                flex
-                items-center
-                justify-center
-                gap-3
-                sm:gap-5
-                md:gap-7
-              "
-            >
-
-              {/* CIRCLE */}
-
-              <div
-                className="
-                  w-8
-                  h-8
-                  sm:w-10
-                  sm:h-10
-                  md:w-12
-                  md:h-12
-                  rounded-full
-                  border-[3px]
-                  border-pink-500
-                  shadow-[0_0_15px_rgba(236,72,153,0.55)]
-                  transition-all
-                  duration-300
-                  hover:scale-105
-                  hover:shadow-[0_0_30px_rgba(236,72,153,0.8)]
-                "
-              />
-
-
-              {/* SQUARE */}
-
-              <div
-                className="
-                  w-24
-                  h-10
-                  sm:w-28
-                  sm:h-12
-                  md:w-32
-                  md:h-14
-                  border-[3px]
-                  border-pink-500
-                  flex
-                  items-center
-                  justify-center
-                  bg-black/20
-                  backdrop-blur-sm
-                  shadow-[0_0_20px_rgba(236,72,153,0.55)]
-                  transition-all
-                  duration-300
-                  hover:scale-105
-                  hover:shadow-[0_0_35px_rgba(236,72,153,0.8)]
-                "
-              >
-                <span
-                  className="
-                    font-mono
-                    text-xl
-                    sm:text-2xl
-                    md:text-3xl
-                    font-bold
-                    tracking-[0.08em]
-                    text-white
-                  "
-                >
-                  2<span className="text-pink-500">K</span>26
-                </span>
-              </div>
-
-
-              {/* TRIANGLE */}
-
-              <div
-                className="
-                  relative
-                  w-8
-                  h-8
-                  sm:w-10
-                  sm:h-10
-                  md:w-12
-                  md:h-12
-                  flex
-                  items-center
-                  justify-center
-                  transition-all
-                  duration-300
-                  hover:scale-105
-                "
-              >
-                <svg
-                  viewBox="0 0 100 100"
-                  className="
-                    w-full
-                    h-full
-                    overflow-visible
-                    drop-shadow-[0_0_8px_rgba(236,72,153,0.7)]
-                  "
-                >
-                  <polygon
-                    points="50,8 92,88 8,88"
-                    fill="transparent"
-                    stroke="#ec4899"
-                    strokeWidth="4"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-
-            </div>
-
-
-            {/* =========================================
-                TAGLINE
-            ========================================= */}
-
-            <p
-              className="
-                font-ui
-                mt-8
-                md:mt-10
-                max-w-4xl
-                text-xs
-                sm:text-sm
-                md:text-base
-                lg:text-lg
-                tracking-[0.12em]
-                sm:tracking-[0.18em]
-                uppercase
-                text-white/80
-              "
-            >
-              The Largest Techno Management Fest of North Bengal
+            {/* Fest description */}
+            <p className="hero-tagline font-ui mx-auto mt-7 max-w-3xl text-xs sm:text-sm md:text-base tracking-[0.12em] sm:tracking-[0.2em] uppercase text-white/70">
+              The Largest Techno-Management Fest of North Bengal
             </p>
 
-
-            {/* =========================================
-                EXPLORE BUTTON
-            ========================================= */}
-
+            {/* Explore */}
             <Link
               to="/events"
-              className="
-                group
-                relative
-                mt-8
-                md:mt-10
-                px-10
-                py-3.5
-                md:px-12
-                md:py-4
-                border
-                border-pink-500
-                bg-black/20
-                backdrop-blur-sm
-                overflow-hidden
-                font-ui
-                text-xs
-                sm:text-sm
-                font-semibold
-                tracking-[0.3em]
-                text-white
-                transition-all
-                duration-300
-                hover:text-black
-                hover:bg-pink-500
-                hover:shadow-[0_0_30px_rgba(236,72,153,0.6)]
-              "
+              className="hero-explore group relative inline-flex items-center justify-center mt-9 sm:mt-12 px-9 py-3.5 sm:px-12 sm:py-4 overflow-hidden border border-pink-500/70 bg-black/30 font-ui text-xs sm:text-sm tracking-[0.25em] text-white transition-all duration-300 hover:bg-pink-500 hover:text-black hover:shadow-[0_0_35px_rgba(236,72,153,0.45)]"
             >
-              <span className="relative z-10">
-                EXPLORE
-              </span>
-
-              {/* Hover sweep */}
-
-              <span
-                className="
-                  absolute
-                  inset-0
-                  bg-white/20
-                  -translate-x-full
-                  transition-transform
-                  duration-500
-                  group-hover:translate-x-0
-                "
-              />
+              <span className="relative z-10">ENTER THE ARENA</span>
+              <span className="absolute inset-0 -translate-x-full bg-pink-500 transition-transform duration-500 group-hover:translate-x-0" />
             </Link>
+
+            {/* Scroll indicator */}
+            <div className="hero-scroll-indicator mt-12 sm:mt-16 flex flex-col items-center gap-2">
+              <span className="font-mono text-[9px] tracking-[0.35em] text-white/40">
+                SCROLL TO BEGIN
+              </span>
+              <span className="hero-scroll-line" />
+            </div>
 
           </div>
         </div>
@@ -388,7 +228,7 @@ const Home = () => {
         {/* About Section */}
 
         <AboutSection />
-        
+
         {/*SPONSORS*/}
 
         <SponsorSlider />

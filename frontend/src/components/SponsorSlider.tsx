@@ -40,7 +40,7 @@ const SponsorSlider = () => {
 
         <h2
           className="
-            font-display
+            font-heavy-title
             text-4xl
             sm:text-5xl
             md:text-6xl
