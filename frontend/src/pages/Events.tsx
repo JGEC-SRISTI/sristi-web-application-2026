@@ -1,12 +1,11 @@
 import { useState, useCallback, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
-  MapPin,
   Users,
   Trophy,
-  Calendar,
 } from "lucide-react";
 import Navbar from "../components/Navbar";
 import LiquidGradientBackground from "../components/LiquidGradientBackground";
@@ -192,24 +191,25 @@ const EventCard = ({ event, position, onClick }: EventCardProps) => {
     sceneRef.current.style.setProperty("--card-sheen-x", `${sheenX.toFixed(2)}%`);
     sceneRef.current.style.setProperty("--card-sheen-y", `${sheenY.toFixed(2)}%`);
     sceneRef.current.style.transform =
-      `rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg)`;
+      `scale(var(--card-hover-scale)) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg)`;
   };
 
   const resetTilt = () => {
     if (sceneRef.current) {
       sceneRef.current.style.setProperty("--card-sheen-x", "50%");
       sceneRef.current.style.setProperty("--card-sheen-y", "35%");
-      sceneRef.current.style.transform = "rotateX(0deg) rotateY(0deg)";
+      sceneRef.current.style.transform =
+        "scale(var(--card-hover-scale)) rotateX(0deg) rotateY(0deg)";
     }
   };
 
   return (
     <div
-      onClick={!isCenter ? onClick : undefined}
+      onClick={onClick}
       className={`
         flex-shrink-0
         transition-[transform,width,filter,opacity] duration-1200 ease-[cubic-bezier(0.02,1,0.7,1)]
-        ${isCenter ? "z-20 cursor-default" : "z-10 cursor-pointer"}
+        ${isCenter ? "z-20 cursor-pointer" : "z-10 cursor-pointer"}
       `}
       style={{
         width: widthMap[abs] ?? "160px",
@@ -225,7 +225,7 @@ const EventCard = ({ event, position, onClick }: EventCardProps) => {
         onPointerLeave={resetTilt}
         className="event-card-scene"
         style={{
-          transform: "rotateX(0deg) rotateY(0deg)",
+          transform: "scale(var(--card-hover-scale)) rotateX(0deg) rotateY(0deg)",
           color: accent,
         }}
       >
@@ -285,21 +285,8 @@ const EventCard = ({ event, position, onClick }: EventCardProps) => {
             {isCenter && (
               <div className="grid grid-cols-2 gap-1.5 pt-1">
                 <div className="flex items-center gap-1.5 text-white/35 text-[9px] font-space-mono uppercase tracking-[0.12em]">
-                  <Calendar size={10} style={{ color: accent }} />
-                  <span>
-                    {new Date(event.date).toLocaleDateString("en-IN", {
-                      day: "numeric",
-                      month: "short",
-                    }).toUpperCase()}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5 text-white/35 text-[9px] font-space-mono uppercase tracking-[0.12em]">
-                  <MapPin size={10} style={{ color: accent }} />
-                  <span className="truncate">{event.venue.toUpperCase()}</span>
-                </div>
-                <div className="flex items-center gap-1.5 text-white/35 text-[9px] font-space-mono uppercase tracking-[0.12em]">
                   <Trophy size={10} style={{ color: accent }} />
-                  <span>{event.prize_pool}</span>
+                  <span>Upto {event.prize_pool}</span>
                 </div>
                 <div className="flex items-center gap-1.5 text-white/35 text-[9px] font-space-mono uppercase tracking-[0.12em]">
                   <Users size={10} style={{ color: accent }} />
@@ -401,9 +388,11 @@ const PARTICIPATION_OPTIONS = [
 ];
 
 const Events = () => {
+  const navigate = useNavigate();
   const [categoryFilter, setCategoryFilter] = useState("ALL");
   const [participationFilter, setParticipationFilter] = useState("ALL");
   const [activeIndex, setActiveIndex] = useState(0);
+  const [filterRevision, setFilterRevision] = useState(0);
   const [showIntro, setShowIntro] = useState(true);
 
   useEffect(() => {
@@ -425,10 +414,12 @@ const Events = () => {
   const handleCategoryChange = (val: string) => {
     setCategoryFilter(val as EventCategory | "ALL");
     setActiveIndex(0);
+    setFilterRevision((revision) => revision + 1);
   };
   const handleParticipationChange = (val: string) => {
     setParticipationFilter(val as ParticipationType | "ALL");
     setActiveIndex(0);
+    setFilterRevision((revision) => revision + 1);
   };
 
   const goLeft = useCallback(() => {
@@ -526,7 +517,10 @@ const Events = () => {
           </button>
 
           {filteredEvents.length > 0 ? (
-            <div className="flex items-center justify-center gap-3 sm:gap-5 lg:gap-6">
+            <div
+              key={filterRevision}
+              className="event-card-filter-transition flex items-center justify-center gap-3 sm:gap-5 lg:gap-6"
+            >
               {visibleCards.map(({ event, position }) => (
                 <EventCard
                   key={
@@ -536,14 +530,7 @@ const Events = () => {
                   }
                   event={event}
                   position={position}
-                  onClick={() => {
-                    if (position !== 0) {
-                      setActiveIndex(
-                        (activeIndex + position + filteredEvents.length) %
-                          filteredEvents.length
-                      );
-                    }
-                  }}
+                  onClick={() => navigate(`/events/${event.slug}`)}
                 />
               ))}
             </div>

@@ -58,7 +58,16 @@ body {
   height: 100%;
   display: block;
   pointer-events: none;
+  opacity: 0.77;
+  transition: opacity 0.95s ease;
 }
+
+/* might add more elements here later to control the liquid gradient */
+.events-page:has(.event-card-scene:hover, .events-splash-wrap:hover, .dropdown-menu:hover) .liquid-gradient-background {
+  opacity: 0.2;
+}
+
+
 
 button,
 a {
@@ -614,12 +623,18 @@ a {
 .event-card-scene {
   --card-sheen-x: 50%;
   --card-sheen-y: 35%;
+  --card-hover-scale: 1;
   position: relative;
   isolation: isolate;
   transform-style: preserve-3d;
   transform-origin: center center;
   transition: transform 180ms cubic-bezier(0.2, 0.75, 0.25, 1);
   will-change: transform;
+}
+
+.event-card-scene:hover {
+  --card-hover-scale: 1.07;
+  transition: 0.4s ease-out;
 }
 
 .event-card-scene::before {
@@ -689,6 +704,55 @@ a {
   opacity: 1;
 }
 
+@keyframes event-card-filter-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.94);
+    filter: blur(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+.event-card-filter-transition {
+  animation: event-card-filter-in 700ms cubic-bezier(0.2, 0.75, 0.25, 1);
+}
+
+.event-action-button {
+  min-width: 142px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 0.5rem;
+  padding: 0.85rem 1.15rem;
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(0, 0, 0, 0.24);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  transition: background-color 220ms ease, border-color 220ms ease, color 220ms ease, transform 220ms ease;
+}
+
+.event-action-button:hover {
+  border-color: rgba(255, 255, 255, 0.7);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+.event-action-button:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 4px;
+}
+
+.event-action-button-primary {
+  border-color: #ff5ca8;
+  background: rgba(255, 92, 168, 0.16);
+  color: #ffffff;
+}
+
 @keyframes event-card-sheen-flow {
   0% {
     background-position: center, 0% 40%;
@@ -727,6 +791,10 @@ a {
       animation: none;
       opacity: 0;
     }
+
+  .event-card-filter-transition {
+    animation: none;
+  }
   }
 
 /*----------------------------------------------------*/
@@ -1313,7 +1381,7 @@ a {
     transparent 100%
   );
   -webkit-mask-image: radial-gradient(
-    circle 40px at var(--splash-x) var(--splash-y),
+    circle 45px at var(--splash-x) var(--splash-y),
     black 0%,
     black 55%,
     transparent 100%
