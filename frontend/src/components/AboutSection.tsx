@@ -431,7 +431,7 @@ const AboutSection = () => {
                   text-white
                 "
               >
-                ABOUT{" "} 
+                ABOUT{" "}
                 <span className="sristi-font-shift">SRISTI</span>
               </h2>
 

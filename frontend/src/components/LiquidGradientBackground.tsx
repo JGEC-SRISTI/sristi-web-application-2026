@@ -290,7 +290,7 @@ class TouchTexture {
       const d = Math.sqrt(dd);
       vx = dx / d;
       vy = dy / d;
-      force = Math.min(dd * 20000, 2.0); 
+      force = Math.min(dd * 20000, 2.0);
     }
     this.last = { x, y };
     this.points.push({ x, y, age: 0, force, vx, vy });
@@ -378,7 +378,7 @@ const LiquidGradientBackground = () => {
         uResolution: {
           value: new THREE.Vector2(window.innerWidth, window.innerHeight),
         },
-        
+
         uColor1: { value: new THREE.Vector3(0.596, 0.165, 0.314) }, // 982A50 - Pink
         uColor2: { value: new THREE.Vector3(0.031, 0.043, 0.106) }, // 080B1B - Navy
         uColor3: { value: new THREE.Vector3(0.184, 0.016, 0.016) }, // 2F0404 - Wine
@@ -386,8 +386,8 @@ const LiquidGradientBackground = () => {
         uColor5: { value: new THREE.Vector3(0.0, 0.0, 0.0) },       // 000000 - Black
         uColor6: { value: new THREE.Vector3(0.0, 0.0, 0.0) },       // 000000 - Black
 
-        
-        uSpeed: { value: 1.5 },           
+
+        uSpeed: { value: 1.5 },
         uIntensity: { value: 1.8 },
         uTouchTexture: { value: touchTexture.texture },
         uGrainIntensity: { value: 0.08 },

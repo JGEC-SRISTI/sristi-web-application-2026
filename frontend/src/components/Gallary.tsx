@@ -391,13 +391,13 @@ const Gallery = () => {
                     goToSlide(index);
                   }
                 }}
-                aria-label={`View gallery image ${index + 1}`} 
+                aria-label={`View gallery image ${index + 1}`}
               >
                 <div
                   ref={isActive ? frontCardRef : undefined}
                   className="gallery-card-inner"
                 >
-                  
+
                   {/* IMAGE */}
 
                   <img
@@ -424,7 +424,7 @@ const Gallery = () => {
                       transition-all
                       duration-700
                       ${
-                        isActive 
+                        isActive
                           ? "bg-black/15"
                           : "bg-transparent"
                       }
@@ -529,7 +529,7 @@ const Gallery = () => {
                       bottom-2
                       left-2
                       sm:bottom-2
-                      sm:left-2 
+                      sm:left-2
                       z-10
                       font-mono
                       text-[4px]

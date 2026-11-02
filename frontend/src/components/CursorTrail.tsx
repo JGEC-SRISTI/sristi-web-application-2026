@@ -2,15 +2,6 @@ import { useEffect, useRef } from "react";
 
 type Shape = "circle" | "triangle" | "square";
 
-interface Particle {
-  id: number;
-  x: number;
-  y: number;
-  shape: Shape;
-  size: number;
-  rotation: number;
-}
-
 const shapes: Shape[] = ["circle", "triangle", "square"];
 
 const CursorTrail = () => {

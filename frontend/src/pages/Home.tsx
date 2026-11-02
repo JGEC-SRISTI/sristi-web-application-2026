@@ -158,7 +158,7 @@ const Home = () => {
         <Navbar />
 
         {/* CINEMATIC HERO */}
-        <div 
+        <div
         ref={heroRef}
         className="hero-stage relative z-10 min-h-screen flex items-center justify-center px-5 pt-30 pb-16">
           <div className="hero-content w-full max-w-7xl mx-auto text-center">
@@ -191,7 +191,7 @@ const Home = () => {
 
             {/* 2K26 — separate horizontal expansion animation */}
             <div
-              key={`year-${heroAnimationKey}`} 
+              key={`year-${heroAnimationKey}`}
               className="hero-year font-title mt-2 sm:mt-3 text-[clamp(3rem,10vw,9rem)] leading-none tracking-[0.3em] text-pink-500"
             >
               2K26
@@ -228,7 +228,7 @@ const Home = () => {
         {/* About Section */}
 
         <AboutSection />
-        
+
         {/*SPONSORS*/}
 
         <SponsorSlider />
