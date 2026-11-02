@@ -7,9 +7,7 @@ import {
   CircleUserRound,
   UserRound,
   X,
-  Gamepad2,
   ShieldCheck,
-  LogOut
 } from "lucide-react";
 import NavShape from "./NavShape";
 import jgeclogo from "../assets/icons/logo1.png";
