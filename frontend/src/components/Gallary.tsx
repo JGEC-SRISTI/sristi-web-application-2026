@@ -1,48 +1,15 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { galleryData } from "../data/gallery";
 
 type FlipDirection = "next" | "previous" | null;
 
 const Gallery = () => {
-  const sliderRef = useRef<HTMLDivElement>(null);
-
   const [activeIndex, setActiveIndex] = useState(0);
   const [flipDirection, setFlipDirection] =
     useState<FlipDirection>(null);
   const [isFlipping, setIsFlipping] =
     useState(false);
-
-  /*
-    =========================================
-    SCROLL TO SLIDE
-    =========================================
-  */
-
-  const scrollToSlide = (index: number) => {
-    const slider = sliderRef.current;
-
-    if (!slider) return;
-
-    const slides =
-      slider.querySelectorAll<HTMLElement>(
-        ".gallery-slide"
-      );
-
-    const slide = slides[index];
-
-    if (!slide) return;
-
-    slider.scrollTo({
-      left:
-        slide.offsetLeft -
-        slider.clientWidth / 2 +
-        slide.clientWidth / 2,
-      behavior: "smooth",
-    });
-
-    setActiveIndex(index);
-  };
 
   /*
     =========================================
@@ -103,70 +70,6 @@ const Gallery = () => {
   const nextSlide = () => {
     flipToSlide("next");
   };
-
-  /*
-    =========================================
-    NORMAL SWIPING
-    =========================================
-  */
-
-  const handleScroll = () => {
-    const slider = sliderRef.current;
-
-    if (!slider || isFlipping) return;
-
-    const slides = Array.from(
-      slider.querySelectorAll<HTMLElement>(
-        ".gallery-slide"
-      )
-    );
-
-    const sliderRect =
-      slider.getBoundingClientRect();
-
-    const sliderCenter =
-      sliderRect.left + sliderRect.width / 2;
-
-    let closestIndex = 0;
-    let closestDistance = Infinity;
-
-    slides.forEach((slide, index) => {
-      const slideRect =
-        slide.getBoundingClientRect();
-
-      const slideCenter =
-        slideRect.left + slideRect.width / 2;
-
-      const distance = Math.abs(
-        slideCenter - sliderCenter
-      );
-
-      if (distance < closestDistance) {
-        closestDistance = distance;
-        closestIndex = index;
-      }
-    });
-
-    setActiveIndex(closestIndex);
-  };
-
-  /*
-    =========================================
-    KEEP ACTIVE SLIDE CENTERED
-    =========================================
-  */
-
-  useEffect(() => {
-    if (!sliderRef.current) return;
-
-    const timer = window.setTimeout(() => {
-      scrollToSlide(activeIndex);
-    }, 50);
-
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, []);
 
   /*========================================
   flip aniation  on arrow keys
@@ -833,7 +736,7 @@ const Gallery = () => {
             type="button"
             onClick={() => {
               if (!isFlipping) {
-                scrollToSlide(index);
+                setActiveIndex(index);
               }
             }}
             aria-label={`Go to image ${

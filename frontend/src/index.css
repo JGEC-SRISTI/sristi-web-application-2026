@@ -9,6 +9,23 @@
   color: #ffffff;
 }
 
+/* Admin screens use the native pointer instead of the site cursor effect. */
+.admin-panel,
+.admin-panel * {
+  cursor: auto !important;
+}
+
+.admin-panel button,
+.admin-panel a,
+.admin-panel select {
+  cursor: pointer !important;
+}
+
+.admin-panel input,
+.admin-panel textarea {
+  cursor: text !important;
+}
+
 /* * {
   margin: 0;
   padding: 0;
