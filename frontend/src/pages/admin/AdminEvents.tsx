@@ -1,4 +1,10 @@
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import type { User } from "@supabase/supabase-js";
 import { Link } from "react-router-dom";
 import {
@@ -65,7 +71,9 @@ function slugify(value: string) {
 
 export default function AdminEvents() {
   const [events, setEvents] = useState<EventRecord[]>([]);
-  const [accessState, setAccessState] = useState<"loading" | "config" | "signed-out" | "checking" | "denied" | "ready">(supabaseConfigMissing ? "config" : "loading");
+  const [accessState, setAccessState] = useState<
+    "loading" | "config" | "signed-out" | "checking" | "denied" | "ready"
+  >(supabaseConfigMissing ? "config" : "loading");
   const [adminRole, setAdminRole] = useState("");
   const [accessError, setAccessError] = useState("");
   const [accountEmail, setAccountEmail] = useState("");
@@ -121,7 +129,9 @@ export default function AdminEvents() {
         return;
       }
       if (!data) {
-        setAccessError("This signed-in account does not have an active admin role.");
+        setAccessError(
+          "This signed-in account does not have an active admin role.",
+        );
         setAccessState("denied");
         return;
       }
@@ -153,7 +163,9 @@ export default function AdminEvents() {
       void checkAccess(data.session?.user ?? null);
     });
 
-    const { data: { subscription } } = client.auth.onAuthStateChange((_event, session) => {
+    const {
+      data: { subscription },
+    } = client.auth.onAuthStateChange((_event, session) => {
       queueMicrotask(() => void checkAccess(session?.user ?? null));
     });
 
@@ -248,7 +260,12 @@ export default function AdminEvents() {
     setIsSaving(true);
     setError("");
     const result = editingId
-      ? await supabase.from("events").update(payload).eq("id", editingId).select("*").single()
+      ? await supabase
+          .from("events")
+          .update(payload)
+          .eq("id", editingId)
+          .select("*")
+          .single()
       : await supabase.from("events").insert(payload).select("*").single();
     setIsSaving(false);
     if (result.error) {
@@ -257,23 +274,32 @@ export default function AdminEvents() {
     }
 
     const savedEvent = result.data as EventRecord;
-    setEvents((current) => editingId
-      ? current.map((item) => item.id === editingId ? savedEvent : item)
-      : [savedEvent, ...current]);
+    setEvents((current) =>
+      editingId
+        ? current.map((item) => (item.id === editingId ? savedEvent : item))
+        : [savedEvent, ...current],
+    );
     setIsFormOpen(false);
     setPageMessage("");
-    setToastMessage(editingId ? "Event updated successfully." : "Event created successfully.");
+    setToastMessage(
+      editingId ? "Event updated successfully." : "Event created successfully.",
+    );
   };
 
   const deleteEvent = async (eventId: string) => {
     if (!supabase) return;
-    const confirmed = window.confirm("Delete this event? This can also delete registrations, attendance, and results linked to it.");
+    const confirmed = window.confirm(
+      "Delete this event? This can also delete registrations, attendance, and results linked to it.",
+    );
     if (!confirmed) {
       setActiveMenu(null);
       return;
     }
 
-    const { error: deleteError } = await supabase.from("events").delete().eq("id", eventId);
+    const { error: deleteError } = await supabase
+      .from("events")
+      .delete()
+      .eq("id", eventId);
     if (deleteError) {
       setPageMessage(`Could not delete event: ${deleteError.message}`);
       setActiveMenu(null);
@@ -304,11 +330,24 @@ export default function AdminEvents() {
   return (
     <div className="admin-panel min-h-screen bg-[#080d14] text-slate-100 font-body">
       {toastMessage && (
-        <div className="pointer-events-none fixed right-5 top-5 z-50" aria-live="polite">
-          <div role="status" className="pointer-events-auto flex min-w-72 items-center gap-3 rounded-xl border border-emerald-300/40 bg-[#f8fbf9] px-4 py-3 text-sm font-medium text-[#173d35] shadow-xl">
+        <div
+          className="pointer-events-none fixed right-5 top-5 z-50"
+          aria-live="polite"
+        >
+          <div
+            role="status"
+            className="pointer-events-auto flex min-w-72 items-center gap-3 rounded-xl border border-emerald-300/40 bg-[#f8fbf9] px-4 py-3 text-sm font-medium text-[#173d35] shadow-xl"
+          >
             <CircleCheck size={19} className="shrink-0 text-emerald-700" />
             <span className="flex-1">{toastMessage}</span>
-            <button type="button" onClick={() => setToastMessage("")} className="rounded-md p-1 text-slate-500 hover:bg-slate-200" aria-label="Dismiss notification"><X size={16} /></button>
+            <button
+              type="button"
+              onClick={() => setToastMessage("")}
+              className="rounded-md p-1 text-slate-500 hover:bg-slate-200"
+              aria-label="Dismiss notification"
+            >
+              <X size={16} />
+            </button>
           </div>
         </div>
       )}
@@ -341,14 +380,34 @@ export default function AdminEvents() {
           <span className="admin-section-label">EVENT OPERATIONS</span>
         </Link>
         <nav className="space-y-2" aria-label="Admin navigation">
-          <NavItem href="/admin" icon={<LayoutDashboard size={18} />} label="Overview" />
+          <NavItem
+            href="/admin"
+            icon={<LayoutDashboard size={18} />}
+            label="Overview"
+          />
           <NavItem active icon={<CalendarDays size={18} />} label="Events" />
-          <NavItem icon={<ListChecks size={18} />} label="Registrations" />
-          <NavItem icon={<Wallet size={18} />} label="Payments" />
-          <NavItem icon={<Users size={18} />} label="Admins" />
+          <NavItem
+            href="/admin/registrations"
+            icon={<ListChecks size={18} />}
+            label="Registrations"
+          />
+          <NavItem
+            href="/admin/payments"
+            icon={<Wallet size={18} />}
+            label="Payments"
+          />
+          <NavItem
+            href="/admin/admins"
+            icon={<Users size={18} />}
+            label="Admins"
+          />
         </nav>
         <div className="mt-auto space-y-2 border-t border-white/10 pt-5">
-          <NavItem icon={<Settings size={18} />} label="Settings" />
+          <NavItem
+            href="/admin/settings"
+            icon={<Settings size={18} />}
+            label="Settings"
+          />
           <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3 text-xs leading-5 text-slate-400">
             <p className="mb-1 flex items-center gap-2 font-semibold text-slate-200">
               <CircleHelp size={14} /> Admin access
@@ -362,26 +421,50 @@ export default function AdminEvents() {
         <header className="flex h-16 items-center justify-between border-b border-white/10 px-5 md:px-9">
           <nav aria-label="Breadcrumb">
             <ol className="admin-breadcrumbs flex items-center gap-2 text-sm">
-              <li><a href="/">SRISTI</a></li>
-              <li aria-hidden="true"><ChevronRight size={15} /></li>
-              <li><span>Admin</span></li>
-              <li aria-hidden="true"><ChevronRight size={15} /></li>
-              <li aria-current="page"><span>Events</span></li>
+              <li>
+                <a href="/">SRISTI</a>
+              </li>
+              <li aria-hidden="true">
+                <ChevronRight size={15} />
+              </li>
+              <li>
+                <span>Admin</span>
+              </li>
+              <li aria-hidden="true">
+                <ChevronRight size={15} />
+              </li>
+              <li aria-current="page">
+                <span>Events</span>
+              </li>
             </ol>
           </nav>
           <div className="flex items-center gap-3 text-sm text-slate-300">
             <span className="grid size-8 place-items-center rounded-full bg-slate-700 font-semibold">
               {adminRole.slice(0, 1) || "A"}
             </span>
-            <span className="hidden sm:inline">{adminRole.replaceAll("_", " ")}</span>
-            <button onClick={signOut} className="ml-2 inline-flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-xs text-slate-300 hover:bg-white/5" aria-label="Sign out">
-              <LogOut size={15} /> <span className="hidden sm:inline">Sign out</span>
+            <span className="hidden sm:inline">
+              {adminRole.replaceAll("_", " ")}
+            </span>
+            <button
+              onClick={signOut}
+              className="ml-2 inline-flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-xs text-slate-300 hover:bg-white/5"
+              aria-label="Sign out"
+            >
+              <LogOut size={15} />{" "}
+              <span className="hidden sm:inline">Sign out</span>
             </button>
           </div>
         </header>
 
         <section className="mx-auto max-w-7xl px-5 py-8 md:px-9">
-          {pageMessage && <div role="status" className="mb-5 rounded-xl border border-sky-300/20 bg-sky-300/[0.06] px-4 py-3 text-sm text-sky-100">{pageMessage}</div>}
+          {pageMessage && (
+            <div
+              role="status"
+              className="mb-5 rounded-xl border border-sky-300/20 bg-sky-300/[0.06] px-4 py-3 text-sm text-sky-100"
+            >
+              {pageMessage}
+            </div>
+          )}
 
           <div className="mb-7 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
             <div>
@@ -455,7 +538,12 @@ export default function AdminEvents() {
                 <tbody className="divide-y divide-white/[0.07]">
                   {isLoadingEvents && (
                     <tr>
-                      <td colSpan={7} className="px-5 py-14 text-center text-slate-400">Loading events…</td>
+                      <td
+                        colSpan={7}
+                        className="px-5 py-14 text-center text-slate-400"
+                      >
+                        Loading events…
+                      </td>
                     </tr>
                   )}
                   {visibleEvents.map((event) => (
@@ -528,7 +616,9 @@ export default function AdminEvents() {
                         colSpan={7}
                         className="px-5 py-14 text-center text-slate-400"
                       >
-                        {search || typeFilter !== "all" ? "No events match those filters." : "No events yet. Add the first event."}
+                        {search || typeFilter !== "all"
+                          ? "No events match those filters."
+                          : "No events yet. Add the first event."}
                       </td>
                     </tr>
                   )}
@@ -737,7 +827,11 @@ export default function AdminEvents() {
                   type="submit"
                   className="rounded-lg bg-emerald-400 px-5 py-2.5 text-sm font-semibold text-slate-950 hover:bg-emerald-300 disabled:cursor-wait disabled:opacity-60"
                 >
-                  {isSaving ? "Saving…" : editingId ? "Save changes" : "Save event"}
+                  {isSaving
+                    ? "Saving…"
+                    : editingId
+                      ? "Save changes"
+                      : "Save event"}
                 </button>
               </footer>
             </form>
@@ -778,35 +872,94 @@ export function AdminAccessGate({
     <main className="admin-panel grid min-h-screen place-items-center bg-[#080d14] px-5 py-10 font-body text-slate-100">
       <section className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0d1520] p-7 shadow-2xl">
         <div className="mb-6 flex items-center gap-3">
-          <span className="grid size-11 place-items-center rounded-xl bg-emerald-400/10 text-emerald-300"><ShieldCheck size={23} /></span>
-          <div><p className="font-bold tracking-wide">SRISTI ADMIN</p><p className="text-xs text-slate-400">Events management</p></div>
+          <span className="grid size-11 place-items-center rounded-xl bg-emerald-400/10 text-emerald-300">
+            <ShieldCheck size={23} />
+          </span>
+          <div>
+            <p className="font-bold tracking-wide">SRISTI ADMIN</p>
+            <p className="text-xs text-slate-400">Events management</p>
+          </div>
         </div>
         {state === "config" ? (
           <>
             <h1 className="text-xl font-semibold">Connect local Supabase</h1>
-            <p className="mt-2 text-sm leading-6 text-slate-400">Copy <code>frontend/.env.example</code> to <code>frontend/.env.local</code>, then set the local Supabase API URL and anon key. Never use a service-role key in the frontend.</p>
+            <p className="mt-2 text-sm leading-6 text-slate-400">
+              Copy <code>frontend/.env.example</code> to{" "}
+              <code>frontend/.env.local</code>, then set the local Supabase API
+              URL and anon key. Never use a service-role key in the frontend.
+            </p>
           </>
         ) : state === "loading" || state === "checking" ? (
-          <p className="text-sm text-slate-300">{state === "loading" ? "Checking your Supabase session…" : "Checking admin access…"}</p>
+          <p className="text-sm text-slate-300">
+            {state === "loading"
+              ? "Checking your Supabase session…"
+              : "Checking admin access…"}
+          </p>
         ) : state === "denied" ? (
           <>
             <h1 className="text-xl font-semibold">Admin access required</h1>
-            <p className="mt-2 text-sm leading-6 text-rose-200">{accessError || "This account is not an active admin."}</p>
-            <button onClick={onSignOut} className="mt-5 rounded-lg border border-white/15 px-4 py-2 text-sm hover:bg-white/5">Sign out and use another account</button>
+            <p className="mt-2 text-sm leading-6 text-rose-200">
+              {accessError || "This account is not an active admin."}
+            </p>
+            <button
+              onClick={onSignOut}
+              className="mt-5 rounded-lg border border-white/15 px-4 py-2 text-sm hover:bg-white/5"
+            >
+              Sign out and use another account
+            </button>
           </>
         ) : (
           <>
             <h1 className="text-xl font-semibold">Sign in to continue</h1>
-            <p className="mt-2 text-sm leading-6 text-slate-400">Use the local Auth account that has an active admin role.</p>
+            <p className="mt-2 text-sm leading-6 text-slate-400">
+              Use the local Auth account that has an active admin role.
+            </p>
             <form onSubmit={onSignIn} className="mt-5 space-y-4">
-              {signInError && <p role="alert" className="rounded-lg border border-rose-400/30 bg-rose-400/10 px-3 py-2 text-sm text-rose-200">{signInError}</p>}
-              <label className="block text-sm">Email<input required type="email" autoComplete="username" value={email} onChange={(event) => onEmailChange(event.target.value)} className={inputClass} /></label>
-              <label className="block text-sm">Password<input required type="password" autoComplete="current-password" value={password} onChange={(event) => onPasswordChange(event.target.value)} className={inputClass} /></label>
-              <button disabled={isSigningIn} className="w-full rounded-lg bg-emerald-400 px-4 py-3 text-sm font-semibold text-slate-950 hover:bg-emerald-300 disabled:opacity-60">{isSigningIn ? "Signing in…" : "Sign in"}</button>
+              {signInError && (
+                <p
+                  role="alert"
+                  className="rounded-lg border border-rose-400/30 bg-rose-400/10 px-3 py-2 text-sm text-rose-200"
+                >
+                  {signInError}
+                </p>
+              )}
+              <label className="block text-sm">
+                Email
+                <input
+                  required
+                  type="email"
+                  autoComplete="username"
+                  value={email}
+                  onChange={(event) => onEmailChange(event.target.value)}
+                  className={inputClass}
+                />
+              </label>
+              <label className="block text-sm">
+                Password
+                <input
+                  required
+                  type="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(event) => onPasswordChange(event.target.value)}
+                  className={inputClass}
+                />
+              </label>
+              <button
+                disabled={isSigningIn}
+                className="w-full rounded-lg bg-emerald-400 px-4 py-3 text-sm font-semibold text-slate-950 hover:bg-emerald-300 disabled:opacity-60"
+              >
+                {isSigningIn ? "Signing in…" : "Sign in"}
+              </button>
             </form>
           </>
         )}
-        <a href="/" className="mt-6 inline-block text-sm text-emerald-300 hover:text-emerald-200">Return to Sristi home</a>
+        <a
+          href="/"
+          className="mt-6 inline-block text-sm text-emerald-300 hover:text-emerald-200"
+        >
+          Return to Sristi home
+        </a>
       </section>
     </main>
   );
@@ -849,7 +1002,17 @@ export function NavItem({
   href?: string;
 }) {
   if (href) {
-    return <Link to={href} viewTransition className={`flex items-center gap-3 rounded-lg px-3 py-3 text-sm no-underline ${active ? "bg-emerald-400/10 font-semibold text-emerald-200" : "text-slate-400 hover:bg-white/5"}`} aria-current={active ? "page" : undefined}>{icon}<span>{label}</span></Link>;
+    return (
+      <Link
+        to={href}
+        viewTransition
+        className={`flex items-center gap-3 rounded-lg px-3 py-3 text-sm no-underline ${active ? "bg-emerald-400/10 font-semibold text-emerald-200" : "text-slate-400 hover:bg-white/5"}`}
+        aria-current={active ? "page" : undefined}
+      >
+        {icon}
+        <span>{label}</span>
+      </Link>
+    );
   }
   return (
     <div

@@ -7,6 +7,7 @@ import Events from "./pages/Events.tsx";
 import EventDetail from "./pages/EventDetail.tsx";
 import AdminOverview from "./pages/admin/AdminOverview.tsx";
 import AdminEvents from "./pages/admin/AdminEvents.tsx";
+import AdminSectionPlaceholder from "./pages/admin/AdminSectionPlaceholder.tsx";
 import CustomCursor from "./components/CustomCursor.tsx";
 
 function AppRoutes() {
@@ -26,6 +27,22 @@ function AppRoutes() {
         <Route path="/events/:eventSlug" element={<EventDetail />} />
         <Route path="/admin" element={<AdminOverview />} />
         <Route path="/admin/events" element={<AdminEvents />} />
+        <Route
+          path="/admin/registrations"
+          element={<AdminSectionPlaceholder section="registrations" />}
+        />
+        <Route
+          path="/admin/payments"
+          element={<AdminSectionPlaceholder section="payments" />}
+        />
+        <Route
+          path="/admin/admins"
+          element={<AdminSectionPlaceholder section="admins" />}
+        />
+        <Route
+          path="/admin/settings"
+          element={<AdminSectionPlaceholder section="settings" />}
+        />
       </Routes>
     </>
   );
