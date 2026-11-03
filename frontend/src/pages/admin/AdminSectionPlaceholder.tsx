@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import type { User } from "@supabase/supabase-js";
 import {
   CalendarDays,
+  ClipboardCheck,
   ChevronRight,
   CircleHelp,
   LayoutDashboard,
@@ -21,7 +22,7 @@ import sristiLogo from "../../assets/icons/sristi_logo.png";
 import { AdminAccessGate, NavItem } from "./AdminEvents";
 import "./AdminEvents.css";
 
-type AdminSection = "registrations" | "payments" | "admins" | "settings";
+type AdminSection = "attendance" | "registrations" | "payments" | "admins" | "settings";
 
 type RegistrationRow = {
   id: string;
@@ -44,6 +45,12 @@ const sectionDetails: Record<
   AdminSection,
   { title: string; description: string; icon: typeof ListChecks; note: string }
 > = {
+  attendance: {
+    title: "Attendance",
+    description: "Mark attendance for registered participants and teams.",
+    icon: ClipboardCheck,
+    note: "Attendance management is ready.",
+  },
   registrations: {
     title: "Registrations",
     description: "Review individual and team event registrations.",
@@ -301,6 +308,12 @@ export default function AdminSectionPlaceholder({
             label="Registrations"
           />
           <NavItem
+            href="/admin/attendance"
+            active={section === "attendance"}
+            icon={<ClipboardCheck size={18} />}
+            label="Attendance"
+          />
+          <NavItem
             href="/admin/payments"
             active={section === "payments"}
             icon={<Wallet size={18} />}
@@ -384,6 +397,8 @@ export default function AdminSectionPlaceholder({
                 Only a super admin can access admin management.
               </p>
             </div>
+          ) : section === "attendance" ? (
+            <AdminAttendanceSection />
           ) : section === "registrations" ? (
             <div className="mt-7 space-y-5">
               <div className="grid gap-4 sm:grid-cols-3">
@@ -627,6 +642,266 @@ function RegistrationSummary({
     <div className="rounded-xl border border-white/10 bg-[#0d1520] p-5">
       <p className="text-sm text-slate-400">{label}</p>
       <p className={`mt-2 text-2xl font-bold ${accent}`}>{value}</p>
+    </div>
+  );
+}
+
+type AttendanceEvent = {
+  id: string;
+  name: string;
+  event_type: "solo" | "team";
+};
+
+type AttendanceEnrollment = {
+  user_id: string | null;
+  team_id: string | null;
+  profiles: {
+    full_name: string;
+    college_roll: string;
+    college_name: string;
+    department: string;
+  } | null;
+  teams: { team_name: string; team_code: string } | null;
+};
+
+type AttendanceRecord = {
+  user_id: string | null;
+  team_id: string | null;
+  status: "present" | "absent";
+  marked_at: string;
+};
+
+type AttendanceTarget = {
+  key: string;
+  userId: string | null;
+  teamId: string | null;
+  name: string;
+  secondary: string;
+  status: "present" | "absent" | null;
+  markedAt: string | null;
+};
+
+function AdminAttendanceSection() {
+  const [events, setEvents] = useState<AttendanceEvent[]>([]);
+  const [selectedEventId, setSelectedEventId] = useState("");
+  const [targets, setTargets] = useState<AttendanceTarget[]>([]);
+  const [search, setSearch] = useState("");
+  const [isLoadingEvents, setIsLoadingEvents] = useState(true);
+  const [isLoadingTargets, setIsLoadingTargets] = useState(false);
+  const [savingKey, setSavingKey] = useState("");
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [reload, setReload] = useState(0);
+
+  useEffect(() => {
+    if (!supabase) {
+      setIsLoadingEvents(false);
+      setError("Supabase is not configured.");
+      return;
+    }
+    let mounted = true;
+    setIsLoadingEvents(true);
+    void supabase
+      .from("events")
+      .select("id,name,event_type")
+      .order("name", { ascending: true })
+      .then(({ data, error: queryError }) => {
+        if (!mounted) return;
+        setIsLoadingEvents(false);
+        if (queryError) {
+          setError(queryError.message);
+          return;
+        }
+        const rows = (data ?? []) as AttendanceEvent[];
+        setEvents(rows);
+        setSelectedEventId((current) => current || rows[0]?.id || "");
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!supabase || !selectedEventId) {
+      setTargets([]);
+      setIsLoadingTargets(false);
+      return;
+    }
+    let mounted = true;
+    setIsLoadingTargets(true);
+    setError("");
+    setNotice("");
+    void (async () => {
+      const { data: enrollmentData, error: enrollmentError } = await supabase!
+        .from("registrations")
+        .select("user_id,team_id,profiles(full_name,college_roll,college_name,department),teams(team_name,team_code)")
+        .eq("event_id", selectedEventId)
+        .eq("status", "registered");
+      if (enrollmentError) {
+        if (mounted) {
+          setIsLoadingTargets(false);
+          setError(enrollmentError.message);
+        }
+        return;
+      }
+
+      const { data: attendanceData, error: attendanceError } = await supabase!
+        .from("attendance")
+        .select("user_id,team_id,status,marked_at")
+        .eq("event_id", selectedEventId);
+      if (attendanceError) {
+        if (mounted) {
+          setIsLoadingTargets(false);
+          setError(attendanceError.message);
+        }
+        return;
+      }
+
+      if (!mounted) return;
+      const enrollments = (enrollmentData ?? []) as unknown as AttendanceEnrollment[];
+      const attendance = (attendanceData ?? []) as AttendanceRecord[];
+      const byTarget = new Map<string, AttendanceRecord>();
+      attendance.forEach((record) => {
+        const key = record.user_id ? `user:${record.user_id}` : `team:${record.team_id}`;
+        byTarget.set(key, record);
+      });
+      setTargets(
+        enrollments.flatMap((enrollment) => {
+          const isTeam = enrollment.team_id !== null;
+          const targetId = isTeam ? enrollment.team_id : enrollment.user_id;
+          if (!targetId) return [];
+          const key = `${isTeam ? "team" : "user"}:${targetId}`;
+          const marked = byTarget.get(key);
+          const person = enrollment.profiles;
+          const team = enrollment.teams;
+          return [{
+            key,
+            userId: isTeam ? null : enrollment.user_id,
+            teamId: isTeam ? enrollment.team_id : null,
+            name: isTeam ? (team?.team_name ?? "Team") : (person?.full_name ?? "Participant"),
+            secondary: isTeam
+              ? `Team code: ${team?.team_code ?? "—"}`
+              : `${person?.college_roll ?? "No roll number"} · ${person?.department ?? "Department unavailable"}`,
+            status: marked?.status ?? null,
+            markedAt: marked?.marked_at ?? null,
+          }];
+        }),
+      );
+      setIsLoadingTargets(false);
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [reload, selectedEventId]);
+
+  const selectedEvent = events.find((event) => event.id === selectedEventId) ?? null;
+  const visibleTargets = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return targets.filter((target) => !query || `${target.name} ${target.secondary}`.toLowerCase().includes(query));
+  }, [search, targets]);
+  const presentCount = targets.filter((target) => target.status === "present").length;
+  const absentCount = targets.filter((target) => target.status === "absent").length;
+  const unmarkedCount = targets.filter((target) => target.status === null).length;
+
+  const markAttendance = async (target: AttendanceTarget, status: "present" | "absent") => {
+    if (!supabase || !selectedEventId) return;
+    setSavingKey(target.key);
+    setError("");
+    setNotice("");
+    const { error: actionError } = await supabase.rpc("mark_attendance", {
+      p_event_id: selectedEventId,
+      p_user_id: target.userId,
+      p_team_id: target.teamId,
+      p_status: status,
+    });
+    setSavingKey("");
+    if (actionError) {
+      setError(actionError.message);
+      return;
+    }
+    setNotice(`${target.name}: marked ${status}.`);
+    setReload((value) => value + 1);
+  };
+
+  return (
+    <div className="mt-7 space-y-5">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <RegistrationSummary label="Registered targets" value={targets.length} />
+        <RegistrationSummary label="Present" value={presentCount} accent="text-emerald-300" />
+        <RegistrationSummary label="Absent" value={absentCount} accent="text-rose-200" />
+        <RegistrationSummary label="Not marked" value={unmarkedCount} accent="text-amber-200" />
+      </div>
+
+      <div className="flex flex-col gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-3 md:flex-row">
+        <label className="flex min-w-0 flex-1 items-center gap-3 rounded-lg border border-white/10 bg-[#0b121c] px-3">
+          <Search size={17} className="shrink-0 text-slate-500" />
+          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search participant, roll number, or team…" className="h-11 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-slate-500" aria-label="Search attendance targets" />
+        </label>
+        <select value={selectedEventId} onChange={(event) => setSelectedEventId(event.target.value)} disabled={isLoadingEvents || events.length === 0} className="h-11 rounded-lg border border-white/10 bg-[#0b121c] px-3 text-sm text-slate-200 outline-none md:w-72" aria-label="Choose event">
+          {events.length === 0 && <option value="">No events available</option>}
+          {events.map((event) => <option key={event.id} value={event.id}>{event.name} · {event.event_type}</option>)}
+        </select>
+      </div>
+
+      {error && <p role="alert" className="rounded-lg border border-rose-300/20 bg-rose-300/5 px-4 py-3 text-sm text-rose-200">Attendance error: {error}</p>}
+      {notice && <p role="status" className="rounded-lg border border-emerald-300/20 bg-emerald-300/5 px-4 py-3 text-sm text-emerald-200">{notice}</p>}
+
+      <div className="overflow-hidden rounded-xl border border-white/10 bg-[#0d1520]">
+        <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+          <div>
+            <h2 className="font-semibold">{selectedEvent ? `${selectedEvent.name} attendance` : "Event attendance"}</h2>
+            <p className="mt-1 text-xs text-slate-500" aria-live="polite">{isLoadingTargets ? "Loading registered targets…" : `${visibleTargets.length} shown`}</p>
+          </div>
+          <button type="button" onClick={() => setReload((value) => value + 1)} disabled={isLoadingTargets || !selectedEventId} className="inline-flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-xs font-medium text-slate-300 transition hover:bg-white/5 disabled:opacity-50">
+            <RefreshCw size={14} className={isLoadingTargets ? "animate-spin" : ""} /> Refresh
+          </button>
+        </div>
+        <div className="overflow-x-auto" aria-busy={isLoadingTargets}>
+          <table className="w-full min-w-[760px] text-left text-sm">
+            <thead className="bg-white/[0.03] text-xs uppercase tracking-wide text-slate-400">
+              <tr><th className="px-5 py-4 font-medium">Participant / team</th><th className="px-4 py-4 font-medium">Target</th><th className="px-4 py-4 font-medium">Attendance</th><th className="px-5 py-4 text-right font-medium">Mark</th></tr>
+            </thead>
+            <tbody className="divide-y divide-white/[0.07]">
+              {isLoadingTargets && Array.from({ length: 4 }, (_, index) => (
+                <tr key={`attendance-skeleton-${index}`} aria-hidden="true">{["w-40", "w-32", "w-20", "w-28"].map((width, cell) => <td key={cell} className="px-4 py-5"><span className={`admin-skeleton block h-4 ${width} rounded`} /></td>)}</tr>
+              ))}
+              {!isLoadingTargets && visibleTargets.map((target) => (
+                <tr key={target.key} className="transition hover:bg-white/[0.025]">
+                  <td className="px-5 py-4"><p className="font-semibold text-white">{target.name}</p><p className="mt-1 text-xs text-slate-500">{target.secondary}</p></td>
+                  <td className="px-4 py-4"><span className={`rounded-full px-2.5 py-1 text-xs ${target.teamId ? "bg-sky-400/10 text-sky-200" : "bg-violet-400/10 text-violet-200"}`}>{target.teamId ? "Team" : "Individual"}</span></td>
+                  <td className="px-4 py-4">
+                    {target.status ? <><span className={`rounded-full px-2.5 py-1 text-xs capitalize ${target.status === "present" ? "bg-emerald-400/10 text-emerald-200" : "bg-rose-400/10 text-rose-200"}`}>{target.status}</span><p className="mt-1 text-[11px] text-slate-500">{target.markedAt ? new Date(target.markedAt).toLocaleString() : ""}</p></> : <span className="text-xs text-amber-200">Not marked</span>}
+                  </td>
+                  <td className="px-5 py-4 text-right">
+                    <div className="inline-flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => void markAttendance(target, "present")}
+                        disabled={savingKey === target.key || isLoadingTargets}
+                        aria-pressed={target.status === "present"}
+                        className={`rounded-lg border px-3 py-2 text-xs font-semibold transition duration-150 ease-out hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d1520] active:translate-y-0 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 ${target.status === "present" ? "border-emerald-200 bg-emerald-300 text-slate-950 shadow-md shadow-emerald-950/30 hover:bg-emerald-200" : "border-emerald-300/25 text-emerald-200 hover:border-emerald-200 hover:bg-emerald-300 hover:text-slate-950"}`}
+                      >
+                        {savingKey === target.key ? "Saving…" : target.status === "present" ? "Present ✓" : "Present"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void markAttendance(target, "absent")}
+                        disabled={savingKey === target.key || isLoadingTargets}
+                        aria-pressed={target.status === "absent"}
+                        className={`rounded-lg border px-3 py-2 text-xs font-semibold transition duration-150 ease-out hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-200 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d1520] active:translate-y-0 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 ${target.status === "absent" ? "border-rose-200 bg-rose-300 text-slate-950 shadow-md shadow-rose-950/30 hover:bg-rose-200" : "border-rose-300/25 text-rose-200 hover:border-rose-200 hover:bg-rose-300 hover:text-slate-950"}`}
+                      >
+                        {target.status === "absent" ? "Absent ✓" : "Absent"}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {!isLoadingTargets && visibleTargets.length === 0 && <tr><td colSpan={4} className="px-5 py-14 text-center text-slate-400">{error ? "Attendance targets could not be loaded." : search ? "No registered participants or teams match this search." : "No registered participants or teams for this event yet."}</td></tr>}
+            </tbody>
+          </table>
+        </div>
+        <p className="border-t border-white/10 px-5 py-3 text-xs text-slate-500">Solo events are marked per participant. Team events are marked once per registered team, as enforced by the database.</p>
+      </div>
     </div>
   );
 }

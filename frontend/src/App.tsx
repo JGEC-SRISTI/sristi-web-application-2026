@@ -35,6 +35,10 @@ function AppRoutes() {
           element={<AdminSectionPlaceholder section="registrations" />}
         />
         <Route
+          path="/admin/attendance"
+          element={<AdminSectionPlaceholder section="attendance" />}
+        />
+        <Route
           path="/admin/payments"
           element={<AdminSectionPlaceholder section="payments" />}
         />
