@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   ListChecks,
   LogOut,
+  Plus,
   RefreshCw,
   Search,
   Settings,
@@ -59,7 +60,7 @@ const sectionDetails: Record<
     title: "Admins",
     description: "Manage admin access and roles.",
     icon: Users,
-    note: "Admin management is ready to be assigned.",
+    note: "Review administrator accounts and manage their access.",
   },
   settings: {
     title: "Settings",
@@ -600,6 +601,8 @@ export default function AdminSectionPlaceholder({
                 </div>
               </div>
             </div>
+          ) : section === "admins" ? (
+            <AdminManagementSection />
           ) : (
             <div className="mt-7 rounded-xl border border-white/10 bg-white/[0.03] p-6">
               <p className="text-sm text-slate-300">{details.note}</p>
@@ -624,6 +627,217 @@ function RegistrationSummary({
     <div className="rounded-xl border border-white/10 bg-[#0d1520] p-5">
       <p className="text-sm text-slate-400">{label}</p>
       <p className={`mt-2 text-2xl font-bold ${accent}`}>{value}</p>
+    </div>
+  );
+}
+
+type AdminRecord = {
+  id: string;
+  user_id: string;
+  role: "ADMIN" | "SUPER_ADMIN";
+  status: "active" | "inactive";
+  created_at: string;
+};
+
+function AdminManagementSection() {
+  const [admins, setAdmins] = useState<AdminRecord[]>([]);
+  const [roleDrafts, setRoleDrafts] = useState<Record<string, AdminRecord["role"]>>({});
+  const [userId, setUserId] = useState("");
+  const [newRole, setNewRole] = useState<AdminRecord["role"]>("ADMIN");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [reload, setReload] = useState(0);
+
+  useEffect(() => {
+    if (!supabase) {
+      setIsLoading(false);
+      setError("Supabase is not configured.");
+      return;
+    }
+    let mounted = true;
+    setIsLoading(true);
+    setError("");
+    void supabase
+      .from("admin_users")
+      .select("id,user_id,role,status,created_at")
+      .order("created_at", { ascending: false })
+      .then(({ data, error: queryError }) => {
+        if (!mounted) return;
+        setIsLoading(false);
+        if (queryError) {
+          setError(queryError.message);
+          return;
+        }
+        const rows = (data ?? []) as AdminRecord[];
+        setAdmins(rows);
+        setRoleDrafts(Object.fromEntries(rows.map((admin) => [admin.id, admin.role])));
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [reload]);
+
+  const runAction = async (
+    action: () => Promise<{ error: { message: string } | null }>,
+    successMessage: string,
+  ) => {
+    setError("");
+    setNotice("");
+    setIsSaving(true);
+    const { error: actionError } = await action();
+    setIsSaving(false);
+    if (actionError) {
+      setError(actionError.message);
+      return false;
+    }
+    setNotice(successMessage);
+    setReload((value) => value + 1);
+    return true;
+  };
+
+  const addAdmin = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!supabase) return;
+    const normalizedId = userId.trim();
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(normalizedId)) {
+      setError("Enter a valid Auth user UUID.");
+      return;
+    }
+    const succeeded = await runAction(
+      async () => await supabase!.rpc("create_admin", { p_user_id: normalizedId, p_role: newRole }),
+      "Admin access granted.",
+    );
+    if (succeeded) setUserId("");
+  };
+
+  const saveRole = async (admin: AdminRecord) => {
+    if (!supabase) return;
+    const selectedRole = roleDrafts[admin.id] ?? admin.role;
+    if (selectedRole === admin.role) return;
+    await runAction(
+      async () =>
+        await supabase!.rpc("update_admin", {
+          p_admin_id: admin.id,
+          p_role: selectedRole,
+          p_status: admin.status,
+        }),
+      "Admin role updated.",
+    );
+  };
+
+  const changeStatus = async (admin: AdminRecord) => {
+    if (!supabase) return;
+    if (admin.status === "active") {
+      if (!window.confirm("Deactivate this admin account? They will lose access immediately.")) return;
+      await runAction(
+        async () => await supabase!.rpc("deactivate_admin", { p_admin_id: admin.id }),
+        "Admin access deactivated.",
+      );
+      return;
+    }
+    await runAction(
+      async () =>
+        await supabase!.rpc("update_admin", {
+          p_admin_id: admin.id,
+          p_role: admin.role,
+          p_status: "active",
+        }),
+      "Admin access reactivated.",
+    );
+  };
+
+  const activeCount = admins.filter((admin) => admin.status === "active").length;
+  const superAdminCount = admins.filter((admin) => admin.role === "SUPER_ADMIN" && admin.status === "active").length;
+
+  return (
+    <div className="mt-7 space-y-5">
+      <div className="grid gap-4 sm:grid-cols-3">
+        <RegistrationSummary label="Total admin accounts" value={admins.length} />
+        <RegistrationSummary label="Active admins" value={activeCount} accent="text-emerald-300" />
+        <RegistrationSummary label="Active super admins" value={superAdminCount} accent="text-violet-200" />
+      </div>
+
+      <form onSubmit={addAdmin} className="grid gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-4 md:grid-cols-[minmax(0,1fr)_180px_auto] md:items-end">
+        <label className="block text-xs font-medium text-slate-300">
+          Existing Supabase Auth user ID
+          <input
+            value={userId}
+            onChange={(event) => setUserId(event.target.value)}
+            placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+            className="mt-2 h-11 w-full rounded-lg border border-white/10 bg-[#0b121c] px-3 font-mono text-xs text-slate-100 outline-none focus:border-emerald-300/50"
+            aria-label="Existing Supabase Auth user ID"
+            required
+          />
+        </label>
+        <label className="block text-xs font-medium text-slate-300">
+          Role
+          <select value={newRole} onChange={(event) => setNewRole(event.target.value as AdminRecord["role"])} className="mt-2 h-11 w-full rounded-lg border border-white/10 bg-[#0b121c] px-3 text-sm text-slate-100 outline-none">
+            <option value="ADMIN">Admin</option>
+            <option value="SUPER_ADMIN">Super admin</option>
+          </select>
+        </label>
+        <button type="submit" disabled={isSaving || !userId.trim()} className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-emerald-300 px-4 text-sm font-semibold text-slate-950 transition hover:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-50">
+          <Plus size={16} /> Grant access
+        </button>
+        <p className="text-xs leading-5 text-slate-500 md:col-span-3">
+          The account must already exist in Supabase Authentication. Copy its user ID from the local or project Auth Users page. This form grants admin access; it does not create or invite an Auth account.
+        </p>
+      </form>
+
+      {error && <p role="alert" className="rounded-lg border border-rose-300/20 bg-rose-300/5 px-4 py-3 text-sm text-rose-200">{error}</p>}
+      {notice && <p role="status" className="rounded-lg border border-emerald-300/20 bg-emerald-300/5 px-4 py-3 text-sm text-emerald-200">{notice}</p>}
+
+      <div className="overflow-hidden rounded-xl border border-white/10 bg-[#0d1520]">
+        <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+          <div>
+            <h2 className="font-semibold">Administrator accounts</h2>
+            <p className="mt-1 text-xs text-slate-500" aria-live="polite">{isLoading ? "Loading admins…" : `${admins.length} accounts`}</p>
+          </div>
+          <button type="button" onClick={() => setReload((value) => value + 1)} disabled={isLoading || isSaving} className="inline-flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-xs font-medium text-slate-300 transition hover:bg-white/5 disabled:opacity-50">
+            <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} /> Refresh
+          </button>
+        </div>
+        <div className="overflow-x-auto" aria-busy={isLoading}>
+          <table className="w-full min-w-[820px] text-left text-sm">
+            <thead className="bg-white/[0.03] text-xs uppercase tracking-wide text-slate-400">
+              <tr>
+                <th className="px-5 py-4 font-medium">Auth user ID</th>
+                <th className="px-4 py-4 font-medium">Role</th>
+                <th className="px-4 py-4 font-medium">Status</th>
+                <th className="px-4 py-4 font-medium">Added</th>
+                <th className="px-5 py-4 text-right font-medium">Access</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/[0.07]">
+              {isLoading && Array.from({ length: 3 }, (_, index) => (
+                <tr key={`admin-skeleton-${index}`} aria-hidden="true">
+                  {["w-48", "w-24", "w-20", "w-24", "w-24"].map((width, cell) => <td key={cell} className="px-4 py-5"><span className={`admin-skeleton block h-4 ${width} rounded`} /></td>)}
+                </tr>
+              ))}
+              {!isLoading && admins.map((admin) => (
+                <tr key={admin.id} className="transition hover:bg-white/[0.025]">
+                  <td className="px-5 py-4 font-mono text-xs text-slate-300">{admin.user_id}</td>
+                  <td className="px-4 py-4">
+                    <div className="flex items-center gap-2">
+                      <select value={roleDrafts[admin.id] ?? admin.role} onChange={(event) => setRoleDrafts((drafts) => ({ ...drafts, [admin.id]: event.target.value as AdminRecord["role"] }))} className="h-9 rounded-lg border border-white/10 bg-[#0b121c] px-2 text-xs text-slate-200 outline-none" aria-label={`Role for ${admin.user_id}`}>
+                        <option value="ADMIN">Admin</option>
+                        <option value="SUPER_ADMIN">Super admin</option>
+                      </select>
+                      {(roleDrafts[admin.id] ?? admin.role) !== admin.role && <button type="button" onClick={() => void saveRole(admin)} disabled={isSaving} className="text-xs font-semibold text-emerald-200 hover:text-emerald-100 disabled:opacity-50">Save</button>}
+                    </div>
+                  </td>
+                  <td className="px-4 py-4"><span className={`rounded-full px-2.5 py-1 text-xs capitalize ${admin.status === "active" ? "bg-emerald-400/10 text-emerald-200" : "bg-slate-400/10 text-slate-300"}`}>{admin.status}</span></td>
+                  <td className="px-4 py-4 text-xs text-slate-400">{new Date(admin.created_at).toLocaleDateString()}</td>
+                  <td className="px-5 py-4 text-right"><button type="button" onClick={() => void changeStatus(admin)} disabled={isSaving} className={`rounded-lg border px-3 py-2 text-xs font-medium transition disabled:opacity-50 ${admin.status === "active" ? "border-rose-300/20 text-rose-200 hover:bg-rose-300/10" : "border-emerald-300/20 text-emerald-200 hover:bg-emerald-300/10"}`}>{admin.status === "active" ? "Deactivate" : "Reactivate"}</button></td>
+                </tr>
+              ))}
+              {!isLoading && admins.length === 0 && <tr><td colSpan={5} className="px-5 py-14 text-center text-slate-400">No admin accounts found.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
