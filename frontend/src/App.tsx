@@ -5,9 +5,11 @@ import "boxicons/css/boxicons.min.css";
 import Home from "./pages/Home.tsx";
 import Events from "./pages/Events.tsx";
 import EventDetail from "./pages/EventDetail.tsx";
+import Accommodation from "./pages/Accommodation.tsx";
 import AdminOverview from "./pages/admin/AdminOverview.tsx";
 import AdminEvents from "./pages/admin/AdminEvents.tsx";
 import CustomCursor from "./components/CustomCursor.tsx";
+
 
 function AppRoutes() {
   const { pathname } = useLocation();
@@ -24,6 +26,7 @@ function AppRoutes() {
         <Route path="/" element={<Home />} />
         <Route path="/events" element={<Events />} />
         <Route path="/events/:eventSlug" element={<EventDetail />} />
+        <Route path="/accommodation" element={<Accommodation />} />
         <Route path="/admin" element={<AdminOverview />} />
         <Route path="/admin/events" element={<AdminEvents />} />
       </Routes>
