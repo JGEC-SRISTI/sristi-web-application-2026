@@ -2,9 +2,13 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import type { User } from "@supabase/supabase-js";
 import {
   CalendarDays,
+  Check,
+  CircleCheck,
   ClipboardCheck,
   ChevronRight,
   CircleHelp,
+  Download,
+  Copy,
   LayoutDashboard,
   ListChecks,
   LogOut,
@@ -14,6 +18,7 @@ import {
   Settings,
   Users,
   Wallet,
+  X,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase, supabaseConfigMissing } from "../../lib/supabase";
@@ -59,9 +64,9 @@ const sectionDetails: Record<
   },
   payments: {
     title: "Payments",
-    description: "Review payment records and verification status.",
+    description: "Review payment records, confirm offline payments, and issue participant verification codes.",
     icon: Wallet,
-    note: "Payment review and verification is ready to be assigned.",
+    note: "Payment review and verification is ready.",
   },
   admins: {
     title: "Admins",
@@ -71,9 +76,9 @@ const sectionDetails: Record<
   },
   settings: {
     title: "Settings",
-    description: "Manage festival-wide settings.",
+    description: "Set the festival name and registration fee used by payment verification.",
     icon: Settings,
-    note: "Festival settings are ready to be assigned.",
+    note: "Festival settings are ready.",
   },
 };
 
@@ -618,6 +623,10 @@ export default function AdminSectionPlaceholder({
             </div>
           ) : section === "admins" ? (
             <AdminManagementSection />
+          ) : section === "payments" ? (
+            <AdminPaymentsSection />
+          ) : section === "settings" ? (
+            <AdminFestSettingsSection />
           ) : (
             <div className="mt-7 rounded-xl border border-white/10 bg-white/[0.03] p-6">
               <p className="text-sm text-slate-300">{details.note}</p>
@@ -625,6 +634,467 @@ export default function AdminSectionPlaceholder({
           )}
         </section>
       </main>
+    </div>
+  );
+}
+
+type PaymentRecordRow = {
+  id: string;
+  user_id: string;
+  amount: number;
+  payment_method: "offline" | "razorpay";
+  status: "pending" | "verified" | "rejected";
+  payment_reference: string | null;
+  verified_at: string | null;
+  created_at: string;
+};
+
+type PaymentParticipant = {
+  id: string;
+  full_name: string;
+  college_roll: string;
+  college_name: string;
+  department: string;
+  phone: string;
+};
+
+type PaymentCode = {
+  id: string;
+  code: string;
+  status: "issued" | "used" | "revoked";
+  created_at: string;
+};
+
+type PaymentView = PaymentRecordRow & {
+  participant: PaymentParticipant | null;
+  code: PaymentCode | null;
+};
+
+function AdminPaymentsSection() {
+  const [payments, setPayments] = useState<PaymentView[]>([]);
+  const [participants, setParticipants] = useState<PaymentParticipant[]>([]);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingParticipants, setIsLoadingParticipants] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [paymentToast, setPaymentToast] = useState("");
+  const [reload, setReload] = useState(0);
+  const [verifyParticipant, setVerifyParticipant] = useState<PaymentParticipant | null>(null);
+  const [paymentReference, setPaymentReference] = useState("");
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [codePayment, setCodePayment] = useState<PaymentView | null>(null);
+  const [customCode, setCustomCode] = useState("");
+  const [isIssuingCode, setIsIssuingCode] = useState(false);
+  const [issuedCode, setIssuedCode] = useState("");
+  const [isCodeCopied, setIsCodeCopied] = useState(false);
+
+  useEffect(() => {
+    if (!paymentToast) return;
+    const timeout = window.setTimeout(() => setPaymentToast(""), 3500);
+    return () => window.clearTimeout(timeout);
+  }, [paymentToast]);
+
+  useEffect(() => {
+    if (!supabase) {
+      setIsLoading(false);
+      setError("Supabase is not configured.");
+      return;
+    }
+    let mounted = true;
+    setIsLoading(true);
+    setError("");
+    void (async () => {
+      const { data: paymentRows, error: paymentError } = await supabase
+        .from("payment_records")
+        .select("id,user_id,amount,payment_method,status,payment_reference,verified_at,created_at")
+        .order("created_at", { ascending: false });
+      if (!mounted) return;
+      if (paymentError) {
+        setError(paymentError.message);
+        setPayments([]);
+        setIsLoading(false);
+        return;
+      }
+      const rows = (paymentRows ?? []) as PaymentRecordRow[];
+      if (rows.length === 0) {
+        setPayments([]);
+        setIsLoading(false);
+        return;
+      }
+      const userIds = [...new Set(rows.map((row) => row.user_id))];
+      const paymentIds = rows.map((row) => row.id);
+      const [{ data: profileRows }, { data: codeRows }] = await Promise.all([
+        supabase.from("profiles").select("id,full_name,college_roll,college_name,department,phone").in("id", userIds),
+        supabase.from("verification_codes").select("id,code,status,created_at,payment_id").in("payment_id", paymentIds).order("created_at", { ascending: false }),
+      ]);
+      if (!mounted) return;
+      const profiles = new Map(((profileRows ?? []) as PaymentParticipant[]).map((row) => [row.id, row]));
+      const codesByPayment = new Map<string, PaymentCode>();
+      for (const row of (codeRows ?? []) as (PaymentCode & { payment_id: string })[]) {
+        if (!codesByPayment.has(row.payment_id)) {
+          codesByPayment.set(row.payment_id, {
+            id: row.id,
+            code: row.code,
+            status: row.status,
+            created_at: row.created_at,
+          });
+        }
+      }
+      setPayments(rows.map((row) => ({
+        ...row,
+        participant: profiles.get(row.user_id) ?? null,
+        code: codesByPayment.get(row.id) ?? null,
+      })));
+      setIsLoading(false);
+    })();
+    return () => { mounted = false; };
+  }, [reload]);
+
+  const loadParticipants = async () => {
+    if (!supabase) return;
+    setIsLoadingParticipants(true);
+    setError("");
+    const { data, error: queryError } = await supabase
+      .from("profiles")
+      .select("id,full_name,college_roll,college_name,department,phone")
+      .order("full_name", { ascending: true });
+    setIsLoadingParticipants(false);
+    if (queryError) {
+      setError(queryError.message);
+      return;
+    }
+    setParticipants((data ?? []) as PaymentParticipant[]);
+  };
+
+  const visiblePayments = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return payments.filter((payment) => {
+      const participant = payment.participant;
+      const matchesQuery = !query || [
+        participant?.full_name,
+        participant?.college_roll,
+        participant?.college_name,
+        participant?.phone,
+        payment.payment_reference,
+        payment.payment_method,
+      ].some((value) => value?.toLowerCase().includes(query));
+      return matchesQuery && (statusFilter === "all" || payment.status === statusFilter);
+    });
+  }, [payments, search, statusFilter]);
+
+  const matchingParticipants = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    const alreadyVerified = new Set(payments.filter((row) => row.status === "verified").map((row) => row.user_id));
+    return participants.filter((participant) => {
+      const matchesQuery = !query || [participant.full_name, participant.college_roll, participant.college_name, participant.phone]
+        .some((value) => value.toLowerCase().includes(query));
+      return matchesQuery && !alreadyVerified.has(participant.id);
+    });
+  }, [participants, payments, search]);
+
+  const verifyOfflinePayment = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!supabase || !verifyParticipant) return;
+    setIsVerifying(true);
+    setError("");
+    const { error: rpcError } = await supabase.rpc("verify_offline_payment", {
+      p_user_id: verifyParticipant.id,
+      p_payment_reference: paymentReference.trim() || null,
+    });
+    setIsVerifying(false);
+    if (rpcError) {
+      setError(rpcError.message);
+      return;
+    }
+    setNotice("");
+    setPaymentToast(`Cash payment verified for ${verifyParticipant.full_name}.`);
+    setVerifyParticipant(null);
+    setPaymentReference("");
+    setReload((value) => value + 1);
+  };
+
+  const issueCode = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!supabase || !codePayment) return;
+    setIsIssuingCode(true);
+    setError("");
+    setIssuedCode("");
+    const { data: codeId, error: rpcError } = await supabase.rpc("issue_verification_code", {
+      p_user_id: codePayment.user_id,
+      p_payment_id: codePayment.id,
+      p_custom_code: customCode.trim() || null,
+    });
+    if (rpcError || !codeId) {
+      setIsIssuingCode(false);
+      setError(rpcError?.message ?? "Could not issue a verification code.");
+      return;
+    }
+    const { data: codeRow, error: codeError } = await supabase
+      .from("verification_codes")
+      .select("code")
+      .eq("id", codeId)
+      .single();
+    setIsIssuingCode(false);
+    if (codeError || !codeRow) {
+      setError(codeError?.message ?? "The code was issued but could not be loaded.");
+      setReload((value) => value + 1);
+      return;
+    }
+    setIssuedCode(codeRow.code);
+    setIsCodeCopied(false);
+    setNotice(`Verification code issued for ${codePayment.participant?.full_name ?? "participant"}.`);
+    setCustomCode("");
+    setReload((value) => value + 1);
+  };
+
+  const copyIssuedCode = async () => {
+    if (!issuedCode) return;
+    try {
+      await navigator.clipboard.writeText(issuedCode);
+      setIsCodeCopied(true);
+    } catch {
+      setError("Could not copy the code. Select it and copy manually.");
+    }
+  };
+
+  const pendingCount = payments.filter((payment) => payment.status === "pending").length;
+  const verifiedCount = payments.filter((payment) => payment.status === "verified").length;
+  const verifiedPayments = payments.filter((payment) => payment.status === "verified");
+  const totalVerified = verifiedPayments.reduce((total, payment) => total + Number(payment.amount), 0);
+
+  const exportVerifiedPayments = () => {
+    if (verifiedPayments.length === 0) return;
+    const csvCell = (value: string | number | null) => {
+      const text = String(value ?? "");
+      const safeText = /^[\s]*[=+@-]/.test(text) ? `'${text}` : text;
+      return `"${safeText.replace(/"/g, '""')}"`;
+    };
+    const headers = [
+      "Participant name",
+      "College roll number",
+      "College",
+      "Department",
+      "Phone",
+      "Payment method",
+      "Amount (INR)",
+      "Payment reference",
+      "Verification code",
+      "Code status",
+      "Verified at",
+    ];
+    const rows = verifiedPayments.map((payment) => [
+      payment.participant?.full_name ?? "Profile unavailable",
+      payment.participant?.college_roll ?? "",
+      payment.participant?.college_name ?? "",
+      payment.participant?.department ?? "",
+      payment.participant?.phone ?? "",
+      payment.payment_method,
+      Number(payment.amount).toFixed(2),
+      payment.payment_reference,
+      payment.code?.code ?? "",
+      payment.code?.status ?? "",
+      payment.verified_at ? new Date(payment.verified_at).toISOString() : "",
+    ]);
+    const csv = [headers, ...rows].map((row) => row.map(csvCell).join(",")).join("\r\n");
+    const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `sristi-verified-payments-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="mt-7 space-y-5">
+      {paymentToast && (
+        <div className="pointer-events-none fixed right-5 top-5 z-[60]" aria-live="polite">
+          <div
+            role="status"
+            className="pointer-events-auto flex min-w-72 items-center gap-3 rounded-xl border border-emerald-300/40 bg-[#f8fbf9] px-4 py-3 text-sm font-medium text-[#173d35] shadow-xl"
+          >
+            <CircleCheck size={19} className="shrink-0 text-emerald-700" />
+            <span className="flex-1">{paymentToast}</span>
+            <button
+              type="button"
+              onClick={() => setPaymentToast("")}
+              className="rounded-md p-1 text-slate-500 transition hover:bg-slate-200"
+              aria-label="Dismiss notification"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+      )}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <RegistrationSummary label="Payment records" value={payments.length} />
+        <RegistrationSummary label="Pending review" value={pendingCount} accent="text-sky-200" />
+        <RegistrationSummary label="Verified total" value={`₹${totalVerified.toLocaleString("en-IN", { minimumFractionDigits: 2 })} · ${verifiedCount} verified`} accent="text-emerald-300" />
+      </div>
+
+      <div className="flex flex-col gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-3 md:flex-row">
+        <label className="flex min-w-0 flex-1 items-center gap-3 rounded-lg border border-white/10 bg-[#0b121c] px-3">
+          <Search size={17} className="shrink-0 text-slate-500" />
+          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search participant, roll number, college, reference…" className="h-11 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-slate-500" aria-label="Search payments" />
+        </label>
+        <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="h-11 rounded-lg border border-white/10 bg-[#0b121c] px-3 text-sm text-slate-200 outline-none" aria-label="Filter payments by status">
+          <option value="all">All statuses</option><option value="pending">Pending</option><option value="verified">Verified</option><option value="rejected">Rejected</option>
+        </select>
+        <button type="button" onClick={() => { setNotice(""); setError(""); setVerifyParticipant(null); setSearch(""); void loadParticipants(); }} className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-emerald-300 px-4 text-sm font-semibold text-slate-950 transition hover:bg-emerald-200">
+          <Plus size={16} /> Record cash payment
+        </button>
+      </div>
+
+      {(error || notice) && <p role={error ? "alert" : "status"} className={`rounded-lg border px-4 py-3 text-sm ${error ? "border-rose-300/20 bg-rose-300/5 text-rose-200" : "border-emerald-300/20 bg-emerald-300/5 text-emerald-200"}`}>{error || notice}</p>}
+
+      <div className="overflow-hidden rounded-xl border border-white/10 bg-[#0d1520]">
+        <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+          <div><h2 className="font-semibold">Payment records</h2><p className="mt-1 text-xs text-slate-500" aria-live="polite">{isLoading ? "Loading payments…" : `${visiblePayments.length} shown · ${verifiedCount} verified`}</p></div>
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={exportVerifiedPayments} disabled={isLoading || verifiedCount === 0} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-emerald-200/30 bg-emerald-300 px-3 py-2 text-xs font-bold text-[#08251d] transition hover:bg-emerald-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d1520] disabled:cursor-not-allowed disabled:opacity-45"><Download size={14} />Export verified ({verifiedCount})</button>
+            <button type="button" onClick={() => setReload((value) => value + 1)} disabled={isLoading} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-xs font-medium text-slate-300 transition hover:bg-white/5 disabled:opacity-50"><RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />Refresh</button>
+          </div>
+        </div>
+        <div className="overflow-x-auto" aria-busy={isLoading}>
+          <table className="w-full min-w-[1050px] text-left text-sm">
+            <thead className="bg-white/[0.03] text-xs uppercase tracking-wide text-slate-400"><tr><th className="px-5 py-4 font-medium">Participant</th><th className="px-4 py-4 font-medium">Amount / method</th><th className="px-4 py-4 font-medium">Reference</th><th className="px-4 py-4 font-medium">Status</th><th className="px-4 py-4 font-medium">Verification code</th><th className="px-4 py-4 font-medium">Action</th></tr></thead>
+            <tbody className="divide-y divide-white/[0.07]">
+              {isLoading && Array.from({ length: 5 }, (_, index) => <tr key={`payment-skeleton-${index}`} aria-hidden="true">{["w-36", "w-24", "w-20", "w-20", "w-24", "w-20"].map((width, cell) => <td key={cell} className="px-4 py-5"><span className={`admin-skeleton block h-4 ${width} rounded`} /></td>)}</tr>)}
+              {!isLoading && visiblePayments.map((payment) => <tr key={payment.id} className="transition hover:bg-white/[0.025]"><td className="px-5 py-4"><p className="font-semibold text-white">{payment.participant?.full_name ?? "Profile unavailable"}</p><p className="mt-1 text-xs text-slate-500">{payment.participant?.college_roll ?? "—"} · {payment.participant?.college_name ?? "—"}</p></td><td className="px-4 py-4"><p className="font-medium text-slate-100">₹{Number(payment.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</p><p className="mt-1 text-xs capitalize text-slate-500">{payment.payment_method}</p></td><td className="px-4 py-4 text-slate-300">{payment.payment_reference || "—"}</td><td className="px-4 py-4"><span className={`rounded-full px-2.5 py-1 text-xs capitalize ${payment.status === "verified" ? "bg-emerald-400/10 text-emerald-200" : payment.status === "pending" ? "bg-sky-400/10 text-sky-200" : "bg-rose-400/10 text-rose-200"}`}>{payment.status}</span></td><td className="px-4 py-4">{payment.code ? <div className="inline-flex max-w-[220px] flex-col items-start gap-1.5 rounded-lg border border-emerald-300/60 bg-[#d9fff1] px-3 py-2 shadow-sm shadow-emerald-950/20"><span className="break-all font-mono text-sm font-extrabold tracking-wide text-[#064e3b]">{payment.code.code}</span><span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${payment.code.status === "issued" ? "bg-[#087f5b] text-white" : "bg-slate-200 text-slate-700"}`}>{payment.code.status}</span></div> : <span className="text-xs text-slate-500">Not issued</span>}</td><td className="px-4 py-4">{payment.status === "verified" && payment.code?.status !== "issued" ? <button type="button" onClick={() => { setError(""); setNotice(""); setIssuedCode(""); setIsCodeCopied(false); setCodePayment(payment); }} className="inline-flex min-h-10 items-center justify-center rounded-lg border border-cyan-100 bg-cyan-200 px-3 py-2 text-xs font-bold text-[#07131b] shadow-sm shadow-cyan-950/30 transition hover:-translate-y-0.5 hover:bg-cyan-100 hover:shadow-md hover:shadow-cyan-950/40 active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-100 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d1520]">Issue code</button> : <span className="text-xs text-slate-500">—</span>}</td></tr>)}
+              {!isLoading && visiblePayments.length === 0 && <tr><td colSpan={6} className="px-5 py-14 text-center text-slate-400">{payments.length === 0 ? "No payment records yet." : "No payments match those filters."}</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {participants.length > 0 && <div className="overflow-hidden rounded-xl border border-white/10 bg-[#0d1520]"><div className="border-b border-white/10 px-5 py-4"><h2 className="font-semibold">Participants available for offline verification</h2><p className="mt-1 text-xs text-slate-500">Confirm cash received before recording a verified offline payment.</p></div><div className="max-h-72 divide-y divide-white/[0.07] overflow-y-auto">{matchingParticipants.slice(0, 50).map((participant) => <div key={participant.id} className="flex flex-wrap items-center justify-between gap-4 px-5 py-4 transition-colors hover:bg-white/[0.025]"><div className="min-w-0"><p className="font-medium text-white">{participant.full_name}</p><p className="mt-1 text-xs text-slate-400">{participant.college_roll} <span className="px-1 text-slate-600">·</span> {participant.college_name} <span className="px-1 text-slate-600">·</span> {participant.phone}</p></div><button type="button" onClick={() => { setError(""); setNotice(""); setPaymentReference(""); setVerifyParticipant(participant); }} className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-emerald-300 px-4 py-2 text-sm font-semibold text-slate-950 shadow-sm shadow-emerald-950/30 transition duration-150 hover:-translate-y-0.5 hover:bg-emerald-200 hover:shadow-md hover:shadow-emerald-950/40 active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d1520]"><CircleCheck size={16} strokeWidth={2.3} />Verify cash</button></div>)}{matchingParticipants.length === 0 && <p className="px-5 py-8 text-center text-sm text-slate-500">No participants match this search or all have verified payments.</p>}{matchingParticipants.length > 50 && <p className="px-5 py-3 text-xs text-slate-500">Showing first 50 matches. Refine the search to find a participant.</p>}</div></div>}
+      {isLoadingParticipants && <p role="status" className="text-sm text-slate-400">Loading participant profiles…</p>}
+
+      {verifyParticipant && <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setVerifyParticipant(null); }}><form onSubmit={verifyOfflinePayment} className="w-full max-w-md rounded-2xl border border-white/10 bg-[#101a27] p-6 shadow-2xl"><h2 className="text-lg font-semibold text-white">Confirm cash payment</h2><p className="mt-2 text-sm text-slate-400">Verify the cash with the participant before recording it. This uses the configured fest fee.</p><p className="mt-4 rounded-lg bg-white/[0.04] p-3 text-sm text-slate-200">{verifyParticipant.full_name} <span className="text-slate-500">· {verifyParticipant.college_roll}</span></p><label className="mt-4 block text-sm text-slate-300">Optional receipt / reference<input value={paymentReference} onChange={(event) => setPaymentReference(event.target.value)} maxLength={160} className="mt-2 h-11 w-full rounded-lg border border-white/10 bg-[#0b121c] px-3 text-sm text-white outline-none focus:border-emerald-300/50" /></label>{error && <p role="alert" className="mt-3 text-sm text-rose-200">{error}</p>}<div className="mt-6 flex justify-end gap-2"><button type="button" onClick={() => setVerifyParticipant(null)} className="rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-300">Cancel</button><button type="submit" disabled={isVerifying} className="rounded-lg bg-emerald-300 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-50">{isVerifying ? "Verifying…" : "Confirm cash received"}</button></div></form></div>}
+
+      {codePayment && <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setCodePayment(null); }}><form onSubmit={issueCode} className="w-full max-w-md rounded-2xl border border-cyan-200/20 bg-[#101a27] p-6 shadow-2xl shadow-black/50"><div className="flex items-start gap-3"><span className="grid size-10 shrink-0 place-items-center rounded-xl border border-cyan-200/20 bg-cyan-300/10 text-cyan-100"><ClipboardCheck size={19} /></span><div><h2 className="text-lg font-semibold text-white">Issue verification code</h2><p className="mt-1 text-sm text-slate-400">Participant: <span className="font-medium text-slate-200">{codePayment.participant?.full_name ?? "participant"}</span></p></div></div>{issuedCode ? <section className="mt-5 rounded-xl border border-emerald-700/30 bg-[#d9fff1] p-5 shadow-sm shadow-emerald-950/20" aria-label="Issued verification code"><div className="flex items-center gap-2 text-sm font-bold text-[#065f46]"><CircleCheck size={18} />Code issued successfully</div><p className="mt-4 text-xs font-bold uppercase tracking-wider text-[#166534]">Participant verification code</p><div className="mt-2 flex min-h-16 items-center justify-between gap-3 rounded-lg border border-emerald-700/25 bg-white px-4 py-3 shadow-inner"><code className="select-all break-all font-mono text-xl font-extrabold leading-relaxed tracking-[0.12em] text-[#052e2b] sm:text-2xl">{issuedCode}</code><button type="button" onClick={() => void copyIssuedCode()} className="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-lg border border-[#0f766e] bg-[#0f766e] px-3 text-xs font-bold text-white transition hover:bg-[#115e59] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0f766e] focus-visible:ring-offset-2" aria-label="Copy verification code">{isCodeCopied ? <Check size={15} /> : <Copy size={15} />}{isCodeCopied ? "Copied" : "Copy"}</button></div><p className="mt-3 text-xs font-medium leading-5 text-[#334155]">Share this code securely with the participant. They can enter it to confirm their payment.</p></section> : <><p className="mt-4 text-sm leading-6 text-slate-400">Leave the field empty to generate a unique code, or enter a custom code. The code will be shown after it is issued.</p><label className="mt-5 block text-sm font-medium text-slate-200">Custom code <span className="font-normal text-slate-400">(optional)</span><input value={customCode} onChange={(event) => setCustomCode(event.target.value)} maxLength={64} placeholder="Auto-generate a unique code" className="mt-2 h-12 w-full rounded-lg border border-white/15 bg-[#07111a] px-4 font-mono text-base font-semibold tracking-wide text-white outline-none transition placeholder:font-sans placeholder:text-sm placeholder:font-normal placeholder:tracking-normal placeholder:text-slate-500 focus:border-cyan-200/60 focus:ring-2 focus:ring-cyan-200/15" /></label></>}{error && <p role="alert" className="mt-4 rounded-lg border border-rose-300/25 bg-rose-300/[0.08] px-3 py-2.5 text-sm text-rose-100">{error}</p>}<div className="mt-6 flex justify-end gap-2 border-t border-white/10 pt-5">{issuedCode ? <button type="button" onClick={() => setCodePayment(null)} className="min-h-11 rounded-lg bg-cyan-200 px-5 text-sm font-bold text-[#07131b] transition hover:bg-cyan-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-100">Done</button> : <><button type="button" onClick={() => setCodePayment(null)} className="min-h-11 rounded-lg border border-white/15 px-4 text-sm font-medium text-slate-200 transition hover:bg-white/[0.06]">Cancel</button><button type="submit" disabled={isIssuingCode} className="min-h-11 rounded-lg bg-cyan-200 px-5 text-sm font-bold text-[#07131b] transition hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-55">{isIssuingCode ? "Issuing…" : "Issue code"}</button></>}</div></form></div>}
+    </div>
+  );
+}
+
+type FestSettingsRecord = {
+  id: number;
+  fest_name: string;
+  fest_fee: number;
+  updated_at: string;
+};
+
+function AdminFestSettingsSection() {
+  const [festName, setFestName] = useState("");
+  const [festFee, setFestFee] = useState("");
+  const [settingsExist, setSettingsExist] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [updatedAt, setUpdatedAt] = useState("");
+  const [reload, setReload] = useState(0);
+
+  useEffect(() => {
+    if (!supabase) {
+      setIsLoading(false);
+      setError("Supabase is not configured.");
+      return;
+    }
+    let mounted = true;
+    setIsLoading(true);
+    setError("");
+    void supabase
+      .from("fest_settings")
+      .select("id,fest_name,fest_fee,updated_at")
+      .eq("id", 1)
+      .maybeSingle()
+      .then(({ data, error: queryError }) => {
+        if (!mounted) return;
+        setIsLoading(false);
+        if (queryError) {
+          setError(queryError.message);
+          return;
+        }
+        const settings = data as FestSettingsRecord | null;
+        if (!settings) {
+          setSettingsExist(false);
+          setFestName("SRISTI 2K26");
+          setFestFee("");
+          setUpdatedAt("");
+          return;
+        }
+        setSettingsExist(true);
+        setFestName(settings.fest_name);
+        setFestFee(String(settings.fest_fee));
+        setUpdatedAt(settings.updated_at);
+      });
+    return () => { mounted = false; };
+  }, [reload]);
+
+  const saveSettings = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!supabase) return;
+    const parsedFee = Number(festFee);
+    if (!festName.trim()) {
+      setError("Enter a festival name.");
+      return;
+    }
+    if (!Number.isFinite(parsedFee) || parsedFee <= 0) {
+      setError("Enter a fee greater than ₹0. Payment verification requires a positive fest fee.");
+      return;
+    }
+    setIsSaving(true);
+    setError("");
+    setNotice("");
+    const values = { fest_name: festName.trim(), fest_fee: parsedFee };
+    const result = settingsExist
+      ? await supabase.from("fest_settings").update(values).eq("id", 1)
+      : await supabase.from("fest_settings").insert({ id: 1, ...values });
+    setIsSaving(false);
+    if (result.error) {
+      setError(result.error.message);
+      return;
+    }
+    setSettingsExist(true);
+    setNotice("Festival settings saved. Offline payment verification can now use this fee.");
+    setUpdatedAt(new Date().toISOString());
+  };
+
+  return (
+    <div className="mt-7 grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <form onSubmit={saveSettings} className="rounded-xl border border-white/10 bg-[#0d1520] p-5 md:p-7">
+        <div className="mb-6 border-b border-white/10 pb-5">
+          <h2 className="text-lg font-semibold text-white">Festival configuration</h2>
+          <p className="mt-1 text-sm text-slate-400">These values are shared across participant registration and payment verification.</p>
+        </div>
+        {isLoading ? (
+          <div className="space-y-5" aria-label="Loading festival settings" aria-busy="true"><span className="admin-skeleton block h-4 w-36 rounded" /><span className="admin-skeleton block h-11 w-full rounded-lg" /><span className="admin-skeleton block h-4 w-28 rounded" /><span className="admin-skeleton block h-11 w-full rounded-lg" /></div>
+        ) : (
+          <>
+            <label className="block text-sm font-medium text-slate-200">Festival name<input value={festName} onChange={(event) => setFestName(event.target.value)} maxLength={120} required className="mt-2 h-12 w-full rounded-lg border border-white/10 bg-[#0b121c] px-3 text-sm text-white outline-none transition focus:border-emerald-300/50" placeholder="SRISTI 2K26" /></label>
+            <label className="mt-5 block text-sm font-medium text-slate-200">Registration fee<input type="number" inputMode="decimal" min="0.01" step="0.01" value={festFee} onChange={(event) => setFestFee(event.target.value)} required className="mt-2 h-12 w-full rounded-lg border border-white/10 bg-[#0b121c] px-3 text-sm text-white outline-none transition focus:border-emerald-300/50" placeholder="Enter amount in INR" /><span className="mt-2 block text-xs leading-5 text-slate-500">This amount is used when an admin confirms an offline payment. Enter the actual fee set by your organizers.</span></label>
+            {error && <p role="alert" className="mt-5 rounded-lg border border-rose-300/20 bg-rose-300/5 px-4 py-3 text-sm text-rose-200">{error}</p>}
+            {notice && <p role="status" className="mt-5 rounded-lg border border-emerald-300/20 bg-emerald-300/5 px-4 py-3 text-sm text-emerald-200">{notice}</p>}
+            <div className="mt-7 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-5">
+              <span className="text-xs text-slate-500">{updatedAt ? `Last saved ${new Date(updatedAt).toLocaleString()}` : "Settings have not been saved yet."}</span>
+              <button type="submit" disabled={isSaving} className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-emerald-300 px-5 text-sm font-semibold text-slate-950 transition hover:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-60">{isSaving ? "Saving…" : "Save settings"}</button>
+            </div>
+          </>
+        )}
+      </form>
+      <aside className="h-fit rounded-2xl border border-cyan-300/25 bg-[#0b1c28] p-5 shadow-lg shadow-cyan-950/20">
+        <div className="flex items-center gap-3">
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-cyan-300 text-[#07131b] shadow-sm shadow-cyan-950/30"><Wallet size={19} strokeWidth={2.2} /></span>
+          <h2 className="font-semibold text-white">Payment verification</h2>
+        </div>
+        <p className="mt-4 text-sm leading-6 text-slate-200">A positive fee must be saved before an admin can record a cash payment. When saved, the payment function uses this amount and records the verifying admin.</p>
+        <button type="button" onClick={() => setReload((value) => value + 1)} disabled={isLoading || isSaving} className="mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-cyan-200/30 bg-cyan-300 px-4 py-2 text-sm font-semibold text-[#07131b] shadow-sm shadow-cyan-950/30 transition duration-150 hover:-translate-y-0.5 hover:bg-cyan-200 hover:shadow-md hover:shadow-cyan-950/40 active:translate-y-0 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-100 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0b1c28] disabled:cursor-not-allowed disabled:opacity-55"><RefreshCw size={15} className={isLoading ? "animate-spin" : ""} />Reload settings</button>
+      </aside>
     </div>
   );
 }
