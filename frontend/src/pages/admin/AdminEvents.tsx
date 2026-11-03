@@ -8,10 +8,13 @@ import {
 import type { User } from "@supabase/supabase-js";
 import { Link } from "react-router-dom";
 import {
+  ArrowLeft,
   CalendarDays,
   ChevronRight,
   CircleCheck,
   CircleHelp,
+  Eye,
+  EyeOff,
   LayoutDashboard,
   ListChecks,
   LogOut,
@@ -515,12 +518,14 @@ export default function AdminEvents() {
             <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
               <div>
                 <h2 className="font-semibold">All events</h2>
-                <p className="mt-1 text-xs text-slate-500">
-                  {visibleEvents.length} events
+                <p className="mt-1 text-xs text-slate-500" aria-live="polite">
+                  {isLoadingEvents
+                    ? "Loading events…"
+                    : `${visibleEvents.length} events`}
                 </p>
               </div>
             </div>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto" aria-busy={isLoadingEvents}>
               <table className="w-full min-w-[760px] text-left text-sm">
                 <thead className="bg-white/[0.03] text-xs uppercase tracking-wide text-slate-400">
                   <tr>
@@ -536,16 +541,33 @@ export default function AdminEvents() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/[0.07]">
-                  {isLoadingEvents && (
-                    <tr>
-                      <td
-                        colSpan={7}
-                        className="px-5 py-14 text-center text-slate-400"
-                      >
-                        Loading events…
-                      </td>
-                    </tr>
-                  )}
+                  {isLoadingEvents &&
+                    Array.from({ length: 5 }, (_, index) => (
+                      <tr key={`event-skeleton-${index}`} aria-hidden="true">
+                        <td className="px-5 py-4">
+                          <span className="admin-skeleton block h-4 w-36 rounded" />
+                          <span className="admin-skeleton mt-2 block h-3 w-24 rounded" />
+                        </td>
+                        <td className="px-4 py-4">
+                          <span className="admin-skeleton block h-5 w-12 rounded-full" />
+                        </td>
+                        <td className="px-4 py-4">
+                          <span className="admin-skeleton block h-4 w-24 rounded" />
+                        </td>
+                        <td className="px-4 py-4">
+                          <span className="admin-skeleton block h-4 w-28 rounded" />
+                        </td>
+                        <td className="px-4 py-4">
+                          <span className="admin-skeleton block h-4 w-10 rounded" />
+                        </td>
+                        <td className="px-4 py-4">
+                          <span className="admin-skeleton block h-4 w-20 rounded" />
+                        </td>
+                        <td className="px-4 py-4">
+                          <span className="admin-skeleton ml-auto block h-8 w-8 rounded-lg" />
+                        </td>
+                      </tr>
+                    ))}
                   {visibleEvents.map((event) => (
                     <tr
                       key={event.id}
@@ -868,6 +890,11 @@ export function AdminAccessGate({
   signInError: string;
   isSigningIn: boolean;
 }) {
+  const [showPassword, setShowPassword] = useState(false);
+  const [focusedField, setFocusedField] = useState<"email" | "password" | null>(
+    null,
+  );
+
   return (
     <main className="admin-panel grid min-h-screen place-items-center bg-[#080d14] px-5 py-10 font-body text-slate-100">
       <section className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0d1520] p-7 shadow-2xl">
@@ -923,28 +950,55 @@ export function AdminAccessGate({
                   {signInError}
                 </p>
               )}
-              <label className="block text-sm">
-                Email
+              <div className="relative">
                 <input
+                  id="admin-email"
                   required
                   type="email"
                   autoComplete="username"
                   value={email}
                   onChange={(event) => onEmailChange(event.target.value)}
-                  className={inputClass}
+                  onFocus={() => setFocusedField("email")}
+                  onBlur={() => setFocusedField(null)}
+                  placeholder=" "
+                  className="peer h-12 w-full rounded-lg border border-slate-300 bg-slate-100 px-3 pb-2 pt-5 text-sm text-slate-900 outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/15"
                 />
-              </label>
-              <label className="block text-sm">
-                Password
+                <label
+                  htmlFor="admin-email"
+                  className={`pointer-events-none absolute left-3 z-10 transition-all ${focusedField === "email" || email ? "-top-2 rounded bg-slate-100 px-1 text-xs text-emerald-800" : "top-3.5 text-sm text-slate-500"}`}
+                >
+                  Email address
+                </label>
+              </div>
+              <div className="relative">
                 <input
                   required
-                  type="password"
+                  id="admin-password"
+                  type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
                   value={password}
                   onChange={(event) => onPasswordChange(event.target.value)}
-                  className={inputClass}
+                  onFocus={() => setFocusedField("password")}
+                  onBlur={() => setFocusedField(null)}
+                  placeholder=" "
+                  className="peer h-12 w-full rounded-lg border border-slate-300 bg-slate-100 px-3 pb-2 pr-12 pt-5 text-sm text-slate-900 outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/15"
                 />
-              </label>
+                <label
+                  htmlFor="admin-password"
+                  className={`pointer-events-none absolute left-3 z-10 transition-all ${focusedField === "password" || password ? "-top-2 rounded bg-slate-100 px-1 text-xs text-emerald-800" : "top-3.5 text-sm text-slate-500"}`}
+                >
+                  Password
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((visible) => !visible)}
+                  className="absolute right-2 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-md text-slate-400 transition hover:bg-white/5 hover:text-emerald-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/50"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-pressed={showPassword}
+                >
+                  {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                </button>
+              </div>
               <button
                 disabled={isSigningIn}
                 className="w-full rounded-lg bg-emerald-400 px-4 py-3 text-sm font-semibold text-slate-950 hover:bg-emerald-300 disabled:opacity-60"
@@ -954,12 +1008,14 @@ export function AdminAccessGate({
             </form>
           </>
         )}
-        <a
-          href="/"
-          className="mt-6 inline-block text-sm text-emerald-300 hover:text-emerald-200"
+        <Link
+          to="/"
+          viewTransition
+          className="admin-home-link mt-6 inline-flex min-h-10 items-center gap-2 rounded-lg border border-emerald-300/30 bg-emerald-300/10 px-4 py-2 text-sm font-semibold text-emerald-200 no-underline shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-[#087f68] hover:bg-[#087f68] hover:text-white hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d1520]"
         >
-          Return to Sristi home
-        </a>
+          <ArrowLeft size={16} />
+          Back to SRISTI home
+        </Link>
       </section>
     </main>
   );
