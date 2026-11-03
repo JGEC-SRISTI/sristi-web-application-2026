@@ -13,6 +13,7 @@ import {
   ChevronRight,
   CircleCheck,
   CircleHelp,
+  ClipboardCheck,
   Eye,
   EyeOff,
   LayoutDashboard,
@@ -393,6 +394,11 @@ export default function AdminEvents() {
             href="/admin/registrations"
             icon={<ListChecks size={18} />}
             label="Registrations"
+          />
+          <NavItem
+            href="/admin/attendance"
+            icon={<ClipboardCheck size={18} />}
+            label="Attendance"
           />
           <NavItem
             href="/admin/payments"
