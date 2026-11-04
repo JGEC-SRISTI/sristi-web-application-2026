@@ -65,7 +65,7 @@ const Dropdown = ({ label, value, options, onChange }: DropdownProps) => {
           flex items-center gap-2.5
           px-5 py-2.5
           rounded-lg
-          font-a24 text-[11px] font-medium tracking-[0.02em] uppercase
+          font-a24 text-[11px] font-medium tracking-[0.02em] uppercase whitespace-nowrap
           border transition-all duration-300
           ${
             open
@@ -207,6 +207,8 @@ const EventCard = ({ event, position, onClick }: EventCardProps) => {
     <div
       onClick={onClick}
       className={`
+        event-card
+        event-card-position-${position}
         flex-shrink-0
         transition-[transform,width,filter,opacity] duration-1200 ease-[cubic-bezier(0.02,1,0.7,1)]
         ${isCenter ? "z-20 cursor-pointer" : "z-10 cursor-pointer"}
@@ -454,31 +456,36 @@ const Events = () => {
 
       <div className="relative z-10 flex-1 flex flex-col pt-18 pb-4 px-4 sm:px-8">
 
-        <div className="flex items-start justify-between mb-2 sm:mb-4">
+        <div className="events-header grid grid-cols-[1fr_auto_1fr] items-start mb-2 sm:mb-4">
 
-          <Dropdown
-            label="Solo/Team"
-            value={participationFilter}
-            options={PARTICIPATION_OPTIONS}
-            onChange={handleParticipationChange}
-          />
-
-          <div className="text-center flex-1">
+          <div className="events-heading text-center">
             <SplashHeading />
-            <p className="font-space-mono text-[10px] sm:text-[11px] tracking-[0.35em] uppercase text-white/80 mt-2">
+            <p className="whitespace-nowrap font-space-mono text-[10px] sm:text-[11px] tracking-[0.35em] uppercase text-white/80 mt-2">
               SRISTI 2K26 — CHOOSE YOUR ARENA
             </p>
           </div>
 
-          <Dropdown
-            label="Category"
-            value={categoryFilter}
-            options={CATEGORY_OPTIONS}
-            onChange={handleCategoryChange}
-          />
+          <div className="events-filters">
+            <div className="events-filter events-filter-left">
+              <Dropdown
+                label="Solo/Team"
+                value={participationFilter}
+                options={PARTICIPATION_OPTIONS}
+                onChange={handleParticipationChange}
+              />
+            </div>
+            <div className="events-filter events-filter-right">
+              <Dropdown
+                label="Category"
+                value={categoryFilter}
+                options={CATEGORY_OPTIONS}
+                onChange={handleCategoryChange}
+              />
+            </div>
+          </div>
         </div>
 
-        <div className="relative flex-1 flex items-center justify-center min-h-0">
+        <div className="events-card-stage relative flex-1 flex items-center justify-center min-h-0">
 
           <button
             type="button"
@@ -486,6 +493,7 @@ const Events = () => {
             aria-label="Previous event"
             disabled={filteredEvents.length <= 1}
             className="
+              events-carousel-arrow
               absolute left-0 sm:left-2 z-30
               w-10 h-10 sm:w-12 sm:h-12 rounded-full
               flex items-center justify-center
@@ -504,6 +512,7 @@ const Events = () => {
             aria-label="Next event"
             disabled={filteredEvents.length <= 1}
             className="
+              events-carousel-arrow
               absolute right-0 sm:right-2 z-30
               w-10 h-10 sm:w-12 sm:h-12 rounded-full
               flex items-center justify-center
@@ -519,7 +528,7 @@ const Events = () => {
           {filteredEvents.length > 0 ? (
             <div
               key={filterRevision}
-              className="event-card-filter-transition flex items-center justify-center gap-3 sm:gap-5 lg:gap-6"
+              className="events-carousel event-card-filter-transition flex items-center justify-center gap-3 sm:gap-5 lg:gap-6"
             >
               {visibleCards.map(({ event, position }) => (
                 <EventCard
