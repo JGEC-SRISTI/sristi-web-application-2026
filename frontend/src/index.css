@@ -2176,7 +2176,9 @@ a {
 .soldier-phone-image {
   position: relative;
   z-index: 3;
-  width: 125%;
+  top: 4%;
+  left: 10%;
+  width: 115%;
   max-width: none;
   transform: translateY(-12.5%) scale(1.18);
   transform-origin: center bottom;
@@ -2187,20 +2189,20 @@ a {
   z-index: 4;
 }
 
-/* Exact phone screen overlay */
+/* Exact portrait phone screen overlay */
 
 .soldier-phone-screen {
   position: absolute;
   z-index: 5;
 
-  /* Screen alignment */
-  left: -1%;
-  width: 82%;
-  top: 8.5%;
-  height: 36%;
+  /* Portrait screen alignment */
+  left: 21.2%;
+  width: 50%;
+  top: -22%;
+  height: 100%;
 
   overflow: hidden;
-  border-radius: 33px;
+  border-radius: 35px;
   background: #050505;
 
   opacity: 0;
@@ -2234,7 +2236,8 @@ a {
   display: flex;
   flex-direction: column;
 
-  padding: 2% 4% 3%;
+  padding: 3% 5% 4%;
+
   background: linear-gradient(
     to top,
     rgba(0, 0, 0, 0.95),
@@ -2249,7 +2252,7 @@ a {
   display: block;
   width: 100%;
   height: 3px;
-  margin-bottom: 4%;
+  margin-bottom: 5%;
   appearance: none;
   border-radius: 10px;
   cursor: pointer;
@@ -2320,12 +2323,11 @@ a {
     transform: scale(1.08);
   }
 
-  .soldier-phone-screen{
-    left: 4%;
-    width: 69%;
-    top: 26%;
-    height: 30%;
-
+  .soldier-phone-screen {
+    left: 25%;
+    width: 48%;
+    top: 11%;
+    height: 78%;
     border-radius: 30px;
   }
 }
@@ -2345,12 +2347,11 @@ a {
     position: relative;
   }
 
-  .soldier-phone-screen{
-    left: 6.8%;
-    width: 56%;
-    top: 27%;
-    height: 25%;
-
+  .soldier-phone-screen {
+    left: 25%;
+    width: 48%;
+    top: 11%;
+    height: 78%;
     border-radius: 15px;
   }
 }
