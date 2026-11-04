@@ -389,13 +389,25 @@ const PARTICIPATION_OPTIONS = [
   { label: "Team", value: "TEAM" },
 ];
 
+const LAST_OPENED_EVENT_KEY = "sristi:last-opened-event";
+
 const Events = () => {
   const navigate = useNavigate();
   const [categoryFilter, setCategoryFilter] = useState("ALL");
   const [participationFilter, setParticipationFilter] = useState("ALL");
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [activeIndex, setActiveIndex] = useState(() => {
+    const lastOpenedSlug = sessionStorage.getItem(LAST_OPENED_EVENT_KEY);
+    const lastOpenedIndex = mockEvents.findIndex(
+      (event) => event.slug === lastOpenedSlug,
+    );
+
+    return lastOpenedIndex >= 0 ? lastOpenedIndex : 0;
+  });
   const [filterRevision, setFilterRevision] = useState(0);
   const [showIntro, setShowIntro] = useState(true);
+  const pendingNavigationRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
@@ -413,37 +425,80 @@ const Events = () => {
     return catOk && partOk;
   });
 
+  const cancelPendingNavigation = useCallback(() => {
+    if (pendingNavigationRef.current !== null) {
+      clearTimeout(pendingNavigationRef.current);
+      pendingNavigationRef.current = null;
+    }
+  }, []);
+
   const handleCategoryChange = (val: string) => {
+    cancelPendingNavigation();
     setCategoryFilter(val as EventCategory | "ALL");
     setActiveIndex(0);
     setFilterRevision((revision) => revision + 1);
   };
   const handleParticipationChange = (val: string) => {
+    cancelPendingNavigation();
     setParticipationFilter(val as ParticipationType | "ALL");
     setActiveIndex(0);
     setFilterRevision((revision) => revision + 1);
   };
 
   const goLeft = useCallback(() => {
+    cancelPendingNavigation();
     setActiveIndex((prev) =>
       (prev - 1 + filteredEvents.length) % filteredEvents.length
     );
-  }, [filteredEvents.length]);
+  }, [cancelPendingNavigation, filteredEvents.length]);
 
   const goRight = useCallback(() => {
+    cancelPendingNavigation();
     setActiveIndex((prev) => (prev + 1) % filteredEvents.length);
-  }, [filteredEvents.length]);
+  }, [cancelPendingNavigation, filteredEvents.length]);
 
   const getVisibleCards = () => {
     if (filteredEvents.length === 0) return [];
+    const offsets =
+      filteredEvents.length === 1
+        ? [0]
+        : filteredEvents.length === 2
+          ? [-1, 0]
+          : filteredEvents.length === 3
+            ? [-1, 0, 1]
+            : filteredEvents.length === 4
+              ? [-1, 0, 1]
+              : [-2, -1, 0, 1, 2];
     const visible: { event: Event; position: number }[] = [];
-    for (let offset = -2; offset <= 2; offset++) {
+    for (const offset of offsets) {
       const idx =
         (activeIndex + offset + filteredEvents.length) % filteredEvents.length;
       visible.push({ event: filteredEvents[idx], position: offset });
     }
     return visible;
   };
+
+  const handleCardClick = (event: Event, position: number) => {
+    const targetIndex = filteredEvents.findIndex((item) => item.id === event.id);
+
+    if (position === 0 || targetIndex === activeIndex) {
+      sessionStorage.setItem(LAST_OPENED_EVENT_KEY, event.slug);
+      navigate(`/events/${event.slug}`);
+      return;
+    }
+
+    cancelPendingNavigation();
+    setActiveIndex(targetIndex);
+    pendingNavigationRef.current = setTimeout(() => {
+      pendingNavigationRef.current = null;
+      sessionStorage.setItem(LAST_OPENED_EVENT_KEY, event.slug);
+      navigate(`/events/${event.slug}`);
+    }, 150);
+  };
+
+  useEffect(() => {
+    return cancelPendingNavigation;
+  }, [cancelPendingNavigation]);
 
   const visibleCards = getVisibleCards();
 
@@ -532,14 +587,10 @@ const Events = () => {
             >
               {visibleCards.map(({ event, position }) => (
                 <EventCard
-                  key={
-                    filteredEvents.length > 4
-                      ? event.id
-                      : `${event.id}-${position}`
-                  }
+                  key={event.id}
                   event={event}
                   position={position}
-                  onClick={() => navigate(`/events/${event.slug}`)}
+                  onClick={() => handleCardClick(event, position)}
                 />
               ))}
             </div>
