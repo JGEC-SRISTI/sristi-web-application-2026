@@ -16,6 +16,7 @@ import {
   RefreshCw,
   Search,
   Settings,
+  Trophy,
   Users,
   Wallet,
   X,
@@ -29,6 +30,7 @@ import "./AdminEvents.css";
 
 type AdminSection =
   | "attendance"
+  | "results"
   | "registrations"
   | "payments"
   | "admins"
@@ -60,6 +62,12 @@ const sectionDetails: Record<
     description: "Mark attendance for registered participants and teams.",
     icon: ClipboardCheck,
     note: "Attendance management is ready.",
+  },
+  results: {
+    title: "Results & leaderboard",
+    description: "Declare event winners and control public leaderboard visibility.",
+    icon: Trophy,
+    note: "Manage event results and leaderboard publication.",
   },
   registrations: {
     title: "Registrations",
@@ -326,6 +334,12 @@ export default function AdminSectionPlaceholder({
             label="Attendance"
           />
           <NavItem
+            href="/admin/results"
+            active={section === "results"}
+            icon={<Trophy size={18} />}
+            label="Results"
+          />
+          <NavItem
             href="/admin/payments"
             active={section === "payments"}
             icon={<Wallet size={18} />}
@@ -411,6 +425,8 @@ export default function AdminSectionPlaceholder({
             </div>
           ) : section === "attendance" ? (
             <AdminAttendanceSection />
+          ) : section === "results" ? (
+            <AdminResultsSection />
           ) : section === "registrations" ? (
             <div className="mt-7 space-y-5">
               <div className="grid gap-4 sm:grid-cols-3">
@@ -644,6 +660,135 @@ export default function AdminSectionPlaceholder({
     </div>
   );
 }
+
+type ResultEvent = { id: string; name: string; event_type: "solo" | "team" };
+type ResultRow = {
+  id: string;
+  event_id: string;
+  user_id: string | null;
+  team_id: string | null;
+  position: number;
+  declared_at: string;
+  profiles: { full_name: string; college_roll: string } | null;
+  teams: { team_name: string; team_code: string } | null;
+};
+type ResultCandidate = {
+  id: string;
+  name: string;
+  detail: string;
+  userId: string | null;
+  teamId: string | null;
+};
+
+function AdminResultsSection() {
+  const [events, setEvents] = useState<ResultEvent[]>([]);
+  const [results, setResults] = useState<ResultRow[]>([]);
+  const [candidates, setCandidates] = useState<ResultCandidate[]>([]);
+  const [selectedEvent, setSelectedEvent] = useState("");
+  const [candidateId, setCandidateId] = useState("");
+  const [position, setPosition] = useState("1");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [reload, setReload] = useState(0);
+
+  useEffect(() => {
+    if (!supabase) return;
+    let active = true;
+    setLoading(true);
+    setError("");
+    void Promise.all([
+      supabase.from("events").select("id,name,event_type").order("name"),
+      supabase.from("results").select("id,event_id,user_id,team_id,position,declared_at,profiles(full_name,college_roll),teams(team_name,team_code)").order("position"),
+    ]).then(([eventResponse, resultResponse]) => {
+      if (!active) return;
+      setLoading(false);
+      const queryError = eventResponse.error ?? resultResponse.error;
+      if (queryError) { setError(queryError.message); return; }
+      const loadedEvents = (eventResponse.data ?? []) as ResultEvent[];
+      setEvents(loadedEvents);
+      setResults((resultResponse.data ?? []) as unknown as ResultRow[]);
+      setSelectedEvent((current) => current || loadedEvents[0]?.id || "");
+    });
+    return () => { active = false; };
+  }, [reload]);
+
+  useEffect(() => {
+    if (!supabase || !selectedEvent) { setCandidates([]); return; }
+    let active = true;
+    const event = events.find((item) => item.id === selectedEvent);
+    if (!event) return;
+    void supabase.from("registrations")
+      .select("user_id,team_id,profiles(full_name,college_roll),teams(team_name,team_code)")
+      .eq("event_id", selectedEvent).eq("status", "registered")
+      .then(({ data, error: queryError }) => {
+        if (!active) return;
+        if (queryError) { setError(queryError.message); setCandidates([]); return; }
+        const options = (data ?? []).flatMap((row: any): ResultCandidate[] => {
+          if (event.event_type === "team" && row.team_id) return [{ id: row.team_id, name: row.teams?.team_name ?? "Team", detail: row.teams?.team_code ?? "Registered team", userId: null, teamId: row.team_id }];
+          if (event.event_type === "solo" && row.user_id) return [{ id: row.user_id, name: row.profiles?.full_name ?? "Participant", detail: row.profiles?.college_roll ?? "Registered participant", userId: row.user_id, teamId: null }];
+          return [];
+        });
+        setCandidates(options);
+        setCandidateId("");
+      });
+    return () => { active = false; };
+  }, [events, selectedEvent]);
+
+  const eventResults = results.filter((row) => row.event_id === selectedEvent).sort((a, b) => a.position - b.position);
+  const usedPlaces = new Set(eventResults.map((row) => row.position));
+  const availablePlaces = [1, 2, 3].filter((place) => !usedPlaces.has(place));
+  const eligibleCandidates = candidates.filter((candidate) => !eventResults.some((row) => candidate.userId ? row.user_id === candidate.userId : row.team_id === candidate.teamId));
+
+  const recordPlacement = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!supabase) return;
+    const candidate = candidates.find((item) => item.id === candidateId);
+    if (!candidate) return;
+    setSaving(true); setError(""); setNotice("");
+    const { error: rpcError } = await supabase.rpc("declare_result", {
+      p_event_id: selectedEvent,
+      p_user_id: candidate.userId,
+      p_team_id: candidate.teamId,
+      p_position: Number(position),
+    });
+    setSaving(false);
+    if (rpcError) { setError(rpcError.message); return; }
+    setNotice(`${placeName(Number(position))} place recorded for ${candidate.name}.`);
+    setCandidateId("");
+    setReload((count) => count + 1);
+  };
+
+  const removePlacement = async (result: ResultRow) => {
+    if (!supabase || !window.confirm(`Remove the ${placeName(result.position)} place result?`)) return;
+    setError(""); setNotice("");
+    const { error: deleteError } = await supabase.from("results").delete().eq("id", result.id);
+    if (deleteError) { setError(deleteError.message); return; }
+    setNotice("Result removed. That place can now be assigned again.");
+    setReload((count) => count + 1);
+  };
+
+  return <div className="mt-7 space-y-5">
+    <div className="grid gap-4 sm:grid-cols-3">
+      <RegistrationSummary label="Events with results" value={new Set(results.map((row) => row.event_id)).size} />
+      <RegistrationSummary label="Placements recorded" value={results.length} accent="text-emerald-300" />
+      <RegistrationSummary label="Public results" value="Paused" accent="text-slate-300" />
+    </div>
+    <div className="rounded-xl border border-sky-300/20 bg-sky-300/[0.06] p-5 text-sm leading-6 text-sky-100">
+      Public results are paused while the participant-facing leaderboard is being planned. Placements recorded here remain available to admins.
+    </div>
+    {(error || notice) && <p role={error ? "alert" : "status"} className={`rounded-lg border px-4 py-3 text-sm ${error ? "border-rose-300/30 bg-rose-50 text-rose-800" : "border-emerald-300/30 bg-emerald-50 text-emerald-900"}`}>{error || notice}</p>}
+    <div className="overflow-hidden rounded-xl border border-white/10 bg-[#0d1520]">
+      <div className="flex flex-col gap-3 border-b border-white/10 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="font-semibold">Event results</h2><p className="mt-1 text-xs text-slate-500">Record up to three placements for each event.</p></div><div className="flex gap-2"><select aria-label="Select event" value={selectedEvent} onChange={(event) => setSelectedEvent(event.target.value)} className="h-10 min-w-48 rounded-lg border border-white/10 bg-[#0b121c] px-3 text-sm text-slate-200"><option value="">Select event</option>{events.map((event) => <option key={event.id} value={event.id}>{event.name} · {event.event_type}</option>)}</select><button type="button" onClick={() => setReload((count) => count + 1)} disabled={loading} className="inline-flex h-10 items-center gap-2 rounded-lg border border-white/10 px-3 text-xs text-slate-300 hover:bg-white/5 disabled:opacity-50"><RefreshCw size={14} className={loading ? "animate-spin" : ""} />Refresh</button></div></div>
+      <form onSubmit={recordPlacement} className="grid gap-3 border-b border-white/10 p-5 md:grid-cols-[1fr_150px_auto]"><select required aria-label="Registered participant or team" value={candidateId} onChange={(event) => setCandidateId(event.target.value)} disabled={!selectedEvent || eligibleCandidates.length === 0 || loading} className="h-11 rounded-lg border border-white/10 bg-[#0b121c] px-3 text-sm text-slate-200"><option value="">{!selectedEvent ? "Choose an event first" : eligibleCandidates.length ? "Choose registered participant / team" : candidates.length ? "All eligible candidates already have a place" : "No registered participants / teams"}</option>{eligibleCandidates.map((candidate) => <option key={candidate.id} value={candidate.id}>{candidate.name} · {candidate.detail}</option>)}</select><select aria-label="Placement" value={position} onChange={(event) => setPosition(event.target.value)} className="h-11 rounded-lg border border-white/10 bg-[#0b121c] px-3 text-sm text-slate-200">{(availablePlaces.length ? availablePlaces : [1, 2, 3]).map((place) => <option key={place} value={place}>{placeName(place)} place</option>)}</select><button type="submit" disabled={saving || loading || !candidateId || availablePlaces.length === 0} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-emerald-200/40 bg-emerald-200 px-4 py-2 text-sm font-bold text-emerald-950 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"><Trophy size={16} />{saving ? "Recording…" : "Record placement"}</button></form>
+      {loading ? <div className="space-y-3 p-5" aria-busy="true">{[0, 1, 2].map((item) => <div key={item} className="admin-skeleton h-14 rounded-lg" />)}</div> : !selectedEvent ? <p className="px-5 py-12 text-center text-sm text-slate-500">Create an event first to record results.</p> : <div className="divide-y divide-white/10">{[1, 2, 3].map((place) => { const row = eventResults.find((item) => item.position === place); const name = row?.profiles?.full_name ?? row?.teams?.team_name; const detail = row?.profiles?.college_roll ?? row?.teams?.team_code; return <div key={place} className="flex items-center justify-between gap-4 px-5 py-4"><div className="flex min-w-0 items-center gap-3"><span className={`grid size-10 shrink-0 place-items-center rounded-xl font-bold ${place === 1 ? "bg-amber-200 text-amber-950" : "bg-slate-200 text-slate-800"}`}>{place}</span><div className="min-w-0"><p className="font-semibold text-slate-900">{name ?? `${placeName(place)} place not assigned`}</p><p className="mt-1 text-xs text-slate-500">{row ? `${detail ?? (row.user_id ? "Participant" : "Team")} · declared ${new Date(row.declared_at).toLocaleDateString()}` : "Available placement"}</p></div></div>{row && <button type="button" onClick={() => void removePlacement(row)} className="rounded-lg border border-rose-300/50 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-800 transition hover:bg-rose-100">Remove</button>}</div>; })}</div>}
+    </div>
+    <p className="text-xs leading-5 text-slate-500">Supabase verifies the participant or team is registered for the event and prevents duplicate placements.</p>
+  </div>;
+}
+
+function placeName(place: number) { return place === 1 ? "1st" : place === 2 ? "2nd" : "3rd"; }
 
 type PaymentRecordRow = {
   id: string;
