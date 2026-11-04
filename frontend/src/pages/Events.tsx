@@ -15,7 +15,6 @@ import {
   type EventCategory,
   type ParticipationType,
 } from "../data/events";
-import { galleryData } from "../data/gallery";
 
 interface DropdownProps {
   label: string;
@@ -142,11 +141,6 @@ const EventCard = ({ event, position, onClick }: EventCardProps) => {
   const sceneRef = useRef<HTMLDivElement>(null);
   const isCenter = position === 0;
   const abs = Math.abs(position);
-  const imageIndex = [...event.id].reduce(
-    (total, character) => total + character.charCodeAt(0),
-    0,
-  ) % galleryData.length;
-  const eventImage = galleryData[imageIndex]?.image;
 
   // card color accents based on category
   const categoryAccent: Record<EventCategory, string> = {
@@ -251,13 +245,11 @@ const EventCard = ({ event, position, onClick }: EventCardProps) => {
               background: `radial-gradient(ellipse at 50% 30%, ${accent}18 0%, transparent 70%)`,
             }}
           >
-            {eventImage && (
-              <img
-                src={eventImage}
-                alt={`${event.title} event`}
-                className="absolute inset-0 h-full w-full object-cover opacity-75"
-              />
-            )}
+            <img
+              src={event.image}
+              alt={`${event.title} event`}
+              className="absolute inset-0 h-full w-full object-cover opacity-75"
+            />
             <div className="absolute inset-0 bg-black/35" />
 
             <span

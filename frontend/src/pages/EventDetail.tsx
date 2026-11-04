@@ -10,7 +10,6 @@ import {
 import { Link, Navigate, useParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import LiquidGradientBackground from "../components/LiquidGradientBackground";
-import { galleryData } from "../data/gallery";
 import { mockEvents, type Event, type EventCategory } from "../data/events";
 
 const categoryAccent: Record<EventCategory, string> = {
@@ -21,15 +20,6 @@ const categoryAccent: Record<EventCategory, string> = {
   Robotics: "#38bdf8",
   Tech: "#a78bfa",
   Miscellaneous: "#f472b6",
-};
-
-const getEventImage = (event: Event) => {
-  const imageIndex = [...event.id].reduce(
-    (total, character) => total + character.charCodeAt(0),
-    0,
-  ) % galleryData.length;
-
-  return galleryData[imageIndex]?.image;
 };
 
 const EventTitle = ({ title, accent }: { title: string; accent: string }) => {
@@ -98,7 +88,6 @@ const EventTitle = ({ title, accent }: { title: string; accent: string }) => {
 const EventPoster = ({ event }: { event: Event }) => {
   const sceneRef = useRef<HTMLDivElement>(null);
   const accent = categoryAccent[event.category];
-  const eventImage = getEventImage(event);
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!sceneRef.current || e.pointerType !== "mouse") return;
@@ -151,13 +140,11 @@ const EventPoster = ({ event }: { event: Event }) => {
               background: `radial-gradient(ellipse at 50% 30%, ${accent}18 0%, transparent 70%)`,
             }}
           >
-            {eventImage && (
-              <img
-                src={eventImage}
-                alt={`${event.title} event`}
-                className="absolute inset-0 h-full w-full object-cover opacity-75"
-              />
-            )}
+            <img
+              src={event.image}
+              alt={`${event.title} event`}
+              className="absolute inset-0 h-full w-full object-cover opacity-75"
+            />
             <div className="absolute inset-0 bg-black/35" />
             <span className="absolute left-5 top-5 rounded-md border border-white/10 bg-black/40 px-3 py-1.5 font-space-mono text-[9px] font-bold uppercase tracking-[0.18em]">
               {event.category}

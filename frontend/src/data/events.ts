@@ -28,6 +28,7 @@ export interface Event {
   id: string;
   slug: string;
   title: string;
+  image: string;
   category: EventCategory;
   participation: ParticipationType;
   description: string;
@@ -38,6 +39,44 @@ export interface Event {
   registration_open: boolean;
   icon: string;
 }
+
+const postImageModules = import.meta.glob(
+  "../assets/images/posts/event_image-*",
+  {
+    eager: true,
+    query: "?url",
+    import: "default",
+  },
+) as Record<string, string>;
+
+const normalizeImageName = (value: string) =>
+  value.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+const postImages = Object.entries(postImageModules).reduce<
+  Record<string, string>
+>((images, [path, image]) => {
+  const filename = path.split("/").pop() ?? "";
+  const name = filename
+    .replace(/^event_image-/, "")
+    .replace(/\.[^.]+$/, "");
+  images[normalizeImageName(name)] = image;
+  return images;
+}, {});
+
+const eventImageAliases: Record<string, string> = {
+  circuitrix: "not-found",
+  hackathon: "Paradigm_Shift",
+  mazemerize: "Mazemarize",
+  robowars: "Robowar",
+  seance: "Seance_60",
+};
+
+const getEventImage = (title: string) =>
+  postImages[
+    normalizeImageName(
+      eventImageAliases[normalizeImageName(title)] ?? title,
+    )
+  ] ?? postImages[normalizeImageName("not-found")];
 
 const event = (
   id: string,
@@ -62,10 +101,10 @@ const event = (
 });
 
 export const mockEventRecords: EventRecord[] = [
-  event("a1", "Bridge the Gap", "Civilized", "team", "Connect ideas, people, and perspectives.", "Bridge the Gap challenges teams to design a practical solution for a social or community problem. Present your approach, defend your choices, and show how thoughtful collaboration can turn divided perspectives into measurable progress."),
+  event("a4", "Instridge", "Civilized", "team", "Build an intelligent bridge from insight to action.", "Instridge asks teams to study a real-world situation, identify the forces shaping it, and propose a clear intervention."),
   event("a2", "Rotolare", "Civilized", "team", "Roll forward with strategy, speed, and teamwork.", "Rotolare combines planning, coordination, and fast decisions in a lively team challenge. Participants must adapt to changing tasks, keep communication sharp, and use every round to improve their route to the final objective."),
   event("a3", "Rise n Build", "Civilized", "team", "Create something useful from a bold shared idea.", "Rise n Build is a collaborative challenge where teams move from a rough concept to a working model or convincing prototype. Judges will look for originality, feasibility, teamwork, and the clarity of the story behind the build."),
-  event("a4", "Instridge", "Civilized", "team", "Build an intelligent bridge from insight to action.", "Instridge asks teams to study a real-world situation, identify the forces shaping it, and propose a clear intervention."),
+  event("a1", "Bridge the Gap", "Civilized", "team", "Connect ideas, people, and perspectives.", "Bridge the Gap challenges teams to design a practical solution for a social or community problem. Present your approach, defend your choices, and show how thoughtful collaboration can turn divided perspectives into measurable progress."),
   event("a5", "CAD", "Civilized", "solo", "Turn an idea into a precise digital design.", "CAD challenges participants to create accurate, practical designs while balancing creativity with engineering constraints."),
   event("a6", "Survey Hunt", "Civilized", "team", "Explore, observe, and uncover the right answers.", "Survey Hunt rewards careful observation, collaboration, and the ability to turn field findings into useful conclusions."),
   event("a7", "Circuitrix", "Robotics", "team", "Trace the signal from problem to working circuit.", "Circuitrix combines electronics knowledge, debugging, and hands-on collaboration."),
@@ -110,6 +149,7 @@ export const mockEvents: Event[] = mockEventRecords.map((record) => ({
   id: record.id,
   slug: record.slug,
   title: record.name,
+  image: getEventImage(record.name),
   category: record.category,
   participation: record.event_type.toUpperCase() as ParticipationType,
   description: record.description,
