@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Navbar from "../components/Navbar";
 import LiquidGradientBackground from "../components/LiquidGradientBackground";
 import {
@@ -19,27 +19,91 @@ const StaffCard = ({ member }: { member: StaffMember }) => (
     <div className="staff-card-image-wrap">
       <img className="staff-card-image" src={member.image} alt={`${member.name}, ${member.role}`} />
       <div className="staff-card-shade" />
-      <div className="staff-socials" aria-label={`${member.name}'s social links`}>
-        {socials.map(({ label, href, icon }) => (
-          <a
-            key={label}
-            href={href}
-            target="_blank"
-            rel="noreferrer"
-            aria-label={`${member.name} on ${label}`}
-            className="staff-social-link"
-          >
-            <i className={`bx ${icon}`} aria-hidden="true" />
-          </a>
-        ))}
-      </div>
+      {member.group === "students" && (
+        <div className="staff-socials" aria-label={`${member.name}'s social links`}>
+          {socials.map(({ label, href, icon }) => (
+            <a
+              key={label}
+              href={href}
+              target="_blank"
+              rel="noreferrer"
+              aria-label={`${member.name} on ${label}`}
+              className="staff-social-link"
+            >
+              <i className={`bx ${icon}`} aria-hidden="true" />
+            </a>
+          ))}
+        </div>
+      )}
       <div className="staff-card-copy">
-        <p className="staff-card-role">{member.role}</p>
+        {member.group === "students" && (
+          <p className="staff-card-role">{member.role}</p>
+        )}
         <h2>{member.name}</h2>
       </div>
     </div>
   </article>
 );
+
+const StaffHeading = () => {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<HTMLHeadingElement>(null);
+  const mouse = useRef({ x: 0, y: 0 });
+  const position = useRef({ x: 0, y: 0 });
+  const rafId = useRef(0);
+
+  useEffect(() => {
+    const lerp = (from: number, to: number, amount: number) =>
+      from + (to - from) * amount;
+
+    const tick = () => {
+      position.current.x = lerp(position.current.x, mouse.current.x, 0.08);
+      position.current.y = lerp(position.current.y, mouse.current.y, 0.08);
+
+      overlayRef.current?.style.setProperty(
+        "--splash-x",
+        `${position.current.x}px`,
+      );
+      overlayRef.current?.style.setProperty(
+        "--splash-y",
+        `${position.current.y}px`,
+      );
+
+      rafId.current = requestAnimationFrame(tick);
+    };
+
+    rafId.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId.current);
+  }, []);
+
+  const handleMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (!wrapRef.current) return;
+    const rect = wrapRef.current.getBoundingClientRect();
+    mouse.current.x = event.clientX - rect.left;
+    mouse.current.y = event.clientY - rect.top;
+  };
+
+  return (
+    <div
+      ref={wrapRef}
+      className="events-splash-wrap relative inline-block"
+      onMouseMove={handleMouseMove}
+      onMouseEnter={() => overlayRef.current?.classList.add("is-visible")}
+      onMouseLeave={() => overlayRef.current?.classList.remove("is-visible")}
+    >
+      <h1 className="font-squid text-5xl leading-none tracking-wider text-white/90 sm:text-6xl md:text-7xl lg:text-8xl select-none py-4">
+        organizing staff
+      </h1>
+      <h1
+        ref={overlayRef}
+        aria-hidden="true"
+        className="events-splash-overlay pointer-events-none font-squid text-5xl leading-none tracking-wider sm:text-6xl md:text-7xl lg:text-8xl"
+      >
+        organizing staff
+      </h1>
+    </div>
+  );
+};
 
 const Committee = () => {
   const [activeGroup, setActiveGroup] = useState<StaffGroup>("faculty");
@@ -53,13 +117,9 @@ const Committee = () => {
       <LiquidGradientBackground />
       <Navbar />
 
-      <div className="relative z-10 mx-auto w-full max-w-[1440px] px-5 pb-16 pt-28 sm:px-8 lg:px-14">
+      <div className="relative z-10 mx-auto w-full max-w-[1440px] px-5 pb-16 pt-24 sm:px-8 lg:px-14">
         <header className="committee-heading">
-          <div className="events-splash-wrap relative inline-block">
-            <h1 className="font-squid text-5xl leading-none tracking-wider text-white/90 sm:text-6xl md:text-7xl lg:text-8xl">
-              organizing staff
-            </h1>
-          </div>
+          <StaffHeading />
           <p>the people behind sristi 2k26</p>
         </header>
 
