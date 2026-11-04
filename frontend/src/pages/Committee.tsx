@@ -106,7 +106,7 @@ const StaffHeading = () => {
 };
 
 const Committee = () => {
-  const [activeGroup, setActiveGroup] = useState<StaffGroup>("faculty");
+  const [activeGroup, setActiveGroup] = useState<StaffGroup>("students");
   const visibleStaff = useMemo(
     () => (activeGroup === "faculty" ? faculty : students),
     [activeGroup],
@@ -124,7 +124,7 @@ const Committee = () => {
         </header>
 
         <div className="staff-filter-bar" role="group" aria-label="Staff category">
-          {(["faculty", "students"] as const).map((group) => (
+          {(["students", "faculty"] as const).map((group) => (
             <button
               key={group}
               type="button"
