@@ -37,6 +37,16 @@ import "./AdminEvents.css";
 
 type EventType = "solo" | "team";
 
+const EVENT_CATEGORIES = [
+  "Civilized",
+  "Gaming",
+  "Management",
+  "Mechanized",
+  "Robotics",
+  "Technical",
+  "Miscellaneous",
+] as const;
+
 type EventRecord = {
   id: string;
   name: string;
@@ -757,7 +767,7 @@ export default function AdminEvents() {
                     </select>
                   </FormField>
                   <FormField label="Category" required>
-                    <input
+                    <select
                       required
                       value={form.category}
                       onChange={(event) =>
@@ -767,8 +777,22 @@ export default function AdminEvents() {
                         }))
                       }
                       className={inputClass}
-                      placeholder="e.g. Robotics"
-                    />
+                    >
+                      <option value="" disabled>
+                        Select a category
+                      </option>
+                      {form.category &&
+                        !EVENT_CATEGORIES.includes(
+                          form.category as (typeof EVENT_CATEGORIES)[number],
+                        ) && (
+                          <option value={form.category}>{form.category}</option>
+                        )}
+                      {EVENT_CATEGORIES.map((category) => (
+                        <option key={category} value={category}>
+                          {category}
+                        </option>
+                      ))}
+                    </select>
                   </FormField>
                 </div>
                 <FormField label="Venue" required>
