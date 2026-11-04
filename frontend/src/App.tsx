@@ -11,7 +11,6 @@ import AdminEvents from "./pages/admin/AdminEvents.tsx";
 import AdminSectionPlaceholder from "./pages/admin/AdminSectionPlaceholder.tsx";
 import CustomCursor from "./components/CustomCursor.tsx";
 
-
 function AppRoutes() {
   const { pathname } = useLocation();
   const isAdminRoute = pathname.startsWith("/admin");
@@ -28,6 +27,7 @@ function AppRoutes() {
         <Route path="/events" element={<Events />} />
         <Route path="/events/:eventSlug" element={<EventDetail />} />
         <Route path="/accommodation" element={<Accommodation />} />
+        {/* Public leaderboard route paused until the results page is scheduled. */}
         <Route path="/admin" element={<AdminOverview />} />
         <Route path="/admin/events" element={<AdminEvents />} />
         <Route
@@ -37,6 +37,10 @@ function AppRoutes() {
         <Route
           path="/admin/attendance"
           element={<AdminSectionPlaceholder section="attendance" />}
+        />
+        <Route
+          path="/admin/results"
+          element={<AdminSectionPlaceholder section="results" />}
         />
         <Route
           path="/admin/payments"

@@ -34,7 +34,7 @@ const Navbar = () => {
   }, []);
 
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-  `
+    `
     group
     relative
     flex
@@ -46,19 +46,13 @@ const Navbar = () => {
     tracking-widest
     transition-all
     duration-300
-    ${
-      isActive
-        ? "text-pink-500"
-        : "text-white"
-    }
+    ${isActive ? "text-pink-500" : "text-white"}
     hover:text-pink-500
   `;
 
   return (
     <nav className="fixed no-trail top-0 left-0 w-full z-200">
-
       <div className="mx-auto">
-
         <div
           className="
             relative
@@ -74,14 +68,9 @@ const Navbar = () => {
             shadow-[0_10px_40px_rgba(0,0,0,0.3)]
           "
         >
-
           {/* ================= LOGO ================= */}
 
-          <Link
-            to="/"
-            className="flex items-center gap-3 group"
-          >
-
+          <Link to="/" className="flex items-center gap-3 group">
             {/* jgec logo */}
             <img
               src={jgeclogo}
@@ -91,18 +80,17 @@ const Navbar = () => {
 
             {/* Logo Text */}
             <div className="leading-none">
-
-              <img src={sristilogo} alt="SRISTI Logo" className="h-9 group-hover:scale-110 transition-transform duration-300" />
-
+              <img
+                src={sristilogo}
+                alt="SRISTI Logo"
+                className="h-9 group-hover:scale-110 transition-transform duration-300"
+              />
             </div>
-
           </Link>
-
 
           {/* ================= DESKTOP NAV ================= */}
 
           <div className="hidden no-trail md:flex items-center gap-10 py-2">
-
             <NavLink to="/" className={navLinkClass}>
               <NavShape shape="square" />
 
@@ -139,8 +127,8 @@ const Navbar = () => {
               </span>
             </NavLink>
 
+            {/* Public leaderboard link paused until the results page is scheduled. */}
           </div>
-
 
           {/* ================= PROFILE ================= */}
 
@@ -163,7 +151,6 @@ const Navbar = () => {
             <CircleUserRound size={22} />
           </button>
 
-
           {/* ================= MOBILE MENU BUTTON ================= */}
 
           <button
@@ -184,7 +171,6 @@ const Navbar = () => {
               text-pink-500
             "
           >
-
             <span
               className={`
                 block
@@ -193,11 +179,7 @@ const Navbar = () => {
                 bg-current
                 transition-all
                 duration-300
-                ${
-                  isMenuOpen
-                    ? "translate-y-1 rotate-45"
-                    : ""
-                }
+                ${isMenuOpen ? "translate-y-1 rotate-45" : ""}
               `}
             />
 
@@ -209,18 +191,11 @@ const Navbar = () => {
                 bg-current
                 transition-all
                 duration-300
-                ${
-                  isMenuOpen
-                    ? "-translate-y-1 -rotate-45"
-                    : ""
-                }
+                ${isMenuOpen ? "-translate-y-1 -rotate-45" : ""}
               `}
             />
-
           </button>
-
         </div>
-
 
         {/* ================= MOBILE MENU ================= */}
 
@@ -230,14 +205,9 @@ const Navbar = () => {
             overflow-hidden
             transition-all
             duration-300
-            ${
-              isMenuOpen
-                ? "max-h-96 opacity-100"
-                : "max-h-0 opacity-0"
-            }
+            ${isMenuOpen ? "max-h-[36rem] opacity-100" : "max-h-0 opacity-0"}
           `}
         >
-
           <div
             className="
               mt-2
@@ -252,14 +222,13 @@ const Navbar = () => {
               gap-6
             "
           >
-
             <NavLink
               to="/"
               className={navLinkClass}
               onClick={() => setIsMenuOpen(false)}
             >
-                <Square size={16} className="inline-block mr-1" />
-                <span className="font-bold">HOME</span>
+              <Square size={16} className="inline-block mr-1" />
+              <span className="font-bold">HOME</span>
             </NavLink>
 
             <NavLink
@@ -267,8 +236,8 @@ const Navbar = () => {
               className={navLinkClass}
               onClick={() => setIsMenuOpen(false)}
             >
-                <Circle size={16} className="inline-block mr-1" />
-                <span className="font-bold">GAMES</span>
+              <Circle size={16} className="inline-block mr-1" />
+              <span className="font-bold">GAMES</span>
             </NavLink>
 
             <NavLink
@@ -276,8 +245,8 @@ const Navbar = () => {
               className={navLinkClass}
               onClick={() => setIsMenuOpen(false)}
             >
-                <Triangle size={16} className="inline-block mr-1" />
-                <span className="font-bold">STAFFS</span>
+              <Triangle size={16} className="inline-block mr-1" />
+              <span className="font-bold">STAFFS</span>
             </NavLink>
 
             <NavLink
@@ -288,6 +257,8 @@ const Navbar = () => {
               <House size={16} className="inline-block mr-1" />
               <span className="font-bold">ACCOMMODATION</span>
             </NavLink>
+
+            {/* Public leaderboard link paused until the results page is scheduled. */}
 
             <button
               type="button"
@@ -300,11 +271,8 @@ const Navbar = () => {
               <UserRound size={16} />
               <span className="font-bold">PROFILE</span>
             </button>
-
           </div>
-
         </div>
-
       </div>
       {/* ================= PLAYER PROFILE DRAWER ================= */}
 
@@ -335,19 +303,13 @@ const Navbar = () => {
           shadow-[-20px_0_60px_rgba(236,72,153,0.15)]
           transition-transform duration-500
           ease-[cubic-bezier(0.22,1,0.36,1)]
-          ${
-            isProfileOpen
-              ? "translate-x-0"
-              : "translate-x-full"
-          }
+          ${isProfileOpen ? "translate-x-0" : "translate-x-full"}
         `}
         style={{ zIndex: 1000 }}
       >
         <div className="h-full overflow-y-auto p-6 text-white">
-
           {/* HEADER */}
           <div className="flex items-center justify-between mb-10">
-
             <div>
               <p className="text-pink-500 font-mono text-xs tracking-[0.3em]">
                 PLAYER DATABASE
@@ -370,18 +332,17 @@ const Navbar = () => {
             >
               <X size={20} />
             </button>
-
           </div>
 
-
           {/* PLAYER IDENTITY */}
-          <div className="
+          <div
+            className="
             relative overflow-hidden
             border border-pink-500/40
             bg-linear-to-br from-pink-950/50 to-black
             p-6 mb-6
-          ">
-
+          "
+          >
             {/* LOGOUT BUTTON */}
             <button
               type="button"
@@ -413,13 +374,14 @@ const Navbar = () => {
             </div>
 
             <div className="relative z-10">
-
-              <div className="
+              <div
+                className="
                 w-20 h-20 rounded-full
                 border-2 border-pink-500
                 flex items-center justify-center
                 text-pink-500 mb-5
-              ">
+              "
+              >
                 <UserRound size={42} />
               </div>
 
@@ -441,25 +403,22 @@ const Navbar = () => {
                   REGISTERED PLAYER
                 </span>
               </div>
-
             </div>
-
           </div>
-
 
           {/* PLAYER INFORMATION */}
           <div className="mb-6">
-
-            <h3 className="
+            <h3
+              className="
               font-title text-lg
               text-pink-500 mb-5
               tracking-widest
-            ">
+            "
+            >
               PLAYER INFORMATION
             </h3>
 
             <div className="space-y-5">
-
               {[
                 ["EMAIL", "dd2874@cse.jgec.ac.in"],
                 ["PHONE", "+91 9733717805"],
@@ -467,67 +426,52 @@ const Navbar = () => {
                 ["DEPARTMENT", "Computer Science & Engineering"],
                 ["ACADEMIC YEAR", "3rd Year"],
               ].map(([label, value]) => (
-
-                <div
-                  key={label}
-                  className="border-b border-white/10 pb-3"
-                >
-
-                  <p className="
+                <div key={label} className="border-b border-white/10 pb-3">
+                  <p
+                    className="
                     text-gray-500 text-[10px]
                     tracking-[0.2em] mb-2
-                  ">
+                  "
+                  >
                     {label}
                   </p>
 
-                  <p className="text-sm font-ui text-white">
-                    {value}
-                  </p>
-
+                  <p className="text-sm font-ui text-white">{value}</p>
                 </div>
-
               ))}
-
             </div>
-
           </div>
 
-
           {/* FOOTER */}
-          <div className="
+          <div
+            className="
             border border-pink-500/30
             bg-pink-500/5 p-4
             flex items-center justify-between
-          ">
-
+          "
+          >
             <div>
               <p className="text-gray-500 text-[10px] tracking-widest">
                 PLAYER STATUS
               </p>
 
-              <p className="text-pink-500 font-title mt-1">
-                VERIFIED
-              </p>
+              <p className="text-pink-500 font-title mt-1">VERIFIED</p>
             </div>
 
-            <ShieldCheck
-              size={28}
-              className="text-pink-500"
-            />
-
+            <ShieldCheck size={28} className="text-pink-500" />
           </div>
 
-          <p className="
+          <p
+            className="
             text-center text-gray-600
             text-[9px] tracking-[0.3em]
             mt-8 font-mono
-          ">
+          "
+          >
             YOUR GAME. YOUR IDENTITY. SRISTI 2K26.
           </p>
-
         </div>
       </div>
-
     </nav>
   );
 };

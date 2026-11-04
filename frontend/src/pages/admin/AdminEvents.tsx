@@ -24,6 +24,7 @@ import {
   Plus,
   Search,
   Settings,
+  Trophy,
   ShieldCheck,
   Trash2,
   Users,
@@ -409,6 +410,11 @@ export default function AdminEvents() {
             href="/admin/attendance"
             icon={<ClipboardCheck size={18} />}
             label="Attendance"
+          />
+          <NavItem
+            href="/admin/results"
+            icon={<Trophy size={18} />}
+            label="Results"
           />
           <NavItem
             href="/admin/payments"
