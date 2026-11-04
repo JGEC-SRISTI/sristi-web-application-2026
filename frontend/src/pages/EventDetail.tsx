@@ -126,7 +126,7 @@ const EventPoster = ({ event }: { event: Event }) => {
   };
 
   return (
-    <div className="w-[380px] max-w-[420px] perspective-[1200px]">
+    <div className="event-detail-poster w-[380px] max-w-[420px] perspective-[1200px]">
       <div
         ref={sceneRef}
         onPointerMove={handlePointerMove}
@@ -146,7 +146,7 @@ const EventPoster = ({ event }: { event: Event }) => {
           }}
         >
           <div
-            className="relative flex h-[min(48vh,400px)] items-center justify-center overflow-hidden rounded-t-2xl"
+            className="event-detail-poster-image relative flex h-[min(48vh,400px)] items-center justify-center overflow-hidden rounded-t-2xl"
             style={{
               background: `radial-gradient(ellipse at 50% 30%, ${accent}18 0%, transparent 70%)`,
             }}
@@ -189,58 +189,63 @@ const EventDetail = () => {
   const accent = categoryAccent[event.category];
 
   return (
-    <main className="events-page relative h-[100svh] overflow-hidden text-white">
+    <main className="event-detail-page events-page relative h-[100svh] overflow-hidden text-white">
       <LiquidGradientBackground />
       <Navbar />
       <div className="relative z-10 mx-auto flex h-full w-full max-w-7xl flex-col px-5 pb-6 pt-24 sm:px-10 lg:px-16">
         <Link
           to="/events"
-          className="group mb-4 inline-flex w-fit items-center gap-2 font-a24 text-xs uppercase tracking-[0.12em] text-white/60 transition-colors hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+          className="event-detail-back group mb-4 inline-flex w-fit items-center gap-2 font-a24 text-xs uppercase tracking-[0.12em] text-white/60 transition-colors hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+          aria-label="Back to events"
         >
           <ArrowLeft size={15} className="transition-transform group-hover:-translate-x-1" />
           Back to events
         </Link>
-        <div className="grid min-h-0 flex-1 items-center gap-8 lg:grid-cols-[minmax(280px,0.55fr)_minmax(0,1.45fr)] lg:gap-8">
-          <div className="relative right-20 bottom-5 lg:justify-start ">
+        <div className="event-detail-content grid min-h-0 flex-1 items-center gap-8 lg:grid-cols-[minmax(280px,0.55fr)_minmax(0,1.45fr)] lg:gap-8">
+          <div className="event-detail-poster-wrap relative right-20 bottom-5 lg:justify-start">
             <EventPoster event={event} />
           </div>
-          <section className="relative bottom-6 left-4 min-w-0 text-left">
-            <p
-              className="mb-3 text-left font-space-mono text-[10px] uppercase tracking-[0.3em]"
-              style={{ color: accent }}
-            >
-              {event.category} / {event.participation}
-            </p>
-            <EventTitle title={event.title} accent={accent} />
-            <p className="mt-5 font-space-mono text-xs uppercase leading-6 tracking-[0.1em] text-white/65 sm:text-sm">
+          <div className="event-detail-copy min-w-0">
+            <section className="event-detail-header relative bottom-6 left-4 text-left">
+              <p
+                className="mb-3 text-left font-space-mono text-[10px] uppercase tracking-[0.3em]"
+                style={{ color: accent }}
+              >
+                {event.category} / {event.participation}
+              </p>
+              <EventTitle title={event.title} accent={accent} />
+            </section>
+            <section className="event-detail-info relative text-left">
+              <p className="mt-5 font-space-mono text-xs uppercase leading-6 tracking-[0.1em] text-white/65 sm:text-sm">
               {event.description}
-            </p>
-            <div className="mt-6 border-y border-white/15 py-4">
-              <h2 className="font-a24 text-sm uppercase tracking-[0.15em] text-white">Event leads</h2>
-              <div className="mt-4 grid gap-3 font-space-mono text-xs uppercase tracking-[0.12em] text-white/65 sm:grid-cols-2">
-                <p>Lead1 <span className="ml-3 text-white/35">+91 98765 43210</span></p>
-                <p>Lead2 <span className="ml-3 text-white/35">+91 98765 43210</span></p>
+              </p>
+              <div className="mt-6 border-y border-white/15 py-4">
+                <h2 className="font-a24 text-sm uppercase tracking-[0.15em] text-white">Event leads</h2>
+                <div className="mt-4 grid gap-3 font-space-mono text-xs uppercase tracking-[0.12em] text-white/65 sm:grid-cols-2">
+                  <p>Lead1 <span className="ml-3 text-white/35">+91 98765 43210</span></p>
+                  <p>Lead2 <span className="ml-3 text-white/35">+91 98765 43210</span></p>
+                </div>
               </div>
-            </div>
-            <a
-              href="https://example.com/sristi-brochure.pdf"
-              target="_blank"
-              rel="noreferrer"
-              className="mt-5 inline-flex items-center gap-2 font-space-mono text-[10px] uppercase tracking-[0.18em] text-white/70 underline decoration-white/30 underline-offset-8 transition-colors hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
-            >
-              View brochure <ExternalLink size={13} />
-            </a>
-            <div className="mt-10 flex flex-wrap gap-3">
-              {event.participation === "TEAM" ? (
-                <>
-                  <button type="button" className="event-action-button event-action-button-primary font-a24">Create team</button>
-                  <button type="button" className="event-action-button font-a24">Join team</button>
-                </>
-              ) : (
-                <button type="button" className="event-action-button event-action-button-primary font-a24">Register</button>
-              )}
-            </div>
-          </section>
+              <a
+                href="https://example.com/sristi-brochure.pdf"
+                target="_blank"
+                rel="noreferrer"
+                className="mt-5 inline-flex items-center gap-2 font-space-mono text-[10px] uppercase tracking-[0.18em] text-white/70 underline decoration-white/30 underline-offset-8 transition-colors hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+              >
+                View brochure <ExternalLink size={13} />
+              </a>
+              <div className="mt-10 flex flex-wrap gap-3">
+                {event.participation === "TEAM" ? (
+                  <>
+                    <button type="button" className="event-action-button event-action-button-primary font-a24">Create team</button>
+                    <button type="button" className="event-action-button font-a24">Join team</button>
+                  </>
+                ) : (
+                  <button type="button" className="event-action-button event-action-button-primary font-a24">Register</button>
+                )}
+              </div>
+            </section>
+          </div>
         </div>
       </div>
     </main>
