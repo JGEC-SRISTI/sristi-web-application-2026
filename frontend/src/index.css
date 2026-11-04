@@ -91,6 +91,10 @@ body {
   transition: opacity 0.95s ease;
 }
 
+.accommodation-page .liquid-gradient-background {
+  opacity: 0.12;
+}
+
 /* might add more elements here later to control the liquid gradient */
 .events-page:has(.event-card-scene:hover, .events-splash-wrap:hover, .dropdown-menu:hover) .liquid-gradient-background {
   opacity: 0.2;
