@@ -8,20 +8,24 @@ import {
   type StaffMember,
 } from "../data/staff";
 
-const socials = [
-  { label: "Instagram", href: "https://www.instagram.com/", icon: "bxl-instagram" },
-  { label: "LinkedIn", href: "https://www.linkedin.com/", icon: "bxl-linkedin" },
-  { label: "Facebook", href: "https://www.facebook.com/", icon: "bxl-facebook" },
-];
+const socialPlatforms = [
+  { key: "instagram", label: "Instagram", icon: "bxl-instagram" },
+  { key: "linkedin", label: "LinkedIn", icon: "bxl-linkedin" },
+] as const;
+
+const getSocialLinks = (member: StaffMember) => socialPlatforms.map((platform) => ({
+  ...platform,
+  href: member.socials?.[platform.key],
+})).filter((social): social is typeof social & { href: string } => Boolean(social.href));
 
 const StaffCard = ({ member }: { member: StaffMember }) => (
   <article className="staff-card group">
     <div className="staff-card-image-wrap">
       <img className="staff-card-image" src={member.image} alt={`${member.name}, ${member.role}`} />
       <div className="staff-card-shade" />
-      {member.group === "students" && (
+      {member.group === "students" && member.socials && (
         <div className="staff-socials" aria-label={`${member.name}'s social links`}>
-          {socials.map(({ label, href, icon }) => (
+          {getSocialLinks(member).map(({ label, href, icon }) => (
             <a
               key={label}
               href={href}
