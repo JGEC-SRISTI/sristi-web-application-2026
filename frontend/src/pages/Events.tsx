@@ -397,6 +397,7 @@ const Events = () => {
   });
   const [filterRevision, setFilterRevision] = useState(0);
   const [showIntro, setShowIntro] = useState(true);
+  const lastWheelNavigationRef = useRef(0);
   const pendingNavigationRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
@@ -438,6 +439,7 @@ const Events = () => {
   };
 
   const goLeft = useCallback(() => {
+    if (filteredEvents.length <= 1) return;
     cancelPendingNavigation();
     setActiveIndex((prev) =>
       (prev - 1 + filteredEvents.length) % filteredEvents.length
@@ -445,9 +447,50 @@ const Events = () => {
   }, [cancelPendingNavigation, filteredEvents.length]);
 
   const goRight = useCallback(() => {
+    if (filteredEvents.length <= 1) return;
     cancelPendingNavigation();
     setActiveIndex((prev) => (prev + 1) % filteredEvents.length);
   }, [cancelPendingNavigation, filteredEvents.length]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (
+        target?.closest("button, input, select, textarea, [contenteditable='true']")
+      ) {
+        return;
+      }
+
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        goLeft();
+      } else if (event.key === "ArrowRight") {
+        event.preventDefault();
+        goRight();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [goLeft, goRight]);
+
+  const handleStageWheel = (event: React.WheelEvent<HTMLDivElement>) => {
+    if (filteredEvents.length <= 1 || Math.abs(event.deltaY) < Math.abs(event.deltaX)) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const now = Date.now();
+    if (now - lastWheelNavigationRef.current < 350) return;
+    lastWheelNavigationRef.current = now;
+
+    if (event.deltaY > 0) {
+      goRight();
+    } else {
+      goLeft();
+    }
+  };
 
   const getVisibleCards = () => {
     if (filteredEvents.length === 0) return [];
@@ -532,7 +575,10 @@ const Events = () => {
           </div>
         </div>
 
-        <div className="events-card-stage relative flex-1 flex items-center justify-center min-h-0">
+        <div
+          className="events-card-stage relative flex-1 flex items-center justify-center min-h-0"
+          onWheel={handleStageWheel}
+        >
 
           <button
             type="button"
