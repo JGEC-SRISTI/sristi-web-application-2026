@@ -1,4 +1,5 @@
 import Navbar from "../components/Navbar";
+import LiquidGradientBackground from "../components/LiquidGradientBackground";
 import {
   ArrowUpRight,
   Phone,
@@ -102,8 +103,9 @@ function Accommodation() {
     });
     };
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#080808] text-white">
+    <main className="accommodation-page events-page relative min-h-screen overflow-hidden bg-[#080808] text-white">
 
+      <LiquidGradientBackground />
       <Navbar />
 
       {/* BACKGROUND */}
@@ -552,7 +554,7 @@ function Accommodation() {
 
             <div className="absolute top-4 left-4 w-5 h-5 border-t-2 border-l-2 border-pink-500/50" />
 
-            <div className="absolute bottom-4 right-4 w-5 h-5 border-b-2 border-r-2 border-pink-500/50" />
+            <div className="absolute right-[-10px] bottom-[-10px] w-5 h-5 border-b-2 border-r-2 border-pink-500/50" />
 
             <p className="font-mono text-xs tracking-[0.3em] text-pink-500 mb-5">
               YOUR NEXT MOVE
@@ -577,6 +579,13 @@ function Accommodation() {
               <ArrowUpRight size={17} />
             </a>
 
+            <a
+              href="mailto:contact@sristi2k26.tech"
+              className="block mt-5 font-ui text-sm text-gray-400 hover:text-gray-300 hover:underline transition-colors"
+            >
+              contact@sristi2k26.tech
+            </a>
+
           </section>
 
           {/* FOOTER */}
@@ -586,7 +595,7 @@ function Accommodation() {
               sristi 2k26
             </p>
 
-            <p className="font-mono text-[9px] text-gray-600 tracking-widest text-center">
+            <p className="relative top-[-2] font-mono text-[9px] text-gray-600 tracking-widest text-center">
               15 YEARS OF INNOVATION // JGEC
             </p>
 

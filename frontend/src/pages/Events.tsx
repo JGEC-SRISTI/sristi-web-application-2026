@@ -15,7 +15,6 @@ import {
   type EventCategory,
   type ParticipationType,
 } from "../data/events";
-import { galleryData } from "../data/gallery";
 
 interface DropdownProps {
   label: string;
@@ -65,7 +64,7 @@ const Dropdown = ({ label, value, options, onChange }: DropdownProps) => {
           flex items-center gap-2.5
           px-5 py-2.5
           rounded-lg
-          font-a24 text-[11px] font-medium tracking-[0.02em] uppercase
+          font-a24 text-[11px] font-medium tracking-[0.02em] uppercase whitespace-nowrap
           border transition-all duration-300
           ${
             open
@@ -142,11 +141,6 @@ const EventCard = ({ event, position, onClick }: EventCardProps) => {
   const sceneRef = useRef<HTMLDivElement>(null);
   const isCenter = position === 0;
   const abs = Math.abs(position);
-  const imageIndex = [...event.id].reduce(
-    (total, character) => total + character.charCodeAt(0),
-    0,
-  ) % galleryData.length;
-  const eventImage = galleryData[imageIndex]?.image;
 
   // card color accents based on category
   const categoryAccent: Record<EventCategory, string> = {
@@ -207,6 +201,8 @@ const EventCard = ({ event, position, onClick }: EventCardProps) => {
     <div
       onClick={onClick}
       className={`
+        event-card
+        event-card-position-${position}
         flex-shrink-0
         transition-[transform,width,filter,opacity] duration-1200 ease-[cubic-bezier(0.02,1,0.7,1)]
         ${isCenter ? "z-20 cursor-pointer" : "z-10 cursor-pointer"}
@@ -249,13 +245,11 @@ const EventCard = ({ event, position, onClick }: EventCardProps) => {
               background: `radial-gradient(ellipse at 50% 30%, ${accent}18 0%, transparent 70%)`,
             }}
           >
-            {eventImage && (
-              <img
-                src={eventImage}
-                alt={`${event.title} event`}
-                className="absolute inset-0 h-full w-full object-cover opacity-75"
-              />
-            )}
+            <img
+              src={event.image}
+              alt={`${event.title} event`}
+              className="absolute inset-0 h-full w-full object-cover opacity-75"
+            />
             <div className="absolute inset-0 bg-black/35" />
 
             <span
@@ -387,13 +381,26 @@ const PARTICIPATION_OPTIONS = [
   { label: "Team", value: "TEAM" },
 ];
 
+const LAST_OPENED_EVENT_KEY = "sristi:last-opened-event";
+
 const Events = () => {
   const navigate = useNavigate();
   const [categoryFilter, setCategoryFilter] = useState("ALL");
   const [participationFilter, setParticipationFilter] = useState("ALL");
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [activeIndex, setActiveIndex] = useState(() => {
+    const lastOpenedSlug = sessionStorage.getItem(LAST_OPENED_EVENT_KEY);
+    const lastOpenedIndex = mockEvents.findIndex(
+      (event) => event.slug === lastOpenedSlug,
+    );
+
+    return lastOpenedIndex >= 0 ? lastOpenedIndex : 0;
+  });
   const [filterRevision, setFilterRevision] = useState(0);
   const [showIntro, setShowIntro] = useState(true);
+  const lastWheelNavigationRef = useRef(0);
+  const pendingNavigationRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
@@ -411,37 +418,122 @@ const Events = () => {
     return catOk && partOk;
   });
 
+  const cancelPendingNavigation = useCallback(() => {
+    if (pendingNavigationRef.current !== null) {
+      clearTimeout(pendingNavigationRef.current);
+      pendingNavigationRef.current = null;
+    }
+  }, []);
+
   const handleCategoryChange = (val: string) => {
+    cancelPendingNavigation();
     setCategoryFilter(val as EventCategory | "ALL");
     setActiveIndex(0);
     setFilterRevision((revision) => revision + 1);
   };
   const handleParticipationChange = (val: string) => {
+    cancelPendingNavigation();
     setParticipationFilter(val as ParticipationType | "ALL");
     setActiveIndex(0);
     setFilterRevision((revision) => revision + 1);
   };
 
   const goLeft = useCallback(() => {
+    if (filteredEvents.length <= 1) return;
+    cancelPendingNavigation();
     setActiveIndex((prev) =>
       (prev - 1 + filteredEvents.length) % filteredEvents.length
     );
-  }, [filteredEvents.length]);
+  }, [cancelPendingNavigation, filteredEvents.length]);
 
   const goRight = useCallback(() => {
+    if (filteredEvents.length <= 1) return;
+    cancelPendingNavigation();
     setActiveIndex((prev) => (prev + 1) % filteredEvents.length);
-  }, [filteredEvents.length]);
+  }, [cancelPendingNavigation, filteredEvents.length]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (
+        target?.closest("button, input, select, textarea, [contenteditable='true']")
+      ) {
+        return;
+      }
+
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        goLeft();
+      } else if (event.key === "ArrowRight") {
+        event.preventDefault();
+        goRight();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [goLeft, goRight]);
+
+  const handleStageWheel = (event: React.WheelEvent<HTMLDivElement>) => {
+    if (filteredEvents.length <= 1 || Math.abs(event.deltaY) < Math.abs(event.deltaX)) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const now = Date.now();
+    if (now - lastWheelNavigationRef.current < 350) return;
+    lastWheelNavigationRef.current = now;
+
+    if (event.deltaY > 0) {
+      goRight();
+    } else {
+      goLeft();
+    }
+  };
 
   const getVisibleCards = () => {
     if (filteredEvents.length === 0) return [];
+    const offsets =
+      filteredEvents.length === 1
+        ? [0]
+        : filteredEvents.length === 2
+          ? [-1, 0]
+          : filteredEvents.length === 3
+            ? [-1, 0, 1]
+            : filteredEvents.length === 4
+              ? [-1, 0, 1]
+              : [-2, -1, 0, 1, 2];
     const visible: { event: Event; position: number }[] = [];
-    for (let offset = -2; offset <= 2; offset++) {
+    for (const offset of offsets) {
       const idx =
         (activeIndex + offset + filteredEvents.length) % filteredEvents.length;
       visible.push({ event: filteredEvents[idx], position: offset });
     }
     return visible;
   };
+
+  const handleCardClick = (event: Event, position: number) => {
+    const targetIndex = filteredEvents.findIndex((item) => item.id === event.id);
+
+    if (position === 0 || targetIndex === activeIndex) {
+      sessionStorage.setItem(LAST_OPENED_EVENT_KEY, event.slug);
+      navigate(`/events/${event.slug}`);
+      return;
+    }
+
+    cancelPendingNavigation();
+    setActiveIndex(targetIndex);
+    pendingNavigationRef.current = setTimeout(() => {
+      pendingNavigationRef.current = null;
+      sessionStorage.setItem(LAST_OPENED_EVENT_KEY, event.slug);
+      navigate(`/events/${event.slug}`);
+    }, 150);
+  };
+
+  useEffect(() => {
+    return cancelPendingNavigation;
+  }, [cancelPendingNavigation]);
 
   const visibleCards = getVisibleCards();
 
@@ -454,31 +546,39 @@ const Events = () => {
 
       <div className="relative z-10 flex-1 flex flex-col pt-18 pb-4 px-4 sm:px-8">
 
-        <div className="flex items-start justify-between mb-2 sm:mb-4">
+        <div className="events-header grid grid-cols-[1fr_auto_1fr] items-start mb-2 sm:mb-4">
 
-          <Dropdown
-            label="Solo/Team"
-            value={participationFilter}
-            options={PARTICIPATION_OPTIONS}
-            onChange={handleParticipationChange}
-          />
-
-          <div className="text-center flex-1">
+          <div className="events-heading text-center">
             <SplashHeading />
-            <p className="font-space-mono text-[10px] sm:text-[11px] tracking-[0.35em] uppercase text-white/80 mt-2">
+            <p className="whitespace-nowrap font-space-mono text-[10px] sm:text-[11px] tracking-[0.35em] uppercase text-white/80 mt-2">
               SRISTI 2K26 — CHOOSE YOUR ARENA
             </p>
           </div>
 
-          <Dropdown
-            label="Category"
-            value={categoryFilter}
-            options={CATEGORY_OPTIONS}
-            onChange={handleCategoryChange}
-          />
+          <div className="events-filters">
+            <div className="events-filter events-filter-left">
+              <Dropdown
+                label="Solo/Team"
+                value={participationFilter}
+                options={PARTICIPATION_OPTIONS}
+                onChange={handleParticipationChange}
+              />
+            </div>
+            <div className="events-filter events-filter-right">
+              <Dropdown
+                label="Category"
+                value={categoryFilter}
+                options={CATEGORY_OPTIONS}
+                onChange={handleCategoryChange}
+              />
+            </div>
+          </div>
         </div>
 
-        <div className="relative flex-1 flex items-center justify-center min-h-0">
+        <div
+          className="events-card-stage relative flex-1 flex items-center justify-center min-h-0"
+          onWheel={handleStageWheel}
+        >
 
           <button
             type="button"
@@ -486,6 +586,7 @@ const Events = () => {
             aria-label="Previous event"
             disabled={filteredEvents.length <= 1}
             className="
+              events-carousel-arrow
               absolute left-0 sm:left-2 z-30
               w-10 h-10 sm:w-12 sm:h-12 rounded-full
               flex items-center justify-center
@@ -504,6 +605,7 @@ const Events = () => {
             aria-label="Next event"
             disabled={filteredEvents.length <= 1}
             className="
+              events-carousel-arrow
               absolute right-0 sm:right-2 z-30
               w-10 h-10 sm:w-12 sm:h-12 rounded-full
               flex items-center justify-center
@@ -519,18 +621,14 @@ const Events = () => {
           {filteredEvents.length > 0 ? (
             <div
               key={filterRevision}
-              className="event-card-filter-transition flex items-center justify-center gap-3 sm:gap-5 lg:gap-6"
+              className="events-carousel event-card-filter-transition flex items-center justify-center gap-3 sm:gap-5 lg:gap-6"
             >
               {visibleCards.map(({ event, position }) => (
                 <EventCard
-                  key={
-                    filteredEvents.length > 4
-                      ? event.id
-                      : `${event.id}-${position}`
-                  }
+                  key={event.id}
                   event={event}
                   position={position}
-                  onClick={() => navigate(`/events/${event.slug}`)}
+                  onClick={() => handleCardClick(event, position)}
                 />
               ))}
             </div>

@@ -2,16 +2,24 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import type { User } from "@supabase/supabase-js";
 import {
   CalendarDays,
+  Check,
+  CircleCheck,
+  ClipboardCheck,
   ChevronRight,
   CircleHelp,
+  Download,
+  Copy,
   LayoutDashboard,
   ListChecks,
   LogOut,
+  Plus,
   RefreshCw,
   Search,
   Settings,
+  Trophy,
   Users,
   Wallet,
+  X,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase, supabaseConfigMissing } from "../../lib/supabase";
@@ -20,7 +28,13 @@ import sristiLogo from "../../assets/icons/sristi_logo.png";
 import { AdminAccessGate, NavItem } from "./AdminEvents";
 import "./AdminEvents.css";
 
-type AdminSection = "registrations" | "payments" | "admins" | "settings";
+type AdminSection =
+  | "attendance"
+  | "results"
+  | "registrations"
+  | "payments"
+  | "admins"
+  | "settings";
 
 type RegistrationRow = {
   id: string;
@@ -43,6 +57,18 @@ const sectionDetails: Record<
   AdminSection,
   { title: string; description: string; icon: typeof ListChecks; note: string }
 > = {
+  attendance: {
+    title: "Attendance",
+    description: "Mark attendance for registered participants and teams.",
+    icon: ClipboardCheck,
+    note: "Attendance management is ready.",
+  },
+  results: {
+    title: "Results & leaderboard",
+    description: "Declare event winners and control public leaderboard visibility.",
+    icon: Trophy,
+    note: "Manage event results and leaderboard publication.",
+  },
   registrations: {
     title: "Registrations",
     description: "Review individual and team event registrations.",
@@ -51,21 +77,23 @@ const sectionDetails: Record<
   },
   payments: {
     title: "Payments",
-    description: "Review payment records and verification status.",
+    description:
+      "Review payment records, confirm offline payments, and issue participant verification codes.",
     icon: Wallet,
-    note: "Payment review and verification is ready to be assigned.",
+    note: "Payment review and verification is ready.",
   },
   admins: {
     title: "Admins",
     description: "Manage admin access and roles.",
     icon: Users,
-    note: "Admin management is ready to be assigned.",
+    note: "Review administrator accounts and manage their access.",
   },
   settings: {
     title: "Settings",
-    description: "Manage festival-wide settings.",
+    description:
+      "Set the festival name and registration fee used by payment verification.",
     icon: Settings,
-    note: "Festival settings are ready to be assigned.",
+    note: "Festival settings are ready.",
   },
 };
 
@@ -300,6 +328,18 @@ export default function AdminSectionPlaceholder({
             label="Registrations"
           />
           <NavItem
+            href="/admin/attendance"
+            active={section === "attendance"}
+            icon={<ClipboardCheck size={18} />}
+            label="Attendance"
+          />
+          <NavItem
+            href="/admin/results"
+            active={section === "results"}
+            icon={<Trophy size={18} />}
+            label="Results"
+          />
+          <NavItem
             href="/admin/payments"
             active={section === "payments"}
             icon={<Wallet size={18} />}
@@ -383,6 +423,10 @@ export default function AdminSectionPlaceholder({
                 Only a super admin can access admin management.
               </p>
             </div>
+          ) : section === "attendance" ? (
+            <AdminAttendanceSection />
+          ) : section === "results" ? (
+            <AdminResultsSection />
           ) : section === "registrations" ? (
             <div className="mt-7 space-y-5">
               <div className="grid gap-4 sm:grid-cols-3">
@@ -600,6 +644,12 @@ export default function AdminSectionPlaceholder({
                 </div>
               </div>
             </div>
+          ) : section === "admins" ? (
+            <AdminManagementSection />
+          ) : section === "payments" ? (
+            <AdminPaymentsSection />
+          ) : section === "settings" ? (
+            <AdminFestSettingsSection />
           ) : (
             <div className="mt-7 rounded-xl border border-white/10 bg-white/[0.03] p-6">
               <p className="text-sm text-slate-300">{details.note}</p>
@@ -607,6 +657,1167 @@ export default function AdminSectionPlaceholder({
           )}
         </section>
       </main>
+    </div>
+  );
+}
+
+type ResultEvent = { id: string; name: string; event_type: "solo" | "team" };
+type ResultRow = {
+  id: string;
+  event_id: string;
+  user_id: string | null;
+  team_id: string | null;
+  position: number;
+  declared_at: string;
+  profiles: { full_name: string; college_roll: string } | null;
+  teams: { team_name: string; team_code: string } | null;
+};
+type ResultCandidate = {
+  id: string;
+  name: string;
+  detail: string;
+  userId: string | null;
+  teamId: string | null;
+};
+
+function AdminResultsSection() {
+  const [events, setEvents] = useState<ResultEvent[]>([]);
+  const [results, setResults] = useState<ResultRow[]>([]);
+  const [candidates, setCandidates] = useState<ResultCandidate[]>([]);
+  const [selectedEvent, setSelectedEvent] = useState("");
+  const [candidateId, setCandidateId] = useState("");
+  const [position, setPosition] = useState("1");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [reload, setReload] = useState(0);
+
+  useEffect(() => {
+    if (!supabase) return;
+    let active = true;
+    setLoading(true);
+    setError("");
+    void Promise.all([
+      supabase.from("events").select("id,name,event_type").order("name"),
+      supabase.from("results").select("id,event_id,user_id,team_id,position,declared_at,profiles(full_name,college_roll),teams(team_name,team_code)").order("position"),
+    ]).then(([eventResponse, resultResponse]) => {
+      if (!active) return;
+      setLoading(false);
+      const queryError = eventResponse.error ?? resultResponse.error;
+      if (queryError) { setError(queryError.message); return; }
+      const loadedEvents = (eventResponse.data ?? []) as ResultEvent[];
+      setEvents(loadedEvents);
+      setResults((resultResponse.data ?? []) as unknown as ResultRow[]);
+      setSelectedEvent((current) => current || loadedEvents[0]?.id || "");
+    });
+    return () => { active = false; };
+  }, [reload]);
+
+  useEffect(() => {
+    if (!supabase || !selectedEvent) { setCandidates([]); return; }
+    let active = true;
+    const event = events.find((item) => item.id === selectedEvent);
+    if (!event) return;
+    void supabase.from("registrations")
+      .select("user_id,team_id,profiles(full_name,college_roll),teams(team_name,team_code)")
+      .eq("event_id", selectedEvent).eq("status", "registered")
+      .then(({ data, error: queryError }) => {
+        if (!active) return;
+        if (queryError) { setError(queryError.message); setCandidates([]); return; }
+        const options = (data ?? []).flatMap((row: any): ResultCandidate[] => {
+          if (event.event_type === "team" && row.team_id) return [{ id: row.team_id, name: row.teams?.team_name ?? "Team", detail: row.teams?.team_code ?? "Registered team", userId: null, teamId: row.team_id }];
+          if (event.event_type === "solo" && row.user_id) return [{ id: row.user_id, name: row.profiles?.full_name ?? "Participant", detail: row.profiles?.college_roll ?? "Registered participant", userId: row.user_id, teamId: null }];
+          return [];
+        });
+        setCandidates(options);
+        setCandidateId("");
+      });
+    return () => { active = false; };
+  }, [events, selectedEvent]);
+
+  const eventResults = results.filter((row) => row.event_id === selectedEvent).sort((a, b) => a.position - b.position);
+  const usedPlaces = new Set(eventResults.map((row) => row.position));
+  const availablePlaces = [1, 2, 3].filter((place) => !usedPlaces.has(place));
+  const eligibleCandidates = candidates.filter((candidate) => !eventResults.some((row) => candidate.userId ? row.user_id === candidate.userId : row.team_id === candidate.teamId));
+
+  const recordPlacement = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!supabase) return;
+    const candidate = candidates.find((item) => item.id === candidateId);
+    if (!candidate) return;
+    setSaving(true); setError(""); setNotice("");
+    const { error: rpcError } = await supabase.rpc("declare_result", {
+      p_event_id: selectedEvent,
+      p_user_id: candidate.userId,
+      p_team_id: candidate.teamId,
+      p_position: Number(position),
+    });
+    setSaving(false);
+    if (rpcError) { setError(rpcError.message); return; }
+    setNotice(`${placeName(Number(position))} place recorded for ${candidate.name}.`);
+    setCandidateId("");
+    setReload((count) => count + 1);
+  };
+
+  const removePlacement = async (result: ResultRow) => {
+    if (!supabase || !window.confirm(`Remove the ${placeName(result.position)} place result?`)) return;
+    setError(""); setNotice("");
+    const { error: deleteError } = await supabase.from("results").delete().eq("id", result.id);
+    if (deleteError) { setError(deleteError.message); return; }
+    setNotice("Result removed. That place can now be assigned again.");
+    setReload((count) => count + 1);
+  };
+
+  return <div className="mt-7 space-y-5">
+    <div className="grid gap-4 sm:grid-cols-3">
+      <RegistrationSummary label="Events with results" value={new Set(results.map((row) => row.event_id)).size} />
+      <RegistrationSummary label="Placements recorded" value={results.length} accent="text-emerald-300" />
+      <RegistrationSummary label="Public results" value="Paused" accent="text-slate-300" />
+    </div>
+    <div className="rounded-xl border border-sky-300/20 bg-sky-300/[0.06] p-5 text-sm leading-6 text-sky-100">
+      Public results are paused while the participant-facing leaderboard is being planned. Placements recorded here remain available to admins.
+    </div>
+    {(error || notice) && <p role={error ? "alert" : "status"} className={`rounded-lg border px-4 py-3 text-sm ${error ? "border-rose-300/30 bg-rose-50 text-rose-800" : "border-emerald-300/30 bg-emerald-50 text-emerald-900"}`}>{error || notice}</p>}
+    <div className="overflow-hidden rounded-xl border border-white/10 bg-[#0d1520]">
+      <div className="flex flex-col gap-3 border-b border-white/10 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="font-semibold">Event results</h2><p className="mt-1 text-xs text-slate-500">Record up to three placements for each event.</p></div><div className="flex gap-2"><select aria-label="Select event" value={selectedEvent} onChange={(event) => setSelectedEvent(event.target.value)} className="h-10 min-w-48 rounded-lg border border-white/10 bg-[#0b121c] px-3 text-sm text-slate-200"><option value="">Select event</option>{events.map((event) => <option key={event.id} value={event.id}>{event.name} · {event.event_type}</option>)}</select><button type="button" onClick={() => setReload((count) => count + 1)} disabled={loading} className="inline-flex h-10 items-center gap-2 rounded-lg border border-white/10 px-3 text-xs text-slate-300 hover:bg-white/5 disabled:opacity-50"><RefreshCw size={14} className={loading ? "animate-spin" : ""} />Refresh</button></div></div>
+      <form onSubmit={recordPlacement} className="grid gap-3 border-b border-white/10 p-5 md:grid-cols-[1fr_150px_auto]"><select required aria-label="Registered participant or team" value={candidateId} onChange={(event) => setCandidateId(event.target.value)} disabled={!selectedEvent || eligibleCandidates.length === 0 || loading} className="h-11 rounded-lg border border-white/10 bg-[#0b121c] px-3 text-sm text-slate-200"><option value="">{!selectedEvent ? "Choose an event first" : eligibleCandidates.length ? "Choose registered participant / team" : candidates.length ? "All eligible candidates already have a place" : "No registered participants / teams"}</option>{eligibleCandidates.map((candidate) => <option key={candidate.id} value={candidate.id}>{candidate.name} · {candidate.detail}</option>)}</select><select aria-label="Placement" value={position} onChange={(event) => setPosition(event.target.value)} className="h-11 rounded-lg border border-white/10 bg-[#0b121c] px-3 text-sm text-slate-200">{(availablePlaces.length ? availablePlaces : [1, 2, 3]).map((place) => <option key={place} value={place}>{placeName(place)} place</option>)}</select><button type="submit" disabled={saving || loading || !candidateId || availablePlaces.length === 0} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-emerald-200/40 bg-emerald-200 px-4 py-2 text-sm font-bold text-emerald-950 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"><Trophy size={16} />{saving ? "Recording…" : "Record placement"}</button></form>
+      {loading ? <div className="space-y-3 p-5" aria-busy="true">{[0, 1, 2].map((item) => <div key={item} className="admin-skeleton h-14 rounded-lg" />)}</div> : !selectedEvent ? <p className="px-5 py-12 text-center text-sm text-slate-500">Create an event first to record results.</p> : <div className="divide-y divide-white/10">{[1, 2, 3].map((place) => { const row = eventResults.find((item) => item.position === place); const name = row?.profiles?.full_name ?? row?.teams?.team_name; const detail = row?.profiles?.college_roll ?? row?.teams?.team_code; return <div key={place} className="flex items-center justify-between gap-4 px-5 py-4"><div className="flex min-w-0 items-center gap-3"><span className={`grid size-10 shrink-0 place-items-center rounded-xl font-bold ${place === 1 ? "bg-amber-200 text-amber-950" : "bg-slate-200 text-slate-800"}`}>{place}</span><div className="min-w-0"><p className="font-semibold text-slate-900">{name ?? `${placeName(place)} place not assigned`}</p><p className="mt-1 text-xs text-slate-500">{row ? `${detail ?? (row.user_id ? "Participant" : "Team")} · declared ${new Date(row.declared_at).toLocaleDateString()}` : "Available placement"}</p></div></div>{row && <button type="button" onClick={() => void removePlacement(row)} className="rounded-lg border border-rose-300/50 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-800 transition hover:bg-rose-100">Remove</button>}</div>; })}</div>}
+    </div>
+    <p className="text-xs leading-5 text-slate-500">Supabase verifies the participant or team is registered for the event and prevents duplicate placements.</p>
+  </div>;
+}
+
+function placeName(place: number) { return place === 1 ? "1st" : place === 2 ? "2nd" : "3rd"; }
+
+type PaymentRecordRow = {
+  id: string;
+  user_id: string;
+  amount: number;
+  payment_method: "offline" | "razorpay";
+  status: "pending" | "verified" | "rejected";
+  payment_reference: string | null;
+  verified_at: string | null;
+  created_at: string;
+};
+
+type PaymentParticipant = {
+  id: string;
+  full_name: string;
+  college_roll: string;
+  college_name: string;
+  department: string;
+  phone: string;
+};
+
+type PaymentCode = {
+  id: string;
+  code: string;
+  status: "issued" | "used" | "revoked";
+  created_at: string;
+};
+
+type PaymentView = PaymentRecordRow & {
+  participant: PaymentParticipant | null;
+  code: PaymentCode | null;
+};
+
+function AdminPaymentsSection() {
+  const [payments, setPayments] = useState<PaymentView[]>([]);
+  const [participants, setParticipants] = useState<PaymentParticipant[]>([]);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingParticipants, setIsLoadingParticipants] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [paymentToast, setPaymentToast] = useState("");
+  const [reload, setReload] = useState(0);
+  const [verifyParticipant, setVerifyParticipant] =
+    useState<PaymentParticipant | null>(null);
+  const [paymentReference, setPaymentReference] = useState("");
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [codePayment, setCodePayment] = useState<PaymentView | null>(null);
+  const [customCode, setCustomCode] = useState("");
+  const [isIssuingCode, setIsIssuingCode] = useState(false);
+  const [issuedCode, setIssuedCode] = useState("");
+  const [isCodeCopied, setIsCodeCopied] = useState(false);
+
+  useEffect(() => {
+    if (!paymentToast) return;
+    const timeout = window.setTimeout(() => setPaymentToast(""), 3500);
+    return () => window.clearTimeout(timeout);
+  }, [paymentToast]);
+
+  useEffect(() => {
+    if (!supabase) {
+      setIsLoading(false);
+      setError("Supabase is not configured.");
+      return;
+    }
+    let mounted = true;
+    setIsLoading(true);
+    setError("");
+    void (async () => {
+      const { data: paymentRows, error: paymentError } = await supabase
+        .from("payment_records")
+        .select(
+          "id,user_id,amount,payment_method,status,payment_reference,verified_at,created_at",
+        )
+        .order("created_at", { ascending: false });
+      if (!mounted) return;
+      if (paymentError) {
+        setError(paymentError.message);
+        setPayments([]);
+        setIsLoading(false);
+        return;
+      }
+      const rows = (paymentRows ?? []) as PaymentRecordRow[];
+      if (rows.length === 0) {
+        setPayments([]);
+        setIsLoading(false);
+        return;
+      }
+      const userIds = [...new Set(rows.map((row) => row.user_id))];
+      const paymentIds = rows.map((row) => row.id);
+      const [{ data: profileRows }, { data: codeRows }] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("id,full_name,college_roll,college_name,department,phone")
+          .in("id", userIds),
+        supabase
+          .from("verification_codes")
+          .select("id,code,status,created_at,payment_id")
+          .in("payment_id", paymentIds)
+          .order("created_at", { ascending: false }),
+      ]);
+      if (!mounted) return;
+      const profiles = new Map(
+        ((profileRows ?? []) as PaymentParticipant[]).map((row) => [
+          row.id,
+          row,
+        ]),
+      );
+      const codesByPayment = new Map<string, PaymentCode>();
+      for (const row of (codeRows ?? []) as (PaymentCode & {
+        payment_id: string;
+      })[]) {
+        if (!codesByPayment.has(row.payment_id)) {
+          codesByPayment.set(row.payment_id, {
+            id: row.id,
+            code: row.code,
+            status: row.status,
+            created_at: row.created_at,
+          });
+        }
+      }
+      setPayments(
+        rows.map((row) => ({
+          ...row,
+          participant: profiles.get(row.user_id) ?? null,
+          code: codesByPayment.get(row.id) ?? null,
+        })),
+      );
+      setIsLoading(false);
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [reload]);
+
+  const loadParticipants = async () => {
+    if (!supabase) return;
+    setIsLoadingParticipants(true);
+    setError("");
+    const { data, error: queryError } = await supabase
+      .from("profiles")
+      .select("id,full_name,college_roll,college_name,department,phone")
+      .order("full_name", { ascending: true });
+    setIsLoadingParticipants(false);
+    if (queryError) {
+      setError(queryError.message);
+      return;
+    }
+    setParticipants((data ?? []) as PaymentParticipant[]);
+  };
+
+  const visiblePayments = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return payments.filter((payment) => {
+      const participant = payment.participant;
+      const matchesQuery =
+        !query ||
+        [
+          participant?.full_name,
+          participant?.college_roll,
+          participant?.college_name,
+          participant?.phone,
+          payment.payment_reference,
+          payment.payment_method,
+        ].some((value) => value?.toLowerCase().includes(query));
+      return (
+        matchesQuery &&
+        (statusFilter === "all" || payment.status === statusFilter)
+      );
+    });
+  }, [payments, search, statusFilter]);
+
+  const matchingParticipants = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    const alreadyVerified = new Set(
+      payments
+        .filter((row) => row.status === "verified")
+        .map((row) => row.user_id),
+    );
+    return participants.filter((participant) => {
+      const matchesQuery =
+        !query ||
+        [
+          participant.full_name,
+          participant.college_roll,
+          participant.college_name,
+          participant.phone,
+        ].some((value) => value.toLowerCase().includes(query));
+      return matchesQuery && !alreadyVerified.has(participant.id);
+    });
+  }, [participants, payments, search]);
+
+  const verifyOfflinePayment = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!supabase || !verifyParticipant) return;
+    setIsVerifying(true);
+    setError("");
+    const { error: rpcError } = await supabase.rpc("verify_offline_payment", {
+      p_user_id: verifyParticipant.id,
+      p_payment_reference: paymentReference.trim() || null,
+    });
+    setIsVerifying(false);
+    if (rpcError) {
+      setError(rpcError.message);
+      return;
+    }
+    setNotice("");
+    setPaymentToast(
+      `Cash payment verified for ${verifyParticipant.full_name}.`,
+    );
+    setVerifyParticipant(null);
+    setPaymentReference("");
+    setReload((value) => value + 1);
+  };
+
+  const issueCode = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!supabase || !codePayment) return;
+    const normalizedCustomCode = customCode.trim().toUpperCase();
+    if (normalizedCustomCode && !/^[A-Z0-9]{6}$/.test(normalizedCustomCode)) {
+      setError(
+        "Use exactly 6 characters from A–Z and 0–9, or leave blank for an automatic code.",
+      );
+      return;
+    }
+    setIsIssuingCode(true);
+    setError("");
+    setIssuedCode("");
+    const { data: codeId, error: rpcError } = await supabase.rpc(
+      "issue_verification_code",
+      {
+        p_user_id: codePayment.user_id,
+        p_payment_id: codePayment.id,
+        p_custom_code: normalizedCustomCode || null,
+      },
+    );
+    if (rpcError || !codeId) {
+      setIsIssuingCode(false);
+      setError(rpcError?.message ?? "Could not issue a verification code.");
+      return;
+    }
+    const { data: codeRow, error: codeError } = await supabase
+      .from("verification_codes")
+      .select("code")
+      .eq("id", codeId)
+      .single();
+    setIsIssuingCode(false);
+    if (codeError || !codeRow) {
+      setError(
+        codeError?.message ?? "The code was issued but could not be loaded.",
+      );
+      setReload((value) => value + 1);
+      return;
+    }
+    setIssuedCode(codeRow.code);
+    setIsCodeCopied(false);
+    setNotice(
+      `Verification code issued for ${codePayment.participant?.full_name ?? "participant"}.`,
+    );
+    setCustomCode("");
+    setReload((value) => value + 1);
+  };
+
+  const copyIssuedCode = async () => {
+    if (!issuedCode) return;
+    try {
+      await navigator.clipboard.writeText(issuedCode);
+      setIsCodeCopied(true);
+    } catch {
+      setError("Could not copy the code. Select it and copy manually.");
+    }
+  };
+
+  const pendingCount = payments.filter(
+    (payment) => payment.status === "pending",
+  ).length;
+  const verifiedCount = payments.filter(
+    (payment) => payment.status === "verified",
+  ).length;
+  const verifiedPayments = payments.filter(
+    (payment) => payment.status === "verified",
+  );
+  const totalVerified = verifiedPayments.reduce(
+    (total, payment) => total + Number(payment.amount),
+    0,
+  );
+
+  const exportVerifiedPayments = () => {
+    if (verifiedPayments.length === 0) return;
+    const csvCell = (value: string | number | null) => {
+      const text = String(value ?? "");
+      const safeText = /^[\s]*[=+@-]/.test(text) ? `'${text}` : text;
+      return `"${safeText.replace(/"/g, '""')}"`;
+    };
+    const headers = [
+      "Participant name",
+      "College roll number",
+      "College",
+      "Department",
+      "Phone",
+      "Payment method",
+      "Amount (INR)",
+      "Payment reference",
+      "Verification code",
+      "Code status",
+      "Verified at",
+    ];
+    const rows = verifiedPayments.map((payment) => [
+      payment.participant?.full_name ?? "Profile unavailable",
+      payment.participant?.college_roll ?? "",
+      payment.participant?.college_name ?? "",
+      payment.participant?.department ?? "",
+      payment.participant?.phone ?? "",
+      payment.payment_method,
+      Number(payment.amount).toFixed(2),
+      payment.payment_reference,
+      payment.code?.code ?? "",
+      payment.code?.status ?? "",
+      payment.verified_at ? new Date(payment.verified_at).toISOString() : "",
+    ]);
+    const csv = [headers, ...rows]
+      .map((row) => row.map(csvCell).join(","))
+      .join("\r\n");
+    const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `sristi-verified-payments-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="mt-7 space-y-5">
+      {paymentToast && (
+        <div
+          className="pointer-events-none fixed right-5 top-5 z-[60]"
+          aria-live="polite"
+        >
+          <div
+            role="status"
+            className="pointer-events-auto flex min-w-72 items-center gap-3 rounded-xl border border-emerald-300/40 bg-[#f8fbf9] px-4 py-3 text-sm font-medium text-[#173d35] shadow-xl"
+          >
+            <CircleCheck size={19} className="shrink-0 text-emerald-700" />
+            <span className="flex-1">{paymentToast}</span>
+            <button
+              type="button"
+              onClick={() => setPaymentToast("")}
+              className="rounded-md p-1 text-slate-500 transition hover:bg-slate-200"
+              aria-label="Dismiss notification"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+      )}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <RegistrationSummary label="Payment records" value={payments.length} />
+        <RegistrationSummary
+          label="Pending review"
+          value={pendingCount}
+          accent="text-sky-200"
+        />
+        <RegistrationSummary
+          label="Verified total"
+          value={`₹${totalVerified.toLocaleString("en-IN", { minimumFractionDigits: 2 })} · ${verifiedCount} verified`}
+          accent="text-emerald-300"
+        />
+      </div>
+
+      <div className="flex flex-col gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-3 md:flex-row">
+        <label className="flex min-w-0 flex-1 items-center gap-3 rounded-lg border border-white/10 bg-[#0b121c] px-3">
+          <Search size={17} className="shrink-0 text-slate-500" />
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search participant, roll number, college, reference…"
+            className="h-11 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-slate-500"
+            aria-label="Search payments"
+          />
+        </label>
+        <select
+          value={statusFilter}
+          onChange={(event) => setStatusFilter(event.target.value)}
+          className="h-11 rounded-lg border border-white/10 bg-[#0b121c] px-3 text-sm text-slate-200 outline-none"
+          aria-label="Filter payments by status"
+        >
+          <option value="all">All statuses</option>
+          <option value="pending">Pending</option>
+          <option value="verified">Verified</option>
+          <option value="rejected">Rejected</option>
+        </select>
+        <button
+          type="button"
+          onClick={() => {
+            setNotice("");
+            setError("");
+            setVerifyParticipant(null);
+            setSearch("");
+            void loadParticipants();
+          }}
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-emerald-300 px-4 text-sm font-semibold text-slate-950 transition hover:bg-emerald-200"
+        >
+          <Plus size={16} /> Record cash payment
+        </button>
+      </div>
+
+      {(error || notice) && (
+        <p
+          role={error ? "alert" : "status"}
+          className={`rounded-lg border px-4 py-3 text-sm ${error ? "border-rose-300/20 bg-rose-300/5 text-rose-200" : "border-emerald-300/20 bg-emerald-300/5 text-emerald-200"}`}
+        >
+          {error || notice}
+        </p>
+      )}
+
+      <div className="overflow-hidden rounded-xl border border-white/10 bg-[#0d1520]">
+        <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+          <div>
+            <h2 className="font-semibold">Payment records</h2>
+            <p className="mt-1 text-xs text-slate-500" aria-live="polite">
+              {isLoading
+                ? "Loading payments…"
+                : `${visiblePayments.length} shown · ${verifiedCount} verified`}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={exportVerifiedPayments}
+              disabled={isLoading || verifiedCount === 0}
+              className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-emerald-200/30 bg-emerald-300 px-3 py-2 text-xs font-bold text-[#08251d] transition hover:bg-emerald-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d1520] disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              <Download size={14} />
+              Export verified ({verifiedCount})
+            </button>
+            <button
+              type="button"
+              onClick={() => setReload((value) => value + 1)}
+              disabled={isLoading}
+              className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-xs font-medium text-slate-300 transition hover:bg-white/5 disabled:opacity-50"
+            >
+              <RefreshCw
+                size={14}
+                className={isLoading ? "animate-spin" : ""}
+              />
+              Refresh
+            </button>
+          </div>
+        </div>
+        <div className="overflow-x-auto" aria-busy={isLoading}>
+          <table className="w-full min-w-[1050px] text-left text-sm">
+            <thead className="bg-white/[0.03] text-xs uppercase tracking-wide text-slate-400">
+              <tr>
+                <th className="px-5 py-4 font-medium">Participant</th>
+                <th className="px-4 py-4 font-medium">Amount / method</th>
+                <th className="px-4 py-4 font-medium">Reference</th>
+                <th className="px-4 py-4 font-medium">Status</th>
+                <th className="px-4 py-4 font-medium">Verification code</th>
+                <th className="px-4 py-4 font-medium">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/[0.07]">
+              {isLoading &&
+                Array.from({ length: 5 }, (_, index) => (
+                  <tr key={`payment-skeleton-${index}`} aria-hidden="true">
+                    {["w-36", "w-24", "w-20", "w-20", "w-24", "w-20"].map(
+                      (width, cell) => (
+                        <td key={cell} className="px-4 py-5">
+                          <span
+                            className={`admin-skeleton block h-4 ${width} rounded`}
+                          />
+                        </td>
+                      ),
+                    )}
+                  </tr>
+                ))}
+              {!isLoading &&
+                visiblePayments.map((payment) => (
+                  <tr
+                    key={payment.id}
+                    className="transition hover:bg-white/[0.025]"
+                  >
+                    <td className="px-5 py-4">
+                      <p className="font-semibold text-white">
+                        {payment.participant?.full_name ??
+                          "Profile unavailable"}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {payment.participant?.college_roll ?? "—"} ·{" "}
+                        {payment.participant?.college_name ?? "—"}
+                      </p>
+                    </td>
+                    <td className="px-4 py-4">
+                      <p className="font-medium text-slate-100">
+                        ₹
+                        {Number(payment.amount).toLocaleString("en-IN", {
+                          minimumFractionDigits: 2,
+                        })}
+                      </p>
+                      <p className="mt-1 text-xs capitalize text-slate-500">
+                        {payment.payment_method}
+                      </p>
+                    </td>
+                    <td className="px-4 py-4 text-slate-300">
+                      {payment.payment_reference || "—"}
+                    </td>
+                    <td className="px-4 py-4">
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-xs capitalize ${payment.status === "verified" ? "bg-emerald-400/10 text-emerald-200" : payment.status === "pending" ? "bg-sky-400/10 text-sky-200" : "bg-rose-400/10 text-rose-200"}`}
+                      >
+                        {payment.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4">
+                      {payment.code ? (
+                        <div className="inline-flex max-w-[220px] flex-col items-start gap-1.5 rounded-lg border border-emerald-300/60 bg-[#d9fff1] px-3 py-2 shadow-sm shadow-emerald-950/20">
+                          <span className="break-all font-mono text-sm font-extrabold tracking-wide text-[#064e3b]">
+                            {payment.code.code}
+                          </span>
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${payment.code.status === "issued" ? "bg-[#087f5b] text-white" : "bg-slate-200 text-slate-700"}`}
+                          >
+                            {payment.code.status}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-slate-500">
+                          Not issued
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-4">
+                      {payment.status === "verified" &&
+                      payment.code?.status !== "issued" ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setError("");
+                            setNotice("");
+                            setIssuedCode("");
+                            setIsCodeCopied(false);
+                            setCodePayment(payment);
+                          }}
+                          className="inline-flex min-h-10 items-center justify-center rounded-lg border border-cyan-100 bg-cyan-200 px-3 py-2 text-xs font-bold text-[#07131b] shadow-sm shadow-cyan-950/30 transition hover:-translate-y-0.5 hover:bg-cyan-100 hover:shadow-md hover:shadow-cyan-950/40 active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-100 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d1520]"
+                        >
+                          Issue code
+                        </button>
+                      ) : (
+                        <span className="text-xs text-slate-500">—</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              {!isLoading && visiblePayments.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="px-5 py-14 text-center text-slate-400"
+                  >
+                    {payments.length === 0
+                      ? "No payment records yet."
+                      : "No payments match those filters."}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {participants.length > 0 && (
+        <div className="overflow-hidden rounded-xl border border-white/10 bg-[#0d1520]">
+          <div className="border-b border-white/10 px-5 py-4">
+            <h2 className="font-semibold">
+              Participants available for offline verification
+            </h2>
+            <p className="mt-1 text-xs text-slate-500">
+              Confirm cash received before recording a verified offline payment.
+            </p>
+          </div>
+          <div className="max-h-72 divide-y divide-white/[0.07] overflow-y-auto">
+            {matchingParticipants.slice(0, 50).map((participant) => (
+              <div
+                key={participant.id}
+                className="flex flex-wrap items-center justify-between gap-4 px-5 py-4 transition-colors hover:bg-white/[0.025]"
+              >
+                <div className="min-w-0">
+                  <p className="font-medium text-white">
+                    {participant.full_name}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-400">
+                    {participant.college_roll}{" "}
+                    <span className="px-1 text-slate-600">·</span>{" "}
+                    {participant.college_name}{" "}
+                    <span className="px-1 text-slate-600">·</span>{" "}
+                    {participant.phone}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setError("");
+                    setNotice("");
+                    setPaymentReference("");
+                    setVerifyParticipant(participant);
+                  }}
+                  className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-emerald-300 px-4 py-2 text-sm font-semibold text-slate-950 shadow-sm shadow-emerald-950/30 transition duration-150 hover:-translate-y-0.5 hover:bg-emerald-200 hover:shadow-md hover:shadow-emerald-950/40 active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d1520]"
+                >
+                  <CircleCheck size={16} strokeWidth={2.3} />
+                  Verify cash
+                </button>
+              </div>
+            ))}
+            {matchingParticipants.length === 0 && (
+              <p className="px-5 py-8 text-center text-sm text-slate-500">
+                No participants match this search or all have verified payments.
+              </p>
+            )}
+            {matchingParticipants.length > 50 && (
+              <p className="px-5 py-3 text-xs text-slate-500">
+                Showing first 50 matches. Refine the search to find a
+                participant.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+      {isLoadingParticipants && (
+        <p role="status" className="text-sm text-slate-400">
+          Loading participant profiles…
+        </p>
+      )}
+
+      {verifyParticipant && (
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget)
+              setVerifyParticipant(null);
+          }}
+        >
+          <form
+            onSubmit={verifyOfflinePayment}
+            className="w-full max-w-md rounded-2xl border border-white/10 bg-[#101a27] p-6 shadow-2xl"
+          >
+            <h2 className="text-lg font-semibold text-white">
+              Confirm cash payment
+            </h2>
+            <p className="mt-2 text-sm text-slate-400">
+              Verify the cash with the participant before recording it. This uses the configured fest fee.
+            </p>
+            <p className="mt-4 rounded-lg bg-white/[0.04] p-3 text-sm text-slate-200">
+              {verifyParticipant.full_name}{" "}
+              <span className="text-slate-500">
+                · {verifyParticipant.college_roll}
+              </span>
+            </p>
+            <label className="mt-4 block text-sm text-slate-300">
+              Optional receipt / reference
+              <input
+                value={paymentReference}
+                onChange={(event) => setPaymentReference(event.target.value)}
+                maxLength={160}
+                className="mt-2 h-11 w-full rounded-lg border border-white/10 bg-[#0b121c] px-3 text-sm text-white outline-none focus:border-emerald-300/50"
+              />
+            </label>
+            {error && (
+              <p role="alert" className="mt-3 text-sm text-rose-200">
+                {error}
+              </p>
+            )}
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setVerifyParticipant(null)}
+                className="rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-300"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isVerifying}
+                className="rounded-lg bg-emerald-300 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-50"
+              >
+                {isVerifying ? "Verifying…" : "Confirm cash received"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {codePayment && (
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setCodePayment(null);
+          }}
+        >
+          <form
+            onSubmit={issueCode}
+            className="w-full max-w-md rounded-2xl border border-cyan-200/20 bg-[#101a27] p-6 shadow-2xl shadow-black/50"
+          >
+            <div className="flex items-start gap-3">
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl border border-cyan-200/20 bg-cyan-300/10 text-cyan-100">
+                <ClipboardCheck size={19} />
+              </span>
+              <div>
+                <h2 className="text-lg font-semibold text-white">
+                  Issue verification code
+                </h2>
+                <p className="mt-1 text-sm text-slate-400">
+                  Participant:{" "}
+                  <span className="font-medium text-slate-200">
+                    {codePayment.participant?.full_name ?? "participant"}
+                  </span>
+                </p>
+              </div>
+            </div>
+            {issuedCode ? (
+              <section
+                className="mt-5 rounded-xl border border-emerald-700/30 bg-[#d9fff1] p-5 shadow-sm shadow-emerald-950/20"
+                aria-label="Issued verification code"
+              >
+                <div className="flex items-center gap-2 text-sm font-bold text-[#065f46]">
+                  <CircleCheck size={18} />
+                  Code issued successfully
+                </div>
+                <p className="mt-4 text-xs font-bold uppercase tracking-wider text-[#166534]">
+                  Participant verification code
+                </p>
+                <div className="mt-2 flex min-h-16 items-center justify-between gap-3 rounded-lg border border-emerald-700/25 bg-white px-4 py-3 shadow-inner">
+                  <code className="select-all break-all font-mono text-xl font-extrabold leading-relaxed tracking-[0.12em] text-[#052e2b] sm:text-2xl">
+                    {issuedCode}
+                  </code>
+                  <button
+                    type="button"
+                    onClick={() => void copyIssuedCode()}
+                    className="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-lg border border-[#0f766e] bg-[#0f766e] px-3 text-xs font-bold text-white transition hover:bg-[#115e59] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0f766e] focus-visible:ring-offset-2"
+                    aria-label="Copy verification code"
+                  >
+                    {isCodeCopied ? <Check size={15} /> : <Copy size={15} />}
+                    {isCodeCopied ? "Copied" : "Copy"}
+                  </button>
+                </div>
+                <p className="mt-3 text-xs font-medium leading-5 text-[#334155]">
+                  Share this code securely with the participant. They can enter
+                  it to confirm their payment.
+                </p>
+              </section>
+            ) : (
+              <>
+                <p className="mt-4 text-sm leading-6 text-slate-400">
+                  Leave blank for an automatic code, or enter exactly 6
+                  characters using A–Z and 0–9. The code will be shown after it
+                  is issued.
+                </p>
+                <label className="mt-5 block text-sm font-medium text-slate-200">
+                  Custom code{" "}
+                  <span className="font-normal text-slate-400">(optional)</span>
+                  <input
+                    value={customCode}
+                    onChange={(event) =>
+                      setCustomCode(
+                        event.target.value
+                          .toUpperCase()
+                          .replace(/[^A-Z0-9]/g, "")
+                          .slice(0, 6),
+                      )
+                    }
+                    maxLength={6}
+                    pattern="[A-Z0-9]{6}"
+                    autoCapitalize="characters"
+                    placeholder="6 letters or digits"
+                    className="mt-2 h-12 w-full rounded-lg border border-white/15 bg-[#07111a] px-4 font-mono text-base font-semibold tracking-wide text-white outline-none transition placeholder:font-sans placeholder:text-sm placeholder:font-normal placeholder:tracking-normal placeholder:text-slate-500 focus:border-cyan-200/60 focus:ring-2 focus:ring-cyan-200/15"
+                  />
+                </label>
+              </>
+            )}
+            {error && (
+              <p
+                role="alert"
+                className="mt-4 rounded-lg border border-rose-300/25 bg-rose-300/[0.08] px-3 py-2.5 text-sm text-rose-100"
+              >
+                {error}
+              </p>
+            )}
+            <div className="mt-6 flex justify-end gap-2 border-t border-white/10 pt-5">
+              {issuedCode ? (
+                <button
+                  type="button"
+                  onClick={() => setCodePayment(null)}
+                  className="min-h-11 rounded-lg bg-cyan-200 px-5 text-sm font-bold text-[#07131b] transition hover:bg-cyan-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-100"
+                >
+                  Done
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setCodePayment(null)}
+                    className="min-h-11 rounded-lg border border-white/15 px-4 text-sm font-medium text-slate-200 transition hover:bg-white/[0.06]"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isIssuingCode}
+                    className="min-h-11 rounded-lg bg-cyan-200 px-5 text-sm font-bold text-[#07131b] transition hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-55"
+                  >
+                    {isIssuingCode ? "Issuing…" : "Issue code"}
+                  </button>
+                </>
+              )}
+            </div>
+          </form>
+        </div>
+      )}
+    </div>
+  );
+}
+
+type FestSettingsRecord = {
+  id: number;
+  fest_name: string;
+  fest_fee: number;
+  updated_at: string;
+};
+
+function AdminFestSettingsSection() {
+  const [festName, setFestName] = useState("");
+  const [festFee, setFestFee] = useState("");
+  const [settingsExist, setSettingsExist] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [updatedAt, setUpdatedAt] = useState("");
+  const [reload, setReload] = useState(0);
+
+  useEffect(() => {
+    if (!supabase) {
+      setIsLoading(false);
+      setError("Supabase is not configured.");
+      return;
+    }
+    let mounted = true;
+    setIsLoading(true);
+    setError("");
+    void supabase
+      .from("fest_settings")
+      .select("id,fest_name,fest_fee,updated_at")
+      .eq("id", 1)
+      .maybeSingle()
+      .then(({ data, error: queryError }) => {
+        if (!mounted) return;
+        setIsLoading(false);
+        if (queryError) {
+          setError(queryError.message);
+          return;
+        }
+        const settings = data as FestSettingsRecord | null;
+        if (!settings) {
+          setSettingsExist(false);
+          setFestName("SRISTI 2K26");
+          setFestFee("");
+          setUpdatedAt("");
+          return;
+        }
+        setSettingsExist(true);
+        setFestName(settings.fest_name);
+        setFestFee(String(settings.fest_fee));
+        setUpdatedAt(settings.updated_at);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [reload]);
+
+  const saveSettings = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!supabase) return;
+    const parsedFee = Number(festFee);
+    if (!festName.trim()) {
+      setError("Enter a festival name.");
+      return;
+    }
+    if (!Number.isFinite(parsedFee) || parsedFee <= 0) {
+      setError(
+        "Enter a fee greater than ₹0. Payment verification requires a positive fest fee.",
+      );
+      return;
+    }
+    setIsSaving(true);
+    setError("");
+    setNotice("");
+    const values = { fest_name: festName.trim(), fest_fee: parsedFee };
+    const result = settingsExist
+      ? await supabase.from("fest_settings").update(values).eq("id", 1)
+      : await supabase.from("fest_settings").insert({ id: 1, ...values });
+    setIsSaving(false);
+    if (result.error) {
+      setError(result.error.message);
+      return;
+    }
+    setSettingsExist(true);
+    setNotice(
+      "Festival settings saved. Offline payment verification can now use this fee.",
+    );
+    setUpdatedAt(new Date().toISOString());
+  };
+
+  return (
+    <div className="mt-7 grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <form
+        onSubmit={saveSettings}
+        className="rounded-xl border border-white/10 bg-[#0d1520] p-5 md:p-7"
+      >
+        <div className="mb-6 border-b border-white/10 pb-5">
+          <h2 className="text-lg font-semibold text-white">
+            Festival configuration
+          </h2>
+          <p className="mt-1 text-sm text-slate-400">
+            These values are shared across participant registration and payment
+            verification.
+          </p>
+        </div>
+        {isLoading ? (
+          <div
+            className="space-y-5"
+            aria-label="Loading festival settings"
+            aria-busy="true"
+          >
+            <span className="admin-skeleton block h-4 w-36 rounded" />
+            <span className="admin-skeleton block h-11 w-full rounded-lg" />
+            <span className="admin-skeleton block h-4 w-28 rounded" />
+            <span className="admin-skeleton block h-11 w-full rounded-lg" />
+          </div>
+        ) : (
+          <>
+            <label className="block text-sm font-medium text-slate-200">
+              Festival name
+              <input
+                value={festName}
+                onChange={(event) => setFestName(event.target.value)}
+                maxLength={120}
+                required
+                className="mt-2 h-12 w-full rounded-lg border border-white/10 bg-[#0b121c] px-3 text-sm text-white outline-none transition focus:border-emerald-300/50"
+                placeholder="SRISTI 2K26"
+              />
+            </label>
+            <label className="mt-5 block text-sm font-medium text-slate-200">
+              Registration fee
+              <input
+                type="number"
+                inputMode="decimal"
+                min="0.01"
+                step="0.01"
+                value={festFee}
+                onChange={(event) => setFestFee(event.target.value)}
+                required
+                className="mt-2 h-12 w-full rounded-lg border border-white/10 bg-[#0b121c] px-3 text-sm text-white outline-none transition focus:border-emerald-300/50"
+                placeholder="Enter amount in INR"
+              />
+              <span className="mt-2 block text-xs leading-5 text-slate-500">
+                This amount is used when an admin confirms an offline payment.
+                Enter the actual fee set by your organizers.
+              </span>
+            </label>
+            {error && (
+              <p
+                role="alert"
+                className="mt-5 rounded-lg border border-rose-300/20 bg-rose-300/5 px-4 py-3 text-sm text-rose-200"
+              >
+                {error}
+              </p>
+            )}
+            {notice && (
+              <p
+                role="status"
+                className="mt-5 rounded-lg border border-emerald-300/20 bg-emerald-300/5 px-4 py-3 text-sm text-emerald-200"
+              >
+                {notice}
+              </p>
+            )}
+            <div className="mt-7 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-5">
+              <span className="text-xs text-slate-500">
+                {updatedAt
+                  ? `Last saved ${new Date(updatedAt).toLocaleString()}`
+                  : "Settings have not been saved yet."}
+              </span>
+              <button
+                type="submit"
+                disabled={isSaving}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-emerald-300 px-5 text-sm font-semibold text-slate-950 transition hover:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isSaving ? "Saving…" : "Save settings"}
+              </button>
+            </div>
+          </>
+        )}
+      </form>
+      <aside className="h-fit rounded-2xl border border-cyan-300/25 bg-[#0b1c28] p-5 shadow-lg shadow-cyan-950/20">
+        <div className="flex items-center gap-3">
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-cyan-300 text-[#07131b] shadow-sm shadow-cyan-950/30">
+            <Wallet size={19} strokeWidth={2.2} />
+          </span>
+          <h2 className="font-semibold text-white">Payment verification</h2>
+        </div>
+        <p className="mt-4 text-sm leading-6 text-slate-200">
+          A positive fee must be saved before an admin can record a cash
+          payment. When saved, the payment function uses this amount and records
+          the verifying admin.
+        </p>
+        <button
+          type="button"
+          onClick={() => setReload((value) => value + 1)}
+          disabled={isLoading || isSaving}
+          className="mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-cyan-200/30 bg-cyan-300 px-4 py-2 text-sm font-semibold text-[#07131b] shadow-sm shadow-cyan-950/30 transition duration-150 hover:-translate-y-0.5 hover:bg-cyan-200 hover:shadow-md hover:shadow-cyan-950/40 active:translate-y-0 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-100 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0b1c28] disabled:cursor-not-allowed disabled:opacity-55"
+        >
+          <RefreshCw size={15} className={isLoading ? "animate-spin" : ""} />
+          Reload settings
+        </button>
+      </aside>
     </div>
   );
 }
@@ -624,6 +1835,766 @@ function RegistrationSummary({
     <div className="rounded-xl border border-white/10 bg-[#0d1520] p-5">
       <p className="text-sm text-slate-400">{label}</p>
       <p className={`mt-2 text-2xl font-bold ${accent}`}>{value}</p>
+    </div>
+  );
+}
+
+type AttendanceEvent = {
+  id: string;
+  name: string;
+  event_type: "solo" | "team";
+};
+
+type AttendanceEnrollment = {
+  user_id: string | null;
+  team_id: string | null;
+  profiles: {
+    full_name: string;
+    college_roll: string;
+    college_name: string;
+    department: string;
+  } | null;
+  teams: { team_name: string; team_code: string } | null;
+};
+
+type AttendanceRecord = {
+  user_id: string | null;
+  team_id: string | null;
+  status: "present" | "absent";
+  marked_at: string;
+};
+
+type AttendanceTarget = {
+  key: string;
+  userId: string | null;
+  teamId: string | null;
+  name: string;
+  secondary: string;
+  status: "present" | "absent" | null;
+  markedAt: string | null;
+};
+
+function AdminAttendanceSection() {
+  const [events, setEvents] = useState<AttendanceEvent[]>([]);
+  const [selectedEventId, setSelectedEventId] = useState("");
+  const [targets, setTargets] = useState<AttendanceTarget[]>([]);
+  const [search, setSearch] = useState("");
+  const [isLoadingEvents, setIsLoadingEvents] = useState(true);
+  const [isLoadingTargets, setIsLoadingTargets] = useState(false);
+  const [savingKey, setSavingKey] = useState("");
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [reload, setReload] = useState(0);
+
+  useEffect(() => {
+    if (!supabase) {
+      setIsLoadingEvents(false);
+      setError("Supabase is not configured.");
+      return;
+    }
+    let mounted = true;
+    setIsLoadingEvents(true);
+    void supabase
+      .from("events")
+      .select("id,name,event_type")
+      .order("name", { ascending: true })
+      .then(({ data, error: queryError }) => {
+        if (!mounted) return;
+        setIsLoadingEvents(false);
+        if (queryError) {
+          setError(queryError.message);
+          return;
+        }
+        const rows = (data ?? []) as AttendanceEvent[];
+        setEvents(rows);
+        setSelectedEventId((current) => current || rows[0]?.id || "");
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!supabase || !selectedEventId) {
+      setTargets([]);
+      setIsLoadingTargets(false);
+      return;
+    }
+    let mounted = true;
+    setIsLoadingTargets(true);
+    setError("");
+    setNotice("");
+    void (async () => {
+      const { data: enrollmentData, error: enrollmentError } = await supabase!
+        .from("registrations")
+        .select(
+          "user_id,team_id,profiles(full_name,college_roll,college_name,department),teams(team_name,team_code)",
+        )
+        .eq("event_id", selectedEventId)
+        .eq("status", "registered");
+      if (enrollmentError) {
+        if (mounted) {
+          setIsLoadingTargets(false);
+          setError(enrollmentError.message);
+        }
+        return;
+      }
+
+      const { data: attendanceData, error: attendanceError } = await supabase!
+        .from("attendance")
+        .select("user_id,team_id,status,marked_at")
+        .eq("event_id", selectedEventId);
+      if (attendanceError) {
+        if (mounted) {
+          setIsLoadingTargets(false);
+          setError(attendanceError.message);
+        }
+        return;
+      }
+
+      if (!mounted) return;
+      const enrollments = (enrollmentData ??
+        []) as unknown as AttendanceEnrollment[];
+      const attendance = (attendanceData ?? []) as AttendanceRecord[];
+      const byTarget = new Map<string, AttendanceRecord>();
+      attendance.forEach((record) => {
+        const key = record.user_id
+          ? `user:${record.user_id}`
+          : `team:${record.team_id}`;
+        byTarget.set(key, record);
+      });
+      setTargets(
+        enrollments.flatMap((enrollment) => {
+          const isTeam = enrollment.team_id !== null;
+          const targetId = isTeam ? enrollment.team_id : enrollment.user_id;
+          if (!targetId) return [];
+          const key = `${isTeam ? "team" : "user"}:${targetId}`;
+          const marked = byTarget.get(key);
+          const person = enrollment.profiles;
+          const team = enrollment.teams;
+          return [
+            {
+              key,
+              userId: isTeam ? null : enrollment.user_id,
+              teamId: isTeam ? enrollment.team_id : null,
+              name: isTeam
+                ? (team?.team_name ?? "Team")
+                : (person?.full_name ?? "Participant"),
+              secondary: isTeam
+                ? `Team code: ${team?.team_code ?? "—"}`
+                : `${person?.college_roll ?? "No roll number"} · ${person?.department ?? "Department unavailable"}`,
+              status: marked?.status ?? null,
+              markedAt: marked?.marked_at ?? null,
+            },
+          ];
+        }),
+      );
+      setIsLoadingTargets(false);
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [reload, selectedEventId]);
+
+  const selectedEvent =
+    events.find((event) => event.id === selectedEventId) ?? null;
+  const visibleTargets = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return targets.filter(
+      (target) =>
+        !query ||
+        `${target.name} ${target.secondary}`.toLowerCase().includes(query),
+    );
+  }, [search, targets]);
+  const presentCount = targets.filter(
+    (target) => target.status === "present",
+  ).length;
+  const absentCount = targets.filter(
+    (target) => target.status === "absent",
+  ).length;
+  const unmarkedCount = targets.filter(
+    (target) => target.status === null,
+  ).length;
+
+  const markAttendance = async (
+    target: AttendanceTarget,
+    status: "present" | "absent",
+  ) => {
+    if (!supabase || !selectedEventId) return;
+    setSavingKey(target.key);
+    setError("");
+    setNotice("");
+    const { error: actionError } = await supabase.rpc("mark_attendance", {
+      p_event_id: selectedEventId,
+      p_user_id: target.userId,
+      p_team_id: target.teamId,
+      p_status: status,
+    });
+    setSavingKey("");
+    if (actionError) {
+      setError(actionError.message);
+      return;
+    }
+    setNotice(`${target.name}: marked ${status}.`);
+    setReload((value) => value + 1);
+  };
+
+  return (
+    <div className="mt-7 space-y-5">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <RegistrationSummary
+          label="Registered targets"
+          value={targets.length}
+        />
+        <RegistrationSummary
+          label="Present"
+          value={presentCount}
+          accent="text-emerald-300"
+        />
+        <RegistrationSummary
+          label="Absent"
+          value={absentCount}
+          accent="text-rose-200"
+        />
+        <RegistrationSummary
+          label="Not marked"
+          value={unmarkedCount}
+          accent="text-amber-200"
+        />
+      </div>
+
+      <div className="flex flex-col gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-3 md:flex-row">
+        <label className="flex min-w-0 flex-1 items-center gap-3 rounded-lg border border-white/10 bg-[#0b121c] px-3">
+          <Search size={17} className="shrink-0 text-slate-500" />
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search participant, roll number, or team…"
+            className="h-11 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-slate-500"
+            aria-label="Search attendance targets"
+          />
+        </label>
+        <select
+          value={selectedEventId}
+          onChange={(event) => setSelectedEventId(event.target.value)}
+          disabled={isLoadingEvents || events.length === 0}
+          className="h-11 rounded-lg border border-white/10 bg-[#0b121c] px-3 text-sm text-slate-200 outline-none md:w-72"
+          aria-label="Choose event"
+        >
+          {events.length === 0 && <option value="">No events available</option>}
+          {events.map((event) => (
+            <option key={event.id} value={event.id}>
+              {event.name} · {event.event_type}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {error && (
+        <p
+          role="alert"
+          className="rounded-lg border border-rose-300/20 bg-rose-300/5 px-4 py-3 text-sm text-rose-200"
+        >
+          Attendance error: {error}
+        </p>
+      )}
+      {notice && (
+        <p
+          role="status"
+          className="rounded-lg border border-emerald-300/20 bg-emerald-300/5 px-4 py-3 text-sm text-emerald-200"
+        >
+          {notice}
+        </p>
+      )}
+
+      <div className="overflow-hidden rounded-xl border border-white/10 bg-[#0d1520]">
+        <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+          <div>
+            <h2 className="font-semibold">
+              {selectedEvent
+                ? `${selectedEvent.name} attendance`
+                : "Event attendance"}
+            </h2>
+            <p className="mt-1 text-xs text-slate-500" aria-live="polite">
+              {isLoadingTargets
+                ? "Loading registered targets…"
+                : `${visibleTargets.length} shown`}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setReload((value) => value + 1)}
+            disabled={isLoadingTargets || !selectedEventId}
+            className="inline-flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-xs font-medium text-slate-300 transition hover:bg-white/5 disabled:opacity-50"
+          >
+            <RefreshCw
+              size={14}
+              className={isLoadingTargets ? "animate-spin" : ""}
+            />{" "}
+            Refresh
+          </button>
+        </div>
+        <div className="overflow-x-auto" aria-busy={isLoadingTargets}>
+          <table className="w-full min-w-[760px] text-left text-sm">
+            <thead className="bg-white/[0.03] text-xs uppercase tracking-wide text-slate-400">
+              <tr>
+                <th className="px-5 py-4 font-medium">Participant / team</th>
+                <th className="px-4 py-4 font-medium">Target</th>
+                <th className="px-4 py-4 font-medium">Attendance</th>
+                <th className="px-5 py-4 text-right font-medium">Mark</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/[0.07]">
+              {isLoadingTargets &&
+                Array.from({ length: 4 }, (_, index) => (
+                  <tr key={`attendance-skeleton-${index}`} aria-hidden="true">
+                    {["w-40", "w-32", "w-20", "w-28"].map((width, cell) => (
+                      <td key={cell} className="px-4 py-5">
+                        <span
+                          className={`admin-skeleton block h-4 ${width} rounded`}
+                        />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              {!isLoadingTargets &&
+                visibleTargets.map((target) => (
+                  <tr
+                    key={target.key}
+                    className="transition hover:bg-white/[0.025]"
+                  >
+                    <td className="px-5 py-4">
+                      <p className="font-semibold text-white">{target.name}</p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {target.secondary}
+                      </p>
+                    </td>
+                    <td className="px-4 py-4">
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-xs ${target.teamId ? "bg-sky-400/10 text-sky-200" : "bg-violet-400/10 text-violet-200"}`}
+                      >
+                        {target.teamId ? "Team" : "Individual"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4">
+                      {target.status ? (
+                        <>
+                          <span
+                            className={`rounded-full px-2.5 py-1 text-xs capitalize ${target.status === "present" ? "bg-emerald-400/10 text-emerald-200" : "bg-rose-400/10 text-rose-200"}`}
+                          >
+                            {target.status}
+                          </span>
+                          <p className="mt-1 text-[11px] text-slate-500">
+                            {target.markedAt
+                              ? new Date(target.markedAt).toLocaleString()
+                              : ""}
+                          </p>
+                        </>
+                      ) : (
+                        <span className="text-xs text-amber-200">
+                          Not marked
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-5 py-4 text-right">
+                      <div className="inline-flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => void markAttendance(target, "present")}
+                          disabled={
+                            savingKey === target.key || isLoadingTargets
+                          }
+                          aria-pressed={target.status === "present"}
+                          className={`rounded-lg border px-3 py-2 text-xs font-semibold transition duration-150 ease-out hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d1520] active:translate-y-0 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 ${target.status === "present" ? "border-emerald-200 bg-emerald-300 text-slate-950 shadow-md shadow-emerald-950/30 hover:bg-emerald-200" : "border-emerald-300/25 text-emerald-200 hover:border-emerald-200 hover:bg-emerald-300 hover:text-slate-950"}`}
+                        >
+                          {savingKey === target.key
+                            ? "Saving…"
+                            : target.status === "present"
+                              ? "Present ✓"
+                              : "Present"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void markAttendance(target, "absent")}
+                          disabled={
+                            savingKey === target.key || isLoadingTargets
+                          }
+                          aria-pressed={target.status === "absent"}
+                          className={`rounded-lg border px-3 py-2 text-xs font-semibold transition duration-150 ease-out hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-200 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d1520] active:translate-y-0 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 ${target.status === "absent" ? "border-rose-200 bg-rose-300 text-slate-950 shadow-md shadow-rose-950/30 hover:bg-rose-200" : "border-rose-300/25 text-rose-200 hover:border-rose-200 hover:bg-rose-300 hover:text-slate-950"}`}
+                        >
+                          {target.status === "absent" ? "Absent ✓" : "Absent"}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              {!isLoadingTargets && visibleTargets.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={4}
+                    className="px-5 py-14 text-center text-slate-400"
+                  >
+                    {error
+                      ? "Attendance targets could not be loaded."
+                      : search
+                        ? "No registered participants or teams match this search."
+                        : "No registered participants or teams for this event yet."}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        <p className="border-t border-white/10 px-5 py-3 text-xs text-slate-500">
+          Solo events are marked per participant. Team events are marked once
+          per registered team, as enforced by the database.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+type AdminRecord = {
+  id: string;
+  user_id: string;
+  role: "ADMIN" | "SUPER_ADMIN";
+  status: "active" | "inactive";
+  created_at: string;
+};
+
+function AdminManagementSection() {
+  const [admins, setAdmins] = useState<AdminRecord[]>([]);
+  const [roleDrafts, setRoleDrafts] = useState<
+    Record<string, AdminRecord["role"]>
+  >({});
+  const [userId, setUserId] = useState("");
+  const [newRole, setNewRole] = useState<AdminRecord["role"]>("ADMIN");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [reload, setReload] = useState(0);
+
+  useEffect(() => {
+    if (!supabase) {
+      setIsLoading(false);
+      setError("Supabase is not configured.");
+      return;
+    }
+    let mounted = true;
+    setIsLoading(true);
+    setError("");
+    void supabase
+      .from("admin_users")
+      .select("id,user_id,role,status,created_at")
+      .order("created_at", { ascending: false })
+      .then(({ data, error: queryError }) => {
+        if (!mounted) return;
+        setIsLoading(false);
+        if (queryError) {
+          setError(queryError.message);
+          return;
+        }
+        const rows = (data ?? []) as AdminRecord[];
+        setAdmins(rows);
+        setRoleDrafts(
+          Object.fromEntries(rows.map((admin) => [admin.id, admin.role])),
+        );
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [reload]);
+
+  const runAction = async (
+    action: () => Promise<{ error: { message: string } | null }>,
+    successMessage: string,
+  ) => {
+    setError("");
+    setNotice("");
+    setIsSaving(true);
+    const { error: actionError } = await action();
+    setIsSaving(false);
+    if (actionError) {
+      setError(actionError.message);
+      return false;
+    }
+    setNotice(successMessage);
+    setReload((value) => value + 1);
+    return true;
+  };
+
+  const addAdmin = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!supabase) return;
+    const normalizedId = userId.trim();
+    if (
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        normalizedId,
+      )
+    ) {
+      setError("Enter a valid Auth user UUID.");
+      return;
+    }
+    const succeeded = await runAction(
+      async () =>
+        await supabase!.rpc("create_admin", {
+          p_user_id: normalizedId,
+          p_role: newRole,
+        }),
+      "Admin access granted.",
+    );
+    if (succeeded) setUserId("");
+  };
+
+  const saveRole = async (admin: AdminRecord) => {
+    if (!supabase) return;
+    const selectedRole = roleDrafts[admin.id] ?? admin.role;
+    if (selectedRole === admin.role) return;
+    await runAction(
+      async () =>
+        await supabase!.rpc("update_admin", {
+          p_admin_id: admin.id,
+          p_role: selectedRole,
+          p_status: admin.status,
+        }),
+      "Admin role updated.",
+    );
+  };
+
+  const changeStatus = async (admin: AdminRecord) => {
+    if (!supabase) return;
+    if (admin.status === "active") {
+      if (
+        !window.confirm(
+          "Deactivate this admin account? They will lose access immediately.",
+        )
+      )
+        return;
+      await runAction(
+        async () =>
+          await supabase!.rpc("deactivate_admin", { p_admin_id: admin.id }),
+        "Admin access deactivated.",
+      );
+      return;
+    }
+    await runAction(
+      async () =>
+        await supabase!.rpc("update_admin", {
+          p_admin_id: admin.id,
+          p_role: admin.role,
+          p_status: "active",
+        }),
+      "Admin access reactivated.",
+    );
+  };
+
+  const activeCount = admins.filter(
+    (admin) => admin.status === "active",
+  ).length;
+  const superAdminCount = admins.filter(
+    (admin) => admin.role === "SUPER_ADMIN" && admin.status === "active",
+  ).length;
+
+  return (
+    <div className="mt-7 space-y-5">
+      <div className="grid gap-4 sm:grid-cols-3">
+        <RegistrationSummary
+          label="Total admin accounts"
+          value={admins.length}
+        />
+        <RegistrationSummary
+          label="Active admins"
+          value={activeCount}
+          accent="text-emerald-300"
+        />
+        <RegistrationSummary
+          label="Active super admins"
+          value={superAdminCount}
+          accent="text-violet-200"
+        />
+      </div>
+
+      <form
+        onSubmit={addAdmin}
+        className="grid gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-4 md:grid-cols-[minmax(0,1fr)_180px_auto] md:items-end"
+      >
+        <label className="block text-xs font-medium text-slate-300">
+          Existing Supabase Auth user ID
+          <input
+            value={userId}
+            onChange={(event) => setUserId(event.target.value)}
+            placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+            className="mt-2 h-11 w-full rounded-lg border border-white/10 bg-[#0b121c] px-3 font-mono text-xs text-slate-100 outline-none focus:border-emerald-300/50"
+            aria-label="Existing Supabase Auth user ID"
+            required
+          />
+        </label>
+        <label className="block text-xs font-medium text-slate-300">
+          Role
+          <select
+            value={newRole}
+            onChange={(event) =>
+              setNewRole(event.target.value as AdminRecord["role"])
+            }
+            className="mt-2 h-11 w-full rounded-lg border border-white/10 bg-[#0b121c] px-3 text-sm text-slate-100 outline-none"
+          >
+            <option value="ADMIN">Admin</option>
+            <option value="SUPER_ADMIN">Super admin</option>
+          </select>
+        </label>
+        <button
+          type="submit"
+          disabled={isSaving || !userId.trim()}
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-emerald-300 px-4 text-sm font-semibold text-slate-950 transition hover:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <Plus size={16} /> Grant access
+        </button>
+        <p className="text-xs leading-5 text-slate-500 md:col-span-3">
+          The account must already exist in Supabase Authentication. Copy its
+          user ID from the local or project Auth Users page. This form grants
+          admin access; it does not create or invite an Auth account.
+        </p>
+      </form>
+
+      {error && (
+        <p
+          role="alert"
+          className="rounded-lg border border-rose-300/20 bg-rose-300/5 px-4 py-3 text-sm text-rose-200"
+        >
+          {error}
+        </p>
+      )}
+      {notice && (
+        <p
+          role="status"
+          className="rounded-lg border border-emerald-300/20 bg-emerald-300/5 px-4 py-3 text-sm text-emerald-200"
+        >
+          {notice}
+        </p>
+      )}
+
+      <div className="overflow-hidden rounded-xl border border-white/10 bg-[#0d1520]">
+        <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+          <div>
+            <h2 className="font-semibold">Administrator accounts</h2>
+            <p className="mt-1 text-xs text-slate-500" aria-live="polite">
+              {isLoading ? "Loading admins…" : `${admins.length} accounts`}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setReload((value) => value + 1)}
+            disabled={isLoading || isSaving}
+            className="inline-flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-xs font-medium text-slate-300 transition hover:bg-white/5 disabled:opacity-50"
+          >
+            <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />{" "}
+            Refresh
+          </button>
+        </div>
+        <div className="overflow-x-auto" aria-busy={isLoading}>
+          <table className="w-full min-w-[820px] text-left text-sm">
+            <thead className="bg-white/[0.03] text-xs uppercase tracking-wide text-slate-400">
+              <tr>
+                <th className="px-5 py-4 font-medium">Auth user ID</th>
+                <th className="px-4 py-4 font-medium">Role</th>
+                <th className="px-4 py-4 font-medium">Status</th>
+                <th className="px-4 py-4 font-medium">Added</th>
+                <th className="px-5 py-4 text-right font-medium">Access</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/[0.07]">
+              {isLoading &&
+                Array.from({ length: 3 }, (_, index) => (
+                  <tr key={`admin-skeleton-${index}`} aria-hidden="true">
+                    {["w-48", "w-24", "w-20", "w-24", "w-24"].map(
+                      (width, cell) => (
+                        <td key={cell} className="px-4 py-5">
+                          <span
+                            className={`admin-skeleton block h-4 ${width} rounded`}
+                          />
+                        </td>
+                      ),
+                    )}
+                  </tr>
+                ))}
+              {!isLoading &&
+                admins.map((admin) => (
+                  <tr
+                    key={admin.id}
+                    className="transition hover:bg-white/[0.025]"
+                  >
+                    <td className="px-5 py-4 font-mono text-xs text-slate-300">
+                      {admin.user_id}
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={roleDrafts[admin.id] ?? admin.role}
+                          onChange={(event) =>
+                            setRoleDrafts((drafts) => ({
+                              ...drafts,
+                              [admin.id]: event.target
+                                .value as AdminRecord["role"],
+                            }))
+                          }
+                          className="h-9 rounded-lg border border-white/10 bg-[#0b121c] px-2 text-xs text-slate-200 outline-none"
+                          aria-label={`Role for ${admin.user_id}`}
+                        >
+                          <option value="ADMIN">Admin</option>
+                          <option value="SUPER_ADMIN">Super admin</option>
+                        </select>
+                        {(roleDrafts[admin.id] ?? admin.role) !==
+                          admin.role && (
+                          <button
+                            type="button"
+                            onClick={() => void saveRole(admin)}
+                            disabled={isSaving}
+                            className="text-xs font-semibold text-emerald-200 hover:text-emerald-100 disabled:opacity-50"
+                          >
+                            Save
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-xs capitalize ${admin.status === "active" ? "bg-emerald-400/10 text-emerald-200" : "bg-slate-400/10 text-slate-300"}`}
+                      >
+                        {admin.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 text-xs text-slate-400">
+                      {new Date(admin.created_at).toLocaleDateString()}
+                    </td>
+                    <td className="px-5 py-4 text-right">
+                      <button
+                        type="button"
+                        onClick={() => void changeStatus(admin)}
+                        disabled={isSaving}
+                        className={`rounded-lg border px-3 py-2 text-xs font-medium transition disabled:opacity-50 ${admin.status === "active" ? "border-rose-300/20 text-rose-200 hover:bg-rose-300/10" : "border-emerald-300/20 text-emerald-200 hover:bg-emerald-300/10"}`}
+                      >
+                        {admin.status === "active"
+                          ? "Deactivate"
+                          : "Reactivate"}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              {!isLoading && admins.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={5}
+                    className="px-5 py-14 text-center text-slate-400"
+                  >
+                    No admin accounts found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }

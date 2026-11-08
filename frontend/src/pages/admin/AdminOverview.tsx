@@ -8,6 +8,7 @@ import {
   ListChecks,
   LogOut,
   Settings,
+  Trophy,
   Users,
   Wallet,
 } from "lucide-react";
@@ -183,6 +184,11 @@ export default function AdminOverview() {
             href="/admin/registrations"
             icon={<ListChecks size={18} />}
             label="Registrations"
+          />
+          <NavItem
+            href="/admin/results"
+            icon={<Trophy size={18} />}
+            label="Results"
           />
           <NavItem
             href="/admin/payments"

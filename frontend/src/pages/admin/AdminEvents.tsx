@@ -13,6 +13,7 @@ import {
   ChevronRight,
   CircleCheck,
   CircleHelp,
+  ClipboardCheck,
   Eye,
   EyeOff,
   LayoutDashboard,
@@ -23,6 +24,7 @@ import {
   Plus,
   Search,
   Settings,
+  Trophy,
   ShieldCheck,
   Trash2,
   Users,
@@ -35,6 +37,16 @@ import sristiLogo from "../../assets/icons/sristi_logo.png";
 import "./AdminEvents.css";
 
 type EventType = "solo" | "team";
+
+const EVENT_CATEGORIES = [
+  "Civilized",
+  "Gaming",
+  "Management",
+  "Mechanized",
+  "Robotics",
+  "Technical",
+  "Miscellaneous",
+] as const;
 
 type EventRecord = {
   id: string;
@@ -395,6 +407,16 @@ export default function AdminEvents() {
             label="Registrations"
           />
           <NavItem
+            href="/admin/attendance"
+            icon={<ClipboardCheck size={18} />}
+            label="Attendance"
+          />
+          <NavItem
+            href="/admin/results"
+            icon={<Trophy size={18} />}
+            label="Results"
+          />
+          <NavItem
             href="/admin/payments"
             icon={<Wallet size={18} />}
             label="Payments"
@@ -751,7 +773,7 @@ export default function AdminEvents() {
                     </select>
                   </FormField>
                   <FormField label="Category" required>
-                    <input
+                    <select
                       required
                       value={form.category}
                       onChange={(event) =>
@@ -761,8 +783,22 @@ export default function AdminEvents() {
                         }))
                       }
                       className={inputClass}
-                      placeholder="e.g. Robotics"
-                    />
+                    >
+                      <option value="" disabled>
+                        Select a category
+                      </option>
+                      {form.category &&
+                        !EVENT_CATEGORIES.includes(
+                          form.category as (typeof EVENT_CATEGORIES)[number],
+                        ) && (
+                          <option value={form.category}>{form.category}</option>
+                        )}
+                      {EVENT_CATEGORIES.map((category) => (
+                        <option key={category} value={category}>
+                          {category}
+                        </option>
+                      ))}
+                    </select>
                   </FormField>
                 </div>
                 <FormField label="Venue" required>
