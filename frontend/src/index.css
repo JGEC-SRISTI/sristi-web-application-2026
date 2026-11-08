@@ -118,14 +118,12 @@ a {
 .font-title {
   font-family: "Game of Squids", sans-serif;
   letter-spacing: 0.18em;
-  text-transform: uppercase;
   font-weight: 400;
 }
 
 .font-heavy-title {
   font-family: "Game Of Squids", sans-serif;
   letter-spacing: 0.1em;
-  text-transform: uppercase;
   font-weight: 700;
 }
 
@@ -513,74 +511,49 @@ a {
    CUSTOM SQUID GAME CURSOR
 ========================================= */
 
-* {
-  cursor: none;
+/* Hide native cursor */
+html.custom-cursor-active,
+html.custom-cursor-active * {
+  cursor: none !important;
 }
 
-/* =========================================
-   NEON TRIANGLE CUSTOM CURSOR
-========================================= */
-
+/* Show custom PNG cursor */
 .custom-cursor {
+  display: block !important;
+
   position: fixed;
   top: 0;
   left: 0;
 
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
 
-  z-index: 99999;
+  z-index: 2147483647;
   pointer-events: none;
 
-  transform: translate(-50%, -50%);
-
-  transition:
-    width 0.25s ease,
-    height 0.25s ease;
+  transform: none !important;
 }
 
-.cursor-triangle-outline {
+.cursor-image {
+  display: block;
   width: 100%;
   height: 100%;
-  overflow: visible;
-
-  filter:
-    drop-shadow(0 0 2px #f7428d)
-    drop-shadow(0 0 6px rgba(255, 92, 133, 0.9))
-    drop-shadow(0 0 13px rgba(255, 92, 133, 0.5));
+  object-fit: contain;
+  pointer-events: none;
 }
 
-/* Hover enlargement */
+/* Mobile devices */
 
-.custom-cursor.cursor-hover {
-  width: 36px;
-  height: 36px;
-}
-
-.custom-cursor.cursor-hover .cursor-triangle-outline {
-  filter:
-    drop-shadow(0 0 3px #ff6685)
-    drop-shadow(0 0 9px #ff6685)
-    drop-shadow(0 0 20px rgba(255, 92, 133, 0.8));
-}
-/* Hide native cursor */
-
-@media (pointer: fine) {
-  body,
-  body * {
-    cursor: none !important;
+@media (hover: none), (pointer: coarse) {
+  html.custom-cursor-active,
+  html.custom-cursor-active * {
+    cursor: auto !important;
   }
-}
 
-/* Don't show custom cursor on touch devices */
-
-@media (pointer: coarse) {
   .custom-cursor {
     display: none;
   }
 }
-/* Don't show custom cursor on touch devices */
-
 
 /*-----------------------------------------*/
 
@@ -1387,7 +1360,7 @@ a {
   line-height: 1.3;
   letter-spacing: 0;
   text-align: center;
-  text-transform: uppercase;
+  text-transform: lowercase;
   white-space: nowrap;
 
   background: linear-gradient(
@@ -1844,9 +1817,9 @@ a {
 /* PINK SOLDIER — Middle layer */
 .hero-soldier {
   position: fixed;
-  top: 7vh;
+  top: 10vh;
   bottom: auto;
-  right: -15%;
+  right: -20%;
 
   z-index: 20;
 
@@ -1957,6 +1930,7 @@ a {
 }
 
 
+
 /* =====================================================
    INVITATION COMPOSITION
 ===================================================== */
@@ -1967,6 +1941,7 @@ a {
   align-items: center;
   justify-content: center;
   perspective: 1200px;
+  isolation: isolate;
 }
 
 .invitation-glow {
@@ -1978,19 +1953,22 @@ a {
   filter: blur(100px);
   opacity: 0;
   transition: opacity 1.5s ease;
+  pointer-events: none;
 }
 
 .jgec-visible .invitation-glow {
   opacity: 1;
 }
 
-/* Cards */
+
+/* =====================================================
+   INVITATION CARDS
+===================================================== */
 
 .invitation-card {
   position: absolute;
   width: clamp(170px, 23vw, 310px);
   height: auto;
-  object-fit: contain;
   opacity: 0;
   filter: drop-shadow(0 15px 25px rgba(0, 0, 0, 0.5));
   will-change: transform, opacity;
@@ -2007,26 +1985,133 @@ a {
   z-index: 3;
   top: 22%;
   right: 0;
-  transform: translateY(100px) rotate(10deg) scale(0.8) ease-in-out;
+  transform: translateY(100px) rotate(10deg) scale(0.8);
 }
 
-/* Hand */
+
+/* =====================================================
+   SECRET LOCATION CARD — 3D FLIP
+===================================================== */
+
+/* Clickable outer card */
+
+.secret-location-card {
+  aspect-ratio: 1587 / 893;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  perspective: 1200px;
+  overflow: visible;
+  isolation: isolate;
+  display: block;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Inner rotating layer */
+
+.secret-card-inner {
+  position: absolute;
+  inset: 0;
+  display: block;
+
+  transform-style: preserve-3d;
+
+  transition:
+    transform 1s cubic-bezier(0.2, 0.75, 0.25, 1);
+
+  pointer-events: none;
+}
+
+/* Flip when clicked */
+
+.secret-location-card.is-revealed .secret-card-inner {
+  transform: rotateY(180deg);
+}
+
+/* Front and back faces */
+
+.secret-card-face {
+  position: absolute;
+  inset: 0;
+
+  display: block;
+  overflow: hidden;
+
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Front — Welcome to the Game */
+
+.secret-card-front {
+  transform: rotateY(0deg);
+}
+
+/* Back — Coordinates */
+
+.secret-card-back {
+  transform: rotateY(180deg);
+}
+
+/* Both card images */
+
+.secret-card-face img {
+  width: 100%;
+  height: 100%;
+
+  display: block;
+
+  object-fit: cover;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Hover effect */
+
+.secret-location-card:hover {
+  filter:
+    drop-shadow(0 15px 25px rgba(0, 0, 0, 0.5))
+    drop-shadow(0 0 12px rgba(255, 92, 168, 0.3));
+}
+
+/* Keyboard accessibility */
+
+.secret-location-card:focus-visible {
+  outline: 2px solid #ff5ca8;
+  outline-offset: 6px;
+}
+
+
+/* =====================================================
+   HAND
+===================================================== */
 
 .invitation-hand {
   position: absolute;
   z-index: 1;
+
   width: 115%;
   max-width: 680px;
+
   height: auto;
   object-fit: contain;
+
   bottom: -10%;
   right: -15%;
+
   opacity: 0;
+
   transform: translateY(120px) scale(0.92);
+
   will-change: transform, opacity;
+  pointer-events: none;
 }
 
-/* Entrance */
+
+/* =====================================================
+   ENTRANCE ANIMATIONS
+===================================================== */
 
 .jgec-visible .invitation-card-one {
   animation:
@@ -2083,12 +2168,16 @@ a {
   }
 }
 
+/* Card entrance */
+
 @keyframes invitation-card-enter {
   to {
     opacity: 1;
     transform: translateY(0) rotate(0deg) scale(1);
   }
 }
+
+/* Hand entrance */
 
 @keyframes invitation-hand-enter {
   to {
@@ -2097,12 +2186,16 @@ a {
   }
 }
 
-/* Independent card movement */
+
+/* =====================================================
+   FLOATING ANIMATIONS
+===================================================== */
 
 @keyframes invitation-float-one {
   0%, 100% {
     transform: translateY(0) rotate(-12deg);
   }
+
   50% {
     transform: translateY(-22px) rotate(-7deg);
   }
@@ -2112,6 +2205,7 @@ a {
   0%, 100% {
     transform: translateY(0) rotate(10deg);
   }
+
   50% {
     transform: translateY(-32px) rotate(15deg);
   }
@@ -2123,6 +2217,7 @@ a {
   0%, 100% {
     transform: translateY(0) scale(1);
   }
+
   50% {
     transform: translateY(-12px) scale(1.015);
   }
@@ -2130,10 +2225,11 @@ a {
 
 
 /* =====================================================
-   MOBILE
+   MOBILE RESPONSIVENESS
 ===================================================== */
 
 @media (max-width: 1023px) {
+
   .jgec-invitation {
     min-height: 430px;
     margin-top: 20px;
@@ -2151,6 +2247,7 @@ a {
 }
 
 @media (max-width: 640px) {
+
   .jgec-invitation {
     min-height: 350px;
   }
@@ -2169,12 +2266,19 @@ a {
     width: 110%;
     right: -10%;
   }
+
+  .secret-location-card {
+    aspect-ratio: 1587 / 893;
+  }
 }
 
 
-/* Accessibility */
+/* =====================================================
+   ACCESSIBILITY
+===================================================== */
 
 @media (prefers-reduced-motion: reduce) {
+
   .jgec-eyebrow,
   .jgec-heading,
   .jgec-divider,
@@ -2184,9 +2288,13 @@ a {
     animation: none !important;
     opacity: 1;
     filter: none;
-    transform: none;
+  }
+
+  .secret-card-inner {
+    transition-duration: 0.01ms;
   }
 }
+
 
 /* =========================================
    SRISTI — MULTI FONT CINEMATIC ANIMATION
@@ -2494,11 +2602,11 @@ a {
   }
 
   .soldier-phone-screen {
-    left: 25%;
-    width: 48%;
-    top: 11%;
-    height: 78%;
-    border-radius: 30px;
+    left: 24.5%;
+    width: 47%;
+    top: 0%;
+    height: 90%;
+    border-radius: 35px;
   }
 }
 
@@ -2519,10 +2627,10 @@ a {
 
   .soldier-phone-screen {
     left: 25%;
-    width: 48%;
-    top: 11%;
-    height: 78%;
-    border-radius: 15px;
+    width: 38%;
+    top: 5%;
+    height: 76%;
+    border-radius: 30px;
   }
 }
 
@@ -3182,3 +3290,17 @@ a {
     transform: translate(0.45px, -0.7px);
   }
 }
+
+/* FORCE HIDE NATIVE CURSOR */
+
+html,
+html *,
+body,
+body *,
+#root,
+#root *,
+#root *::before,
+#root *::after {
+  cursor: none !important;
+}
+

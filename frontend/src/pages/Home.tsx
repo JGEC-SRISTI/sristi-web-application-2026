@@ -24,6 +24,14 @@ const Home = () => {
   const [isMuted, setIsMuted] = useState(true);
   const [soldierScroll, setSoldierScroll] = useState(0);
 
+  useEffect(() => {
+    const isMobile = window.matchMedia("(max-width: 768px)").matches;
+
+    if (isMobile) {
+      setIsVideo(false);
+    }
+  }, []);
+
   const toggleBackground = () => {
     setIsVideo((previous) => !previous);
   };
@@ -175,7 +183,7 @@ const Home = () => {
               key={`sristi-${heroAnimationKey}`}
               className="hero-title font-title text-[clamp(4rem,15vw,13rem)] leading-[0.85] tracking-[0.04em] text-white"
             >
-              SRISTI
+              sristi
             </h1>
 
             <img
@@ -194,7 +202,7 @@ const Home = () => {
               key={`year-${heroAnimationKey}`}
               className="hero-year font-title mt-2 sm:mt-3 text-[clamp(3rem,10vw,9rem)] leading-none tracking-[0.3em] text-pink-500"
             >
-              2K26
+              2k26
             </div>
 
             {/* Neon divider */}

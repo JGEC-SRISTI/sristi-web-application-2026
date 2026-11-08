@@ -12,6 +12,7 @@ import sristiVideo from "../assets/videos/sristi_about.mp4";
 import handImage from "../assets/images/hand.png";
 import card1Image from "../assets/images/card1.png";
 import card2Image from "../assets/images/card2.png";
+import card3Image from "../assets/images/card3.png";
 
 import { useEffect, useRef, useState } from "react";
 
@@ -19,6 +20,7 @@ const AboutSection = () => {
     const jgecRef = useRef<HTMLElement>(null);
     const [jgecVisible, setJgecVisible] = useState(false);
     const [jgecTypedCharacters, setJgecTypedCharacters] = useState(0);
+    const [isLocationRevealed, setIsLocationRevealed] = useState(false);
 
     useEffect(() => {
       const section = jgecRef.current;
@@ -350,11 +352,35 @@ const AboutSection = () => {
               <div className="invitation-glow" />
 
               {/* Floating card 1 */}
-              <img
-                src={card1Image}
-                alt="Squid Game invitation card"
-                className="invitation-card invitation-card-one"
-              />
+              <button
+                type="button"
+                className={`invitation-card invitation-card-one secret-location-card ${
+                  isLocationRevealed ? "is-revealed" : ""
+                }`}
+                onClick={() => setIsLocationRevealed((prev) => !prev)}
+                aria-label="Click to flip and reveal the location"
+                aria-pressed={isLocationRevealed}
+              >
+                <span className="secret-card-inner">
+
+                  {/* FRONT — WELCOME TO THE GAME */}
+                  <span className="secret-card-face secret-card-front">
+                    <img
+                      src={card3Image}
+                      alt="Welcome to the Game"
+                    />
+                  </span>
+
+                  {/* BACK — LOCATION COORDINATES */}
+                  <span className="secret-card-face secret-card-back">
+                    <img
+                      src={card1Image}
+                      alt="26.54776, 88.701972"
+                    />
+                  </span>
+
+                </span>
+              </button>
 
               {/* Floating card 2 */}
               <img
@@ -432,7 +458,7 @@ const AboutSection = () => {
                 "
               >
                 ABOUT{" "}
-                <span className="sristi-font-shift">SRISTI</span>
+                <span className="sristi-font-shift">sristi</span>
               </h2>
 
             </div>

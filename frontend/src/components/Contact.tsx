@@ -122,7 +122,7 @@ const Contact = () => {
               tracking-wide
             "
           >
-            CONTACT US
+            contact us
           </h2>
 
         </div>
