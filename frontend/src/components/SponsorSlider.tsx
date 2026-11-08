@@ -48,7 +48,7 @@ const SponsorSlider = () => {
             text-white
           "
         >
-          SPONSORS
+          sponsors
         </h2>
 
       </div>

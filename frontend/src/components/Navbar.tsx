@@ -107,7 +107,7 @@ const Navbar = () => {
               <NavShape shape="square" />
 
               <span className="nav-text-wrap font-title text-md">
-                <span className="nav-text">HOME</span>
+                <span className="nav-text">home</span>
                 <span className="nav-text-pink">HOME</span>
               </span>
             </NavLink>
@@ -116,7 +116,7 @@ const Navbar = () => {
               <NavShape shape="circle" />
 
               <span className="nav-text-wrap font-title text-md">
-                <span className="nav-text">GAMES</span>
+                <span className="nav-text">games</span>
                 <span className="nav-text-pink">GAMES</span>
               </span>
             </NavLink>
@@ -125,7 +125,7 @@ const Navbar = () => {
               <NavShape shape="triangle" />
 
               <span className="nav-text-wrap font-title text-md">
-                <span className="nav-text">STAFFS</span>
+                <span className="nav-text">staffs</span>
                 <span className="nav-text-pink">STAFFS</span>
               </span>
             </NavLink>
@@ -134,7 +134,7 @@ const Navbar = () => {
               <NavShape shape="house" />
 
               <span className="nav-text-wrap font-title text-md">
-                <span className="nav-text">ACCOMMODATION</span>
+                <span className="nav-text">accommodation</span>
                 <span className="nav-text-pink">ACCOMMODATION</span>
               </span>
             </NavLink>

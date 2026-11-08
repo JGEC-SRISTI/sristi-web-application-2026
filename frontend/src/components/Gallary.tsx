@@ -241,7 +241,7 @@ const Gallery = () => {
                 text-white
               "
             >
-              GALLERY
+              gallerY
             </h2>
           </div>
 

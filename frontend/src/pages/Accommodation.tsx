@@ -166,10 +166,10 @@ function Accommodation() {
             </div>
 
             <h1 className="font-title text-4xl sm:text-5xl md:text-7xl leading-tight">
-              YOUR STAY
+              your stay
               <br />
               <span className="text-pink-500">
-                IN THE GAME
+                in the game
               </span>
             </h1>
 
@@ -244,7 +244,7 @@ function Accommodation() {
             <div className="flex justify-between items-center border-b border-pink-500/30 px-5 md:px-8 py-4">
 
               <span className="font-title text-xs md:text-sm text-pink-500">
-                SRISTI 2K26
+                sristi 2k26
               </span>
 
               <span className="font-mono text-[9px] md:text-xs text-gray-500 tracking-widest">
@@ -379,7 +379,7 @@ function Accommodation() {
                 </p>
 
                 <h2 className="font-title text-2xl md:text-4xl">
-                PLAYER <span className="text-pink-500">FACILITIES</span>
+                player <span className="text-pink-500">facilities</span>
                 </h2>
 
             </div>
@@ -501,7 +501,7 @@ function Accommodation() {
               </p>
 
               <h2 className="font-title text-2xl md:text-4xl">
-                CONTACT <span className="text-pink-500">OUR TEAM</span>
+                contact <span className="text-pink-500">our team</span>
               </h2>
 
               <p className="font-ui text-sm text-gray-500 mt-5">
@@ -517,7 +517,7 @@ function Accommodation() {
                 <a
                   key={person.name}
                   href={`tel:${person.phone}`}
-                  className="group flex items-center gap-4 border border-white/10 bg-white/[0.02] p-5 hover:border-pink-500/50 hover:bg-pink-500/5 transition-all duration-300"
+                  className="group flex items-center gap-4 border border-white/10 bg-white/2 p-5 hover:border-pink-500/50 hover:bg-pink-500/5 transition-all duration-300"
                 >
 
                   <div className="w-12 h-12 flex items-center justify-center border border-pink-500/30 text-pink-500 group-hover:bg-pink-500 group-hover:text-black transition-all">
@@ -548,7 +548,7 @@ function Accommodation() {
           </section>
 
           {/* FINAL CTA */}
-          <section className="relative mt-24 border border-pink-500/30 bg-pink-500/[0.04] px-6 py-12 text-center overflow-hidden">
+          <section className="relative mt-24 border border-pink-500/30 bg-pink-500/4 px-6 py-12 text-center overflow-hidden">
 
             <div className="absolute top-4 left-4 w-5 h-5 border-t-2 border-l-2 border-pink-500/50" />
 
@@ -559,8 +559,8 @@ function Accommodation() {
             </p>
 
             <h2 className="font-title text-2xl md:text-4xl leading-relaxed">
-              DON'T MISS
-              <span className="text-pink-500"> THE GAME.</span>
+              don't miss
+              <span className="text-pink-500"> the game</span>
             </h2>
 
             <p className="font-ui text-gray-400 text-sm mt-5">
@@ -583,7 +583,7 @@ function Accommodation() {
           <div className="mt-16 pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4">
 
             <p className="font-title text-sm text-pink-500">
-              SRISTI 2K26
+              sristi 2k26
             </p>
 
             <p className="font-mono text-[9px] text-gray-600 tracking-widest text-center">
