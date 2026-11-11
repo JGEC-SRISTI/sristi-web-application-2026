@@ -168,10 +168,13 @@ const Navbar = () => {
       return;
     }
 
+    let authEventReceived = false;
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(
       (_event, newSession) => {
+        authEventReceived = true;
         setSession(newSession);
         setAuthLoading(false);
       }
@@ -182,7 +185,11 @@ const Navbar = () => {
         console.error("Session error:", error.message);
       }
 
-      setSession(data.session);
+      // Do not overwrite a newer auth event, such as signOut(), with a
+      // session snapshot that was read before that event completed.
+      if (!authEventReceived) {
+        setSession(data.session);
+      }
       setAuthLoading(false);
     });
 
