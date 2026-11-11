@@ -6,7 +6,7 @@ import {
   type ReactNode,
 } from "react";
 import type { User } from "@supabase/supabase-js";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   CalendarDays,
@@ -85,6 +85,7 @@ function slugify(value: string) {
 }
 
 export default function AdminEvents() {
+  const navigate = useNavigate();
   const [events, setEvents] = useState<EventRecord[]>([]);
   const [accessState, setAccessState] = useState<
     "loading" | "config" | "signed-out" | "checking" | "denied" | "ready"
@@ -206,7 +207,11 @@ export default function AdminEvents() {
   const signOut = async () => {
     if (!supabase) return;
     const { error: authError } = await supabase.auth.signOut();
-    if (authError) setPageMessage(`Could not sign out: ${authError.message}`);
+    if (authError) {
+      setPageMessage(`Could not sign out: ${authError.message}`);
+      return;
+    }
+    navigate("/", { replace: true });
   };
 
   const visibleEvents = useMemo(() => {

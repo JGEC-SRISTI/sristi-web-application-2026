@@ -3,6 +3,7 @@ import type { User } from "@supabase/supabase-js";
 import {
   CalendarDays,
   ChevronRight,
+  ClipboardCheck,
   ClipboardList,
   LayoutDashboard,
   ListChecks,
@@ -12,7 +13,7 @@ import {
   Users,
   Wallet,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase, supabaseConfigMissing } from "../../lib/supabase";
 import collegeLogo from "../../assets/icons/logo1.png";
 import sristiLogo from "../../assets/icons/sristi_logo.png";
@@ -20,6 +21,7 @@ import { AdminAccessGate, NavItem } from "./AdminEvents";
 import "./AdminEvents.css";
 
 export default function AdminOverview() {
+  const navigate = useNavigate();
   const [accessState, setAccessState] = useState<
     "loading" | "config" | "signed-out" | "checking" | "denied" | "ready"
   >(supabaseConfigMissing ? "config" : "loading");
@@ -118,7 +120,11 @@ export default function AdminOverview() {
   const signOut = async () => {
     if (!supabase) return;
     const { error } = await supabase.auth.signOut();
-    if (error) setLoadError(`Could not sign out: ${error.message}`);
+    if (error) {
+      setLoadError(`Could not sign out: ${error.message}`);
+      return;
+    }
+    navigate("/", { replace: true });
   };
 
   if (accessState !== "ready") {
@@ -184,6 +190,11 @@ export default function AdminOverview() {
             href="/admin/registrations"
             icon={<ListChecks size={18} />}
             label="Registrations"
+          />
+          <NavItem
+            href="/admin/attendance"
+            icon={<ClipboardCheck size={18} />}
+            label="Attendance"
           />
           <NavItem
             href="/admin/results"
