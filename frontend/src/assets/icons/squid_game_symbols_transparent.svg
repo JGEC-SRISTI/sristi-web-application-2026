@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="171" height="282" viewBox="0 0 171 282">
-  <title>Squid Game geometric symbols</title>
-  <g fill="none" stroke-linejoin="miter">
-    <circle cx="88" cy="43.5" r="29" stroke="#ffffff" stroke-width="13"/>
-    <circle cx="88" cy="244" r="29" stroke="#ffffff" stroke-width="13"/>
-    <path d="M88 45 L21 131.5 H155 Z" stroke="#d60250" stroke-width="12" />
-    <rect x="19.5" y="153" width="137" height="92" stroke="#d60250" stroke-width="12"/>
-  </g>
-</svg>

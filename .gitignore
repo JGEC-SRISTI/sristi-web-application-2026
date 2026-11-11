@@ -31,6 +31,3 @@ supabase/.temp/
 
 # Vite
 *.local
-
-# Local Supabase migration backups
-supabase/migrations/*.bak
