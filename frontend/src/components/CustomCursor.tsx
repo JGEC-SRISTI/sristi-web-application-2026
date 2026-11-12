@@ -1,36 +1,47 @@
-import { useEffect, useState } from "react";
+
+import { useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import cursorImage from "../assets/icons/cursor.png";
 
 const CustomCursor = () => {
-  const [position, setPosition] = useState({ x: -100, y: -100 });
+  const cursorRef = useRef<HTMLDivElement>(null);
+  const location = useLocation();
 
   useEffect(() => {
-    // Activate custom cursor mode
-    document.documentElement.classList.add("custom-cursor-active");
+    const isAdminRoute = location.pathname.startsWith("/admin");
+
+    const root = document.documentElement;
+
+    if (isAdminRoute) {
+      root.classList.remove("custom-cursor-active");
+      return;
+    }
+
+    root.classList.add("custom-cursor-active");
 
     const handleMouseMove = (event: MouseEvent) => {
-      setPosition({
-        x: event.clientX,
-        y: event.clientY,
-      });
+      if (cursorRef.current) {
+        cursorRef.current.style.left = `${event.clientX}px`;
+        cursorRef.current.style.top = `${event.clientY}px`;
+      }
     };
 
-    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mousemove", handleMouseMove, {
+      passive: true,
+    });
 
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
-      document.documentElement.classList.remove("custom-cursor-active");
+      root.classList.remove("custom-cursor-active");
     };
-  }, []);
+  }, [location.pathname]);
+
+  if (location.pathname.startsWith("/admin")) {
+    return null;
+  }
 
   return (
-    <div
-      className="custom-cursor"
-      style={{
-        left: position.x,
-        top: position.y,
-      }}
-    >
+    <div ref={cursorRef} className="custom-cursor">
       <img
         src={cursorImage}
         alt=""
