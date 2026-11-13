@@ -2,7 +2,8 @@
 import { useState } from "react";
 import DevCard from "../components/dev/DevCard.tsx";
 import "../styles/dev.css";
-
+import { useNavigate } from "react-router-dom";
+import { Home } from "lucide-react";
 import entryVideo from "../assets/videos/dev.entry.mp4";
 
 import mrinmoy from "../assets/images/dev/mrinmoy.png";
@@ -68,6 +69,7 @@ const developers = [
 function Dev() {
   const [introLeaving, setIntroLeaving] = useState(false);
   const [introDone, setIntroDone] = useState(false);
+  const navigate = useNavigate();
 
   const finishIntro = () => {
     if (introLeaving || introDone) return;
@@ -115,6 +117,15 @@ function Dev() {
           introDone ? "dev-content-visible" : ""
         }`}
       >
+        <button
+          className="back-to-home rounded-full p-2 bg-white shadow-md hover:bg-gray-100 transition-colors duration-300 absolute top-4 left-4 z-50"
+          onClick={() => navigate("/")}
+          aria-label="Back to Home"
+          title="Back to Home"
+          type="button"
+        >
+          <Home size={20} />
+        </button>
         <div className="dev-background-shapes">
           <span className="dev-shape circle" />
           <span className="dev-shape triangle" />
