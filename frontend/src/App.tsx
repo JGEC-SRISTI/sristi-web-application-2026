@@ -12,6 +12,7 @@ import AdminEvents from "./pages/admin/AdminEvents.tsx";
 import AdminSectionPlaceholder from "./pages/admin/AdminSectionPlaceholder.tsx";
 import CustomCursor from "./components/CustomCursor.tsx";
 import Register from "./pages/Register.tsx";
+import Dev from "./pages/Dev.tsx";
 
 function AppRoutes() {
   const { pathname } = useLocation();
@@ -30,6 +31,7 @@ function AppRoutes() {
         <Route path="/events/:eventSlug" element={<EventDetail />} />
         <Route path="/accommodation" element={<Accommodation />} />
         <Route path="/committee" element={<Committee />} />
+        <Route path="/dev" element={<Dev />} />
         <Route path="/register" element={<Register />} />
         {/* Public leaderboard route paused until the results page is scheduled. */}
         <Route path="/admin" element={<AdminOverview />} />

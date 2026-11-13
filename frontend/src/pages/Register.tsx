@@ -281,13 +281,16 @@ const Register = () => {
             <div>
               <label className={labelClass}>FULL NAME *</label>
               <input
+                type="text"
                 name="full_name"
                 value={form.full_name}
-                readOnly
-                className={`${inputClass} opacity-70 cursor-not-allowed`}
+                onChange={handleChange}
+                placeholder="Enter your full name"
+                className={inputClass}
+                required
               />
               <p className="text-[10px] text-gray-600 mt-1">
-                Retrieved from your Google account
+                Retrieved from Google. You can edit your name.
               </p>
             </div>
 
