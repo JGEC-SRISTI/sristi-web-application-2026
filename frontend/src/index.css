@@ -3293,16 +3293,6 @@ html.custom-cursor-active * {
 
 /* FORCE HIDE NATIVE CURSOR */
 
-html,
-html *,
-body,
-body *,
-#root,
-#root *,
-#root *::before,
-#root *::after {
-  cursor: none !important;
-}
 
 .profile-edit-button {
   box-shadow: 2px 2px 10px rgba(236, 72, 153, 0.4);
