@@ -49,6 +49,7 @@ const descriptions = [
   "Not only you the organizer also create the whole fest.",
   "Can you cross the hardles?",
   "Learn, Create, Compete.",
+  "Let the rock make it's own roll.",
 ];
 
 export const galleryData: GalleryItem[] = galleryImages.map(
