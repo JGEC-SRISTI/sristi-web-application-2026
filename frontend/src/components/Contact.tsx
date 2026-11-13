@@ -263,7 +263,6 @@ const Contact = () => {
               <Link to="/committee" className="footer-link">Staffs</Link>
               <Link to="/events" className="footer-link">Games</Link>
               <Link to="/accommodation" className="footer-link">Accommodation</Link>
-              <Link to="/dev" className="footer-link">Devers</Link>
             </div>
           </div>
 
@@ -341,6 +340,9 @@ const Contact = () => {
 
               <Link to="/events" className="footer-link">
                 Games
+              </Link>
+              <Link to="/dev" className="footer-link">
+                Devers
               </Link>
             </div>
           </div>
