@@ -3291,14 +3291,6 @@ html.custom-cursor-active * {
   }
 }
 
-/* Hide native cursor only when custom cursor is active */
-html.custom-cursor-active,
-html.custom-cursor-active body,
-html.custom-cursor-active #root,
-html.custom-cursor-active #root * {
-  cursor: none !important;
-}
-
 /* Custom cursor */
 .custom-cursor {
   position: fixed;
