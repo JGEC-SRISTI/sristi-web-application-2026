@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   Calendar,
@@ -11,6 +11,7 @@ import { Link, Navigate, useParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import LiquidGradientBackground from "../components/LiquidGradientBackground";
 import { mockEvents, type Event, type EventCategory } from "../data/events";
+import { supabase } from "../lib/supabase";
 
 const categoryAccent: Record<EventCategory, string> = {
   Civilized: "#fbbf24",
@@ -170,6 +171,42 @@ const EventPoster = ({ event }: { event: Event }) => {
 const EventDetail = () => {
   const { eventSlug } = useParams();
   const event = mockEvents.find((item) => item.slug === eventSlug);
+  const [brochureUrl, setBrochureUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const client = supabase;
+    if (!client || !eventSlug) return;
+
+    let mounted = true;
+    const loadBrochure = async () => {
+      const { data: eventRow, error: eventError } = await client
+        .from("events")
+        .select("id")
+        .eq("slug", eventSlug)
+        .maybeSingle();
+
+      if (eventError || !eventRow) return;
+
+      const { data: brochure, error: brochureError } = await client
+        .from("event_files")
+        .select("file_path")
+        .eq("event_id", eventRow.id)
+        .eq("file_type", "brochure")
+        .maybeSingle();
+
+      if (brochureError || !brochure || !mounted) return;
+
+      const { data } = client.storage
+        .from("event-files")
+        .getPublicUrl(brochure.file_path);
+      if (mounted) setBrochureUrl(data.publicUrl);
+    };
+
+    void loadBrochure();
+    return () => {
+      mounted = false;
+    };
+  }, [eventSlug]);
 
   if (!event) return <Navigate to="/events" replace />;
 
@@ -213,14 +250,16 @@ const EventDetail = () => {
                   <p>Lead2 <span className="ml-3 text-white/35">+91 98765 43210</span></p>
                 </div>
               </div>
-              <a
-                href="https://example.com/sristi-brochure.pdf"
-                target="_blank"
-                rel="noreferrer"
-                className="mt-5 inline-flex items-center gap-2 font-space-mono text-[10px] uppercase tracking-[0.18em] text-white/70 underline decoration-white/30 underline-offset-8 transition-colors hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
-              >
-                View brochure <ExternalLink size={13} />
-              </a>
+              {brochureUrl && (
+                <a
+                  href={brochureUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-5 inline-flex items-center gap-2 font-space-mono text-[10px] uppercase tracking-[0.18em] text-white/70 underline decoration-white/30 underline-offset-8 transition-colors hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+                >
+                  View brochure <ExternalLink size={13} />
+                </a>
+              )}
               <div className="mt-10 flex flex-wrap gap-3">
                 {event.participation === "TEAM" ? (
                   <>

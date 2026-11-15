@@ -27,6 +27,9 @@ import {
   Trophy,
   ShieldCheck,
   Trash2,
+  FileText,
+  Upload,
+  ExternalLink,
   Users,
   Wallet,
   X,
@@ -63,6 +66,12 @@ type EventRecord = {
 };
 
 type EventForm = Omit<EventRecord, "id" | "updated_at">;
+
+type EventBrochure = {
+  id: string;
+  file_name: string;
+  file_path: string;
+};
 
 const emptyForm: EventForm = {
   name: "",
@@ -106,6 +115,10 @@ export default function AdminEvents() {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [form, setForm] = useState<EventForm>(emptyForm);
   const [isSlugCustomized, setIsSlugCustomized] = useState(false);
+  const [brochure, setBrochure] = useState<EventBrochure | null>(null);
+  const [selectedBrochure, setSelectedBrochure] = useState<File | null>(null);
+  const [isBrochureLoading, setIsBrochureLoading] = useState(false);
+  const [isBrochureSaving, setIsBrochureSaving] = useState(false);
   const [error, setError] = useState("");
   const [toastMessage, setToastMessage] = useState("");
 
@@ -231,6 +244,8 @@ export default function AdminEvents() {
   const openCreateForm = () => {
     setEditingId(null);
     setForm(emptyForm);
+    setBrochure(null);
+    setSelectedBrochure(null);
     setIsSlugCustomized(false);
     setError("");
     setIsFormOpen(true);
@@ -238,6 +253,8 @@ export default function AdminEvents() {
 
   const openEditForm = (event: EventRecord) => {
     setEditingId(event.id);
+    setBrochure(null);
+    setSelectedBrochure(null);
     setIsSlugCustomized(event.slug !== slugify(event.name));
     setForm({
       name: event.name,
@@ -253,6 +270,129 @@ export default function AdminEvents() {
     setError("");
     setActiveMenu(null);
     setIsFormOpen(true);
+    if (!supabase) return;
+    setIsBrochureLoading(true);
+    void supabase
+      .from("event_files")
+      .select("id, file_name, file_path")
+      .eq("event_id", event.id)
+      .eq("file_type", "brochure")
+      .maybeSingle()
+      .then(({ data, error: brochureError }) => {
+        setIsBrochureLoading(false);
+        if (brochureError) {
+          setError(`Could not load brochure: ${brochureError.message}`);
+          return;
+        }
+        setBrochure((data as EventBrochure | null) ?? null);
+      });
+  };
+
+  const validateBrochure = (file: File) => {
+    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+      return "Brochure must be a PDF file.";
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      return "Brochure must be 10 MB or smaller.";
+    }
+    return "";
+  };
+
+  const uploadBrochure = async (eventId: string, file: File) => {
+    if (!supabase) return "Supabase is not configured.";
+    const validationError = validateBrochure(file);
+    if (validationError) return validationError;
+
+    setIsBrochureSaving(true);
+    const oldBrochure = brochure;
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
+    const filePath = `${eventId}/brochure/${crypto.randomUUID()}-${safeName}`;
+    const { error: uploadError } = await supabase.storage
+      .from("event-files")
+      .upload(filePath, file, {
+        contentType: "application/pdf",
+        upsert: false,
+      });
+    if (uploadError) {
+      setIsBrochureSaving(false);
+      return `Could not upload brochure: ${uploadError.message}`;
+    }
+
+    const metadata = {
+      event_id: eventId,
+      file_name: file.name,
+      file_path: filePath,
+      file_type: "brochure",
+    };
+    const metadataResult = oldBrochure
+      ? await supabase
+          .from("event_files")
+          .update(metadata)
+          .eq("id", oldBrochure.id)
+          .select("id, file_name, file_path")
+          .single()
+      : await supabase
+          .from("event_files")
+          .insert(metadata)
+          .select("id, file_name, file_path")
+          .single();
+
+    if (metadataResult.error) {
+      await supabase.storage.from("event-files").remove([filePath]);
+      setIsBrochureSaving(false);
+      return `Could not save brochure metadata: ${metadataResult.error.message}`;
+    }
+
+    setBrochure(metadataResult.data as EventBrochure);
+    setSelectedBrochure(null);
+    setIsBrochureSaving(false);
+
+    if (oldBrochure) {
+      const { error: removeError } = await supabase.storage
+        .from("event-files")
+        .remove([oldBrochure.file_path]);
+      if (removeError) {
+        setPageMessage(`Brochure replaced, but the old file could not be removed: ${removeError.message}`);
+      }
+    }
+    return "";
+  };
+
+  const deleteBrochure = async () => {
+    if (!supabase || !brochure) return;
+    if (!window.confirm("Delete this brochure?")) return;
+    setIsBrochureSaving(true);
+    const { error: removeError } = await supabase.storage
+      .from("event-files")
+      .remove([brochure.file_path]);
+    if (removeError) {
+      setIsBrochureSaving(false);
+      setError(`Could not delete brochure: ${removeError.message}`);
+      return;
+    }
+    const { error: metadataError } = await supabase
+      .from("event_files")
+      .delete()
+      .eq("id", brochure.id);
+    setIsBrochureSaving(false);
+    if (metadataError) {
+      setError(`File removed, but brochure metadata could not be deleted: ${metadataError.message}`);
+      return;
+    }
+    setBrochure(null);
+    setToastMessage("Brochure deleted.");
+  };
+
+  const viewBrochure = async () => {
+    if (!supabase || !brochure) return;
+    const { data, error: signedUrlError } = await supabase.storage
+      .from("event-files")
+      .createSignedUrl(brochure.file_path, 60);
+    if (signedUrlError) {
+      setError(`Could not open brochure: ${signedUrlError.message}`);
+      return;
+    }
+    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
   };
 
   const submitForm = async (event: FormEvent<HTMLFormElement>) => {
@@ -287,13 +427,22 @@ export default function AdminEvents() {
           .select("*")
           .single()
       : await supabase.from("events").insert(payload).select("*").single();
-    setIsSaving(false);
     if (result.error) {
+      setIsSaving(false);
       setError(result.error.message);
       return;
     }
 
     const savedEvent = result.data as EventRecord;
+    if (selectedBrochure) {
+      const brochureError = await uploadBrochure(savedEvent.id, selectedBrochure);
+      if (brochureError) {
+        setIsSaving(false);
+        setError(brochureError);
+        return;
+      }
+    }
+    setIsSaving(false);
     setEvents((current) =>
       editingId
         ? current.map((item) => (item.id === editingId ? savedEvent : item))
@@ -873,6 +1022,70 @@ export default function AdminEvents() {
                     </div>
                   </div>
                 )}
+                <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                  <div className="flex items-start gap-3">
+                    <FileText size={20} className="mt-0.5 text-emerald-300" />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold">Event brochure</p>
+                      <p className="mt-1 text-xs leading-5 text-slate-400">
+                        Upload one PDF brochure. Selecting a replacement updates the current brochure after saving.
+                      </p>
+                      {isBrochureLoading ? (
+                        <p className="mt-3 text-sm text-slate-500">Loading brochure…</p>
+                      ) : brochure ? (
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                          <span className="max-w-full truncate rounded-md bg-white/60 px-2.5 py-1.5 text-xs text-slate-700">
+                            {brochure.file_name}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={viewBrochure}
+                            disabled={isBrochureSaving}
+                            className="inline-flex items-center gap-1.5 rounded-md border border-white/15 px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-white/60 disabled:opacity-50"
+                          >
+                            <ExternalLink size={13} /> View
+                          </button>
+                          <button
+                            type="button"
+                            onClick={deleteBrochure}
+                            disabled={isBrochureSaving}
+                            className="inline-flex items-center gap-1.5 rounded-md border border-rose-300/50 px-2.5 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-50 disabled:opacity-50"
+                          >
+                            <Trash2 size={13} /> Delete
+                          </button>
+                        </div>
+                      ) : null}
+                      <label className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-lg border border-emerald-300/50 px-3 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-50">
+                        <Upload size={15} />
+                        {brochure ? "Choose replacement PDF" : "Upload brochure PDF"}
+                        <input
+                          type="file"
+                          accept="application/pdf,.pdf"
+                          className="sr-only"
+                          disabled={isBrochureSaving}
+                          onChange={(event) => {
+                            const file = event.target.files?.[0] ?? null;
+                            event.target.value = "";
+                            if (!file) return;
+                            const validationError = validateBrochure(file);
+                            if (validationError) {
+                              setError(validationError);
+                              setSelectedBrochure(null);
+                              return;
+                            }
+                            setError("");
+                            setSelectedBrochure(file);
+                          }}
+                        />
+                      </label>
+                      {selectedBrochure && (
+                        <p className="mt-2 text-xs text-slate-500">
+                          Selected: {selectedBrochure.name}. Click Save to upload it.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
                 <p className="text-xs text-slate-500">
                   ID and created/updated timestamps are managed by the database.
                 </p>
