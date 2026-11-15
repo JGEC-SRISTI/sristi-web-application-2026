@@ -98,31 +98,19 @@ const Contact = () => {
 
         <div className="mb-10 md:mb-14">
 
-          <p
-            className="
-              font-mono
-              text-xs
-              tracking-[0.45em]
-              uppercase
-              text-pink-500
-            "
-          >
-            Get In Touch
-          </p>
-
           <h2
             className="
               mt-3
               font-heavy-title
-              text-4xl
-              min-[380px]:text-5xl
-              sm:text-6xl
-              md:text-7xl
-              lg:text-8xl
+              text-3xl
+              min-[380px]:text-4xl
+              sm:text-5xl
+              md:text-6xl
+              lg:text-7xl
               tracking-wide
             "
           >
-            contact us
+            get in <span className="text-pink-500">touch</span>
           </h2>
 
         </div>
