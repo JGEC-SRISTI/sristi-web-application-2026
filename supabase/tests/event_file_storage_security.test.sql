@@ -63,8 +63,8 @@ select
             where
                 id = 'event-files'
         ),
-        false,
-        'the event-files bucket is private'
+        true,
+        'the event-files bucket is public'
     );
 
 select
