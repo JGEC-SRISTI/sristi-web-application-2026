@@ -39,8 +39,8 @@ Call these through `supabase.rpc(name, args)`. They are protected database funct
 | `is_verified_user` | `{}` | `boolean` | Signed-in participant; true only when payment is verified and its linked code is used |
 | `can_register_solo_event` | `{ p_event_id: string }` | `boolean` | Signed-in participant; eligibility check for a solo event |
 | `register_solo_event` | `{ p_event_id: string }` | registration UUID | Signed-in verified participant; creates a solo registration |
-| `create_team` | `{ p_event_id: string, p_team_name: string }` | team UUID | Signed-in verified participant; creates a team and generates its code server-side |
-| `join_team` | `{ p_team_code: string }` | team UUID | Signed-in verified participant; joins a forming team subject to capacity and membership rules |
+| `create_team` | `{ p_event_id: string, p_team_name: string }` | team UUID | Signed-in verified participant; creates a team and generates an 8-character uppercase hexadecimal invite code server-side |
+| `join_team` | `{ p_team_code: string }` | team UUID | Signed-in verified participant; joins a forming team subject to capacity and membership rules; accepts the text invite code |
 | `register_team` | `{ p_team_id: string }` | `boolean` | Team leader; marks a team ready after its 3–5 member size is valid |
 | `register_team_event` | `{ p_team_id: string }` | registration UUID | Team leader; registers the ready team for its event |
 
