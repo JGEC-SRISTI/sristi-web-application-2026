@@ -108,7 +108,7 @@ body {
 
 .contact-category-card::before,
 .contact-event-list::before {
-  background-image: url("./assets/textures/paper_4.jpg");
+  background-image: url("./assets/textures/paper_texture.jpg");
   background-position: center;
   background-size: cover;
   content: "";
