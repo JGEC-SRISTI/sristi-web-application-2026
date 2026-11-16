@@ -40,6 +40,7 @@ import sristiLogo from "../../assets/icons/sristi_logo.png";
 import "./AdminEvents.css";
 
 type EventType = "solo" | "team";
+type TeamSizeMode = "range" | "fixed";
 
 const EVENT_CATEGORIES = [
   "Civilized",
@@ -65,7 +66,9 @@ type EventRecord = {
   updated_at: string;
 };
 
-type EventForm = Omit<EventRecord, "id" | "updated_at">;
+type EventForm = Omit<EventRecord, "id" | "updated_at"> & {
+  team_size_mode: TeamSizeMode;
+};
 
 type EventBrochure = {
   id: string;
@@ -83,6 +86,7 @@ const emptyForm: EventForm = {
   description: "",
   min_team_size: null,
   max_team_size: null,
+  team_size_mode: "range",
 };
 
 function slugify(value: string) {
@@ -266,6 +270,11 @@ export default function AdminEvents() {
       description: event.description,
       min_team_size: event.min_team_size,
       max_team_size: event.max_team_size,
+      team_size_mode:
+        event.min_team_size !== null &&
+        event.min_team_size === event.max_team_size
+          ? "fixed"
+          : "range",
     });
     setError("");
     setActiveMenu(null);
@@ -413,9 +422,31 @@ export default function AdminEvents() {
       venue: form.venue.trim(),
       short_description: form.short_description.trim(),
       description: form.description.trim(),
-      min_team_size: form.event_type === "team" ? 3 : null,
-      max_team_size: form.event_type === "team" ? 5 : null,
+      min_team_size:
+        form.event_type === "team" ? form.min_team_size : null,
+      max_team_size:
+        form.event_type === "team" ? form.max_team_size : null,
     };
+
+    if (form.event_type === "team") {
+      if (
+        form.min_team_size === null ||
+        form.max_team_size === null ||
+        form.min_team_size < 1 ||
+        form.max_team_size > 5 ||
+        form.min_team_size > form.max_team_size
+      ) {
+        setError("Team size must be between 1 and 5 members.");
+        return;
+      }
+      if (
+        form.team_size_mode === "fixed" &&
+        form.min_team_size !== form.max_team_size
+      ) {
+        setError("Fixed team size must use the same minimum and maximum.");
+        return;
+      }
+    }
 
     setIsSaving(true);
     setError("");
@@ -770,7 +801,9 @@ export default function AdminEvents() {
                       </td>
                       <td className="px-4 py-4 text-slate-300">
                         {event.event_type === "team"
-                          ? `${event.min_team_size}–${event.max_team_size}`
+                          ? event.min_team_size === event.max_team_size
+                            ? `${event.min_team_size}`
+                            : `${event.min_team_size}–${event.max_team_size}`
                           : "—"}
                       </td>
                       <td className="px-4 py-4 text-xs text-slate-500">
@@ -1002,23 +1035,76 @@ export default function AdminEvents() {
                   <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
                     <p className="font-semibold">Team size</p>
                     <p className="mt-1 text-xs leading-5 text-slate-400">
-                      The current database rule requires teams of 3–5 members.
+                      Choose a fixed team size or a range from 1 to 5 members.
                     </p>
+                    <div className="mt-4">
+                      <FormField label="Team size rule">
+                        <select
+                          value={form.team_size_mode}
+                          onChange={(event) => {
+                            const mode = event.target.value as TeamSizeMode;
+                            setForm((current) => ({
+                              ...current,
+                              team_size_mode: mode,
+                              min_team_size:
+                                mode === "fixed"
+                                  ? current.min_team_size ?? 1
+                                  : current.min_team_size ?? 1,
+                              max_team_size:
+                                mode === "fixed"
+                                  ? current.min_team_size ?? 1
+                                  : current.max_team_size ?? 5,
+                            }));
+                          }}
+                          className={inputClass}
+                        >
+                          <option value="range">Range</option>
+                          <option value="fixed">Fixed number</option>
+                        </select>
+                      </FormField>
+                    </div>
                     <div className="mt-4 grid grid-cols-2 gap-4">
-                      <FormField label="Minimum">
+                      <FormField
+                        label={form.team_size_mode === "fixed" ? "Members" : "Minimum"}
+                      >
                         <input
-                          disabled
-                          value="3"
-                          className={`${inputClass} cursor-not-allowed opacity-70`}
+                          required
+                          type="number"
+                          min={1}
+                          max={5}
+                          value={form.min_team_size ?? ""}
+                          onChange={(event) => {
+                            const value = Number(event.target.value);
+                            setForm((current) => ({
+                              ...current,
+                              min_team_size: value,
+                              max_team_size:
+                                current.team_size_mode === "fixed"
+                                  ? value
+                                  : current.max_team_size,
+                            }));
+                          }}
+                          className={inputClass}
                         />
                       </FormField>
-                      <FormField label="Maximum">
-                        <input
-                          disabled
-                          value="5"
-                          className={`${inputClass} cursor-not-allowed opacity-70`}
-                        />
-                      </FormField>
+                      {form.team_size_mode === "range" && (
+                        <FormField label="Maximum">
+                          <input
+                            required
+                            type="number"
+                            min={1}
+                            max={5}
+                            value={form.max_team_size ?? ""}
+                            onChange={(event) =>
+                              setForm((current) => ({
+                                ...current,
+                                max_team_size: Number(event.target.value),
+                              }))
+                            }
+                            className={inputClass}
+                          />
+                        </FormField>
+                      )}
                     </div>
                   </div>
                 )}
