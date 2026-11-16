@@ -518,6 +518,15 @@ const Navbar = () => {
               </span>
             </NavLink>
 
+            <NavLink to="/contact_us" className={navLinkClass}>
+              <NavShape shape="circle" />
+
+              <span className="nav-text-wrap font-title text-md">
+                <span className="nav-text">contact us</span>
+                <span className="nav-text-pink">CONTACT</span>
+              </span>
+            </NavLink>
+
             <NavLink to="/accommodation" className={navLinkClass}>
               <NavShape shape="house" />
 
@@ -673,6 +682,15 @@ const Navbar = () => {
             >
               <Triangle size={16} className="inline-block mr-1" />
               <span className="font-title">STAFFS</span>
+            </NavLink>
+
+            <NavLink
+              to="/contact_us"
+              className={navLinkClass}
+              onClick={() => setIsMenuOpen(false)}
+            >
+              <Circle size={16} className="inline-block mr-1" />
+              <span className="font-title">CONTACT US</span>
             </NavLink>
 
             <NavLink
