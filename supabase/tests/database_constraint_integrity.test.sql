@@ -139,7 +139,7 @@ values
   );
 
 select
-  lives_ok(
+  throws_ok(
     $$
     insert into
       public.profiles (
