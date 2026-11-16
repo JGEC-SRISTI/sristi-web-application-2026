@@ -46,7 +46,7 @@ const EVENT_CATEGORIES = [
   "Civilized",
   "Gaming",
   "Management",
-  "Mechanized",
+  "Aeronautical",
   "Robotics",
   "Technical",
   "Miscellaneous",
