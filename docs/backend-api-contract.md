@@ -103,7 +103,8 @@ The frontend must not write directly to `admin_users` or `audit_logs`. Admin acc
 ## Current integration boundaries
 
 - Public event and fest-setting reads are available through their tables under RLS.
-- Event-file metadata can be read publicly, but the `event-files` Storage bucket is private and file access requires authentication. Admins manage objects.
+- Event-file metadata and brochure objects can be read publicly. Upload, update, and delete operations on the `event-files` Storage bucket require an active admin.
+- Team events store their member rule in `min_team_size` and `max_team_size`. Equal values require a fixed team size; different values define an inclusive range. Valid team sizes are 1 through 5, and team registration is enforced against the event's configured rule.
 - `profiles` has no email column; do not expect it in a profile query.
 - Configure Google Auth and production redirect URLs in Supabase before deployment. The checked-in local config does not contain provider credentials.
 - This contract covers existing schema functions and policies. It does not imply that the admin UI, OAuth provider setup, cloud migration deployment, or export workflows are already complete.
