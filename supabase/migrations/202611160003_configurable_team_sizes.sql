@@ -11,6 +11,8 @@ add constraint events_team_size_rules_check check (
     )
     or (
         event_type = 'team'
+        and min_team_size is not null
+        and max_team_size is not null
         and min_team_size between 1 and 5
         and max_team_size between 1 and 5
         and min_team_size <= max_team_size
