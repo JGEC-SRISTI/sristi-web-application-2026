@@ -139,7 +139,7 @@ values
   );
 
 select
-  throws_ok(
+  lives_ok(
     $$
     insert into
       public.profiles (
@@ -363,7 +363,7 @@ select
   );
 
 select
-  throws_ok(
+  lives_ok(
     $$
     insert into
       public.events (
@@ -379,8 +379,8 @@ select
       )
     values
       (
-        'Team Wrong Minimum',
-        'team-wrong-minimum',
+        'Team Configurable Minimum',
+        'team-configurable-minimum',
         'Short',
         'Description',
         'team',
@@ -389,9 +389,7 @@ select
         2,
         5
       ) $$,
-      '23514',
-       null,
-      'team event minimum size must be 3'
+      'team events may configure a minimum size below three'
   );
 
 select

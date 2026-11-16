@@ -46,36 +46,66 @@ set search_path = public
 as $$
 declare
     v_team_id uuid;
+    v_event_id uuid;
+    v_team_status text;
     v_member_count integer;
     v_max_team_size smallint;
 begin
+    if auth.uid() is null then
+        raise exception 'Authentication required';
+    end if;
+
+    if p_team_code is null or trim(p_team_code) = '' then
+        raise exception 'Team code cannot be empty';
+    end if;
+
     if not public.is_verified_user() then
         raise exception 'User is not verified';
     end if;
 
-    if trim(p_team_code) = '' then
-        raise exception 'Team code cannot be empty';
-    end if;
-
-    select t.id, e.max_team_size
-    into v_team_id, v_max_team_size
+    select t.id, t.event_id, t.status, e.max_team_size
+    into v_team_id, v_event_id, v_team_status, v_max_team_size
     from public.teams t
     join public.events e on e.id = t.event_id
-    where t.team_code = trim(p_team_code)
-      and t.status = 'forming'
+    where t.team_code = upper(trim(p_team_code))
       and e.event_type = 'team';
 
     if v_team_id is null then
-        raise exception 'Invalid or unavailable team code';
+        raise exception 'Invalid team code';
     end if;
+
+    if v_team_status <> 'forming' then
+        raise exception 'Team is not accepting new members';
+    end if;
+
+    perform pg_advisory_xact_lock(
+        hashtextextended(
+            auth.uid()::text || ':' || v_event_id::text,
+            0
+        )
+    );
 
     if exists (
         select 1
-        from public.team_members
-        where team_id = v_team_id
-          and user_id = auth.uid()
+        from public.team_members tm
+        join public.teams t on t.id = tm.team_id
+        where tm.user_id = auth.uid()
+          and t.event_id = v_event_id
     ) then
-        raise exception 'User is already a member of this team';
+        raise exception 'User is already a member of a team for this event';
+    end if;
+
+    perform pg_advisory_xact_lock(
+        hashtextextended(v_team_id::text, 0)
+    );
+
+    if not exists (
+        select 1
+        from public.teams
+        where id = v_team_id
+          and status = 'forming'
+    ) then
+        raise exception 'Team is not accepting new members';
     end if;
 
     select count(*)
