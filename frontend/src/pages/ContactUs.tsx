@@ -124,7 +124,7 @@ function ContactUs() {
                         <Square aria-hidden="true" className="contact-category-shape-fill h-5 w-5" stroke="none" />
                       </span>
                       <ChevronDown
-                        className={`ml-1 h-5 w-5 transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`}
+                        className={`contact-category-chevron ml-1 h-5 w-5 transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`}
                         strokeWidth={1.6}
                       />
                     </span>

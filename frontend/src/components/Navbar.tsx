@@ -690,7 +690,7 @@ const Navbar = () => {
               onClick={() => setIsMenuOpen(false)}
             >
               <Circle size={16} className="inline-block mr-1" />
-              <span className="font-title">CONTACT</span>
+              <span className="font-title">CONTACT US</span>
             </NavLink>
 
             <NavLink
