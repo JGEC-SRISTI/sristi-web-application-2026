@@ -6,6 +6,7 @@ import Home from "./pages/Home.tsx";
 import Events from "./pages/Events.tsx";
 import EventDetail from "./pages/EventDetail.tsx";
 import Accommodation from "./pages/Accommodation.tsx";
+import ContactUs from "./pages/ContactUs.tsx";
 import Committee from "./pages/Committee.tsx";
 import AdminOverview from "./pages/admin/AdminOverview.tsx";
 import AdminEvents from "./pages/admin/AdminEvents.tsx";
@@ -30,6 +31,7 @@ function AppRoutes() {
         <Route path="/events" element={<Events />} />
         <Route path="/events/:eventSlug" element={<EventDetail />} />
         <Route path="/accommodation" element={<Accommodation />} />
+        <Route path="/contact_us" element={<ContactUs />} />
         <Route path="/committee" element={<Committee />} />
         <Route path="/dev" element={<Dev />} />
         <Route path="/register" element={<Register />} />

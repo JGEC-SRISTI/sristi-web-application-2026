@@ -95,6 +95,67 @@ body {
   opacity: 0.12;
 }
 
+.contact-us-page .liquid-gradient-background {
+  opacity: 0.5;
+}
+
+.contact-category-card,
+.contact-event-list {
+  isolation: isolate;
+  overflow: hidden;
+  position: relative;
+}
+
+.contact-category-card::before,
+.contact-event-list::before {
+  background-image: url("./assets/textures/paper_4.jpg");
+  background-position: center;
+  background-size: cover;
+  content: "";
+  inset: 0;
+  color: black;
+  opacity: 0.1;
+  pointer-events: none;
+  position: absolute;
+  z-index: 0;
+}
+
+.contact-category-card > *,
+.contact-event-list > * {
+  position: relative;
+  z-index: 1;
+}
+
+.contact-category-shape {
+  position: relative;
+  display: inline-flex;
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.contact-category-shape-outline,
+.contact-category-shape-fill {
+  position: absolute;
+  inset: 0;
+}
+
+.contact-category-shape-outline {
+  z-index: 1;
+}
+
+.contact-category-shape-fill {
+  z-index: 2;
+  fill: currentColor;
+  clip-path: inset(100% 0 0 0);
+  transition: clip-path 0.5s cubic-bezier(0.16, 1, 0.3, 1), color 0.25s ease;
+}
+
+.contact-category-card:hover .contact-category-shape-fill,
+.contact-category-card:focus-visible .contact-category-shape-fill {
+  clip-path: inset(0 0 0 0);
+  color: #ff5ca8;
+}
+
 /* might add more elements here later to control the liquid gradient */
 .events-page:has(.event-card-scene:hover, .events-splash-wrap:hover, .dropdown-menu:hover) .liquid-gradient-background {
   opacity: 0.2;
@@ -1304,6 +1365,195 @@ html.custom-cursor-active * {
   border-color: rgba(236, 72, 153, 0.5);
 
   background: rgba(0, 0, 0, 0.35);
+}
+
+.contact-category-card{
+  min-height: 7.25rem;
+}
+.contact-event-card {
+  min-height: 4.75rem;
+}
+
+.contact-category-card {
+  text-transform: uppercase;
+}
+
+.contact-event-card {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  width: calc(100% - 1rem);
+  margin-left: 0.5rem;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 1rem;
+  color: inherit;
+  background: transparent;
+  transition: width 450ms cubic-bezier(0.16, 1, 0.3, 1), margin 450ms cubic-bezier(0.16, 1, 0.3, 1), background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.contact-event-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.contact-event-card:hover,
+.contact-event-card:focus-visible,
+.contact-event-card.is-open {
+  background: rgba(236, 72, 153, 0.08);
+}
+
+@media (min-width: 641px) {
+  .contact-event-card.is-open {
+    width: 100%;
+    margin-left: 0;
+    padding-right: 2rem;
+    padding-left: 2rem;
+  }
+}
+
+.contact-event-card:focus-visible {
+  outline: 2px solid #ff5ca8;
+  outline-offset: -2px;
+}
+
+.contact-event-card-title {
+  display: block;
+  text-transform: uppercase;
+  transition: color 0.3s ease, letter-spacing 0.3s ease;
+}
+
+.contact-event-card:hover .contact-event-card-title,
+.contact-event-card.is-open .contact-event-card-title {
+  color: #ff5ca8;
+  letter-spacing: 0.04em;
+}
+
+.contact-event-card.is-open .contact-event-card-title {
+  animation: contact-event-title-reveal 850ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.contact-coordinator-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.contact-event-card.is-open .contact-coordinator-grid {
+  animation: contact-event-content-reveal 1100ms cubic-bezier(0.16, 1, 0.3, 1) 120ms both;
+}
+
+@keyframes contact-event-title-reveal {
+  from {
+    opacity: 0.45;
+    transform: translateY(1.1rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(-0.45rem);
+  }
+}
+
+@keyframes contact-event-content-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(1.5rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.contact-coordinator-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+  gap: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.75rem;
+  padding: 0.8rem 1rem;
+  background: rgba(0, 0, 0, 0.2);
+  transition: border-color 0.3s ease, background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.contact-coordinator-card:hover {
+  border-color: rgba(255, 92, 168, 0.55);
+  background: rgba(255, 92, 168, 0.08);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.25);
+  transform: translateY(-2px);
+}
+
+.contact-coordinator-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.contact-coordinator-name {
+  color: #ffffff;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 1.35rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.contact-coordinator-detail {
+  overflow-wrap: anywhere;
+  color: rgba(255, 255, 255, 0.48);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.04em;
+}
+
+.contact-coordinator-link {
+  cursor: pointer;
+  transition: color 0.25s ease, text-shadow 0.25s ease;
+}
+
+.contact-coordinator-link:hover,
+.contact-coordinator-link:focus-visible {
+  color: #ff5ca8;
+  text-shadow: 0 0 10px rgba(255, 92, 168, 0.45);
+}
+
+.contact-coordinator-phone {
+  flex-shrink: 0;
+  color: #3b9cff;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 0.75rem;
+  font-weight: 500;
+  transition: color 0.3s ease, text-shadow 0.3s ease;
+}
+
+.contact-coordinator-card:hover .contact-coordinator-phone {
+  color: #75b8ff;
+  text-shadow: 0 0 12px rgba(59, 156, 255, 0.65);
+}
+
+.contact-coordinator-phone:hover,
+.contact-coordinator-phone:focus-visible {
+  color: #75b8ff;
+  text-shadow: 0 0 12px rgba(59, 156, 255, 0.65);
+}
+
+@media (max-width: 540px) {
+  .contact-coordinator-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .contact-event-card.is-open .contact-event-card-title,
+  .contact-event-card.is-open .contact-coordinator-grid {
+    animation: none;
+  }
 }
 
 
