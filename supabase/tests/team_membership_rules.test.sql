@@ -1,7 +1,7 @@
 begin;
 
 select
-    plan(16);
+    plan(12);
 
 -- These six local-only identities all have completed verification. Every
 -- fixture is rolled back at the end of the test.
@@ -240,7 +240,8 @@ select
         'test.team_id',
         public.create_team(
             '21000000-0000-4000-8000-000000000001',
-            'Test Team'
+            'Test Team',
+            true
         ) :: text,
         true
     );
@@ -295,7 +296,7 @@ select
 
 select
     is(
-        public.join_team(current_setting('test.team_code')),
+        public.join_team(current_setting('test.team_code'), true),
         current_setting('test.team_id') :: uuid,
         'a verified participant can join a forming team'
     );
@@ -324,7 +325,7 @@ select
 
 select
     is(
-        public.join_team(current_setting('test.team_code')),
+        public.join_team(current_setting('test.team_code'), true),
         current_setting('test.team_id') :: uuid,
         'a third verified participant can join the team'
     );
@@ -337,24 +338,11 @@ select
     );
 
 select
-    is(
-        public.join_team(current_setting('test.team_code')),
-        current_setting('test.team_id') :: uuid,
-        'a fourth verified participant can join the team'
-    );
-
-select
-    set_config(
-        'request.jwt.claim.sub',
-        '11000000-0000-4000-8000-000000000005',
-        true
-    );
-
-select
-    is(
-        public.join_team(current_setting('test.team_code')),
-        current_setting('test.team_id') :: uuid,
-        'a fifth verified participant can join the team'
+    throws_ok(
+        'select public.join_team(current_setting(''test.team_code''), true)',
+        'P0001',
+        'Team is not accepting new members',
+        'the team is registered automatically when it reaches the minimum size'
     );
 
 reset role;
@@ -369,8 +357,8 @@ select
             where
                 team_id = current_setting('test.team_id') :: uuid
         ),
-        5,
-        'the team can contain at most five members'
+        3,
+        'automatic registration closes the team at the minimum size'
     );
 
 set
@@ -385,10 +373,10 @@ select
 
 select
     throws_ok(
-        'select public.join_team(current_setting(''test.team_code''))',
+        'select public.join_team(current_setting(''test.team_code''), true)',
         'P0001',
-        'Team is already full',
-        'a sixth participant cannot join a full team'
+        'Team is not accepting new members',
+        'a participant cannot join an automatically registered team'
     );
 
 select
@@ -396,7 +384,8 @@ select
         'test.second_team_id',
         public.create_team(
             '21000000-0000-4000-8000-000000000001',
-            'Second Team'
+            'Second Team',
+            true
         ) :: text,
         true
     );
@@ -429,7 +418,7 @@ select
 
 select
     throws_ok(
-        'select public.join_team(current_setting(''test.second_team_code''))',
+        'select public.join_team(current_setting(''test.second_team_code''), true)',
         'P0001',
         'User is already a member of a team for this event',
         'a participant cannot join a second team for the same event'
@@ -443,43 +432,13 @@ select
     );
 
 select
-    is(
-        public.register_team(current_setting('test.team_id') :: uuid),
-        true,
-        'the leader can confirm a team once it has at least three members'
-    );
-
-reset role;
-
-select
-    is(
-        (
-            select
-                status
-            from
-                public.teams
-            where
-                id = current_setting('test.team_id') :: uuid
-        ),
-        'registered',
-        'team confirmation changes its status to registered'
-    );
-
-set
-    local role authenticated;
-
-select
     ok(
-        public.register_team_event(current_setting('test.team_id') :: uuid) is not null,
-        'the leader can register the confirmed team for its team event'
-    );
-
-select
-    throws_ok(
-        'select public.register_team_event(current_setting(''test.team_id'')::uuid)',
-        'P0001',
-        'Team is already registered for this event',
-        'a team cannot register for the same event twice'
+        (
+            select status
+            from public.teams
+            where id = current_setting('test.team_id') :: uuid
+        ) = 'registered',
+        'automatic registration changes the team status to registered'
     );
 
 reset role;
@@ -511,7 +470,7 @@ select
 
 select
     throws_ok(
-        'select public.join_team(current_setting(''test.team_code''))',
+        'select public.join_team(current_setting(''test.team_code''), true)',
         'P0001',
         'Team is not accepting new members',
         'a registered team no longer accepts new members'

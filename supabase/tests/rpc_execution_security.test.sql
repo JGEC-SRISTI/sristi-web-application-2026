@@ -209,27 +209,27 @@ select
     is(
         has_function_privilege(
             'anon',
-            'public.create_team(uuid, text)',
+            'public.create_team(uuid, text, boolean)',
             'EXECUTE'
         ),
         false,
-        'anonymous users cannot execute create_team with two arguments'
+        'anonymous users cannot execute create_team with consent'
     );
 
 select
     is(
         has_function_privilege(
             'authenticated',
-            'public.create_team(uuid, text)',
+            'public.create_team(uuid, text, boolean)',
             'EXECUTE'
         ),
         true,
-        'authenticated users can execute create_team with two arguments'
+        'authenticated users can execute create_team with consent'
     );
 
 select
     is(
-        has_function_privilege('anon', 'public.join_team(text)', 'EXECUTE'),
+        has_function_privilege('anon', 'public.join_team(text, boolean)', 'EXECUTE'),
         false,
         'anonymous users cannot execute join_team'
     );
@@ -238,7 +238,7 @@ select
     is(
         has_function_privilege(
             'authenticated',
-            'public.join_team(text)',
+            'public.join_team(text, boolean)',
             'EXECUTE'
         ),
         true,
