@@ -1,7 +1,7 @@
 begin;
 
 select
-    plan(12);
+    plan(19);
 
 -- These six local-only identities all have completed verification. Every
 -- fixture is rolled back at the end of the test.
@@ -460,6 +460,135 @@ select
 
 set
     local role authenticated;
+
+select
+    set_config(
+        'test.registration_id',
+        (
+            select
+                id
+            from
+                public.registrations
+            where
+                team_id = current_setting('test.team_id') :: uuid
+                and status = 'registered'
+        ) :: text,
+        true
+    );
+
+reset role;
+
+update public.team_members
+set member_info_consent = false
+where team_id = current_setting('test.team_id')::uuid
+  and user_id = '11000000-0000-4000-8000-000000000003';
+
+set local role authenticated;
+
+select
+    set_config(
+        'request.jwt.claim.sub',
+        '11000000-0000-4000-8000-000000000002',
+        true
+    );
+
+select
+    is(
+        (
+            select
+                count(*) :: integer
+            from
+                public.registrations
+            where
+                team_id = current_setting('test.team_id') :: uuid
+        ),
+        1,
+        'every team member can view the team registration'
+    );
+
+select
+    is(
+        (
+            select
+                count(*) :: integer
+            from
+                public.get_team_roster(current_setting('test.team_id') :: uuid)
+        ),
+        3,
+        'a team member can read the complete team roster'
+    );
+
+select
+    is(
+        (
+            select full_name
+            from public.get_team_roster(current_setting('test.team_id')::uuid)
+            where is_leader = false and is_you = false
+            order by full_name nulls first
+            limit 1
+        ),
+        null::text,
+        'the roster hides a member name when that member has not consented'
+    );
+
+select
+    is(
+        (
+            select
+                count(*) :: integer
+            from
+                public.get_team_roster(current_setting('test.team_id') :: uuid)
+            where is_you
+        ),
+        1,
+        'the roster marks the requesting member'
+    );
+
+select
+    set_config(
+        'request.jwt.claim.sub',
+        '11000000-0000-4000-8000-000000000002',
+        true
+    );
+
+select
+    throws_ok(
+        'select public.finalize_team_registration(current_setting(''test.team_id'')::uuid)',
+        'P0001',
+        'Only the team leader can finalize registration',
+        'a verified non-leader cannot finalize team registration'
+    );
+
+select
+    set_config(
+        'request.jwt.claim.sub',
+        '11000000-0000-4000-8000-000000000004',
+        true
+    );
+
+select
+    throws_ok(
+        'select * from public.get_team_roster(current_setting(''test.team_id'')::uuid)',
+        'P0001',
+        'Only team members can view the team roster',
+        'a non-member cannot read the team roster'
+    );
+
+select
+    set_config(
+        'request.jwt.claim.sub',
+        '11000000-0000-4000-8000-000000000001',
+        true
+    );
+
+select
+    is(
+        public.finalize_team_registration(
+            current_setting('test.team_id') :: uuid
+        ),
+        current_setting('test.registration_id') :: uuid,
+        'finalizing an already registered team returns the existing registration'
+    );
 
 select
     set_config(

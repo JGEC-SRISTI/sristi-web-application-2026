@@ -1,7 +1,7 @@
 begin;
 
 select
-    plan(44);
+    plan(48);
 
 -- Keep authenticated RPC access explicit while ensuring anonymous clients do
 -- not inherit EXECUTE through PUBLIC on any application-facing function.
@@ -243,6 +243,50 @@ select
         ),
         true,
         'authenticated users can execute join_team'
+    );
+
+select
+    is(
+        has_function_privilege(
+            'anon',
+            'public.get_team_roster(uuid)',
+            'EXECUTE'
+        ),
+        false,
+        'anonymous users cannot execute get_team_roster'
+    );
+
+select
+    is(
+        has_function_privilege(
+            'authenticated',
+            'public.get_team_roster(uuid)',
+            'EXECUTE'
+        ),
+        true,
+        'authenticated users can execute get_team_roster'
+    );
+
+select
+    is(
+        has_function_privilege(
+            'anon',
+            'public.finalize_team_registration(uuid)',
+            'EXECUTE'
+        ),
+        false,
+        'anonymous users cannot execute finalize_team_registration'
+    );
+
+select
+    is(
+        has_function_privilege(
+            'authenticated',
+            'public.finalize_team_registration(uuid)',
+            'EXECUTE'
+        ),
+        true,
+        'authenticated users can execute finalize_team_registration'
     );
 
 select
