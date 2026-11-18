@@ -7,8 +7,8 @@ import { mockEvents, type EventCategory } from "../data/events";
 const categories: EventCategory[] = [
   "Civilized",
   "Robotics",
-  "Tech",
-  "Mechanized",
+  "Technical",
+  "Aeronautical",
   "Management",
   "Gaming",
   "Miscellaneous",
