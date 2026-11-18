@@ -147,9 +147,9 @@ const EventCard = ({ event, position, onClick }: EventCardProps) => {
     Civilized:      "#fbbf24",
     Gaming:         "#f472b6",
     Management:     "#34d399",
-    Mechanized:     "#fb923c",
+    Aeronautical:     "#fb923c",
     Robotics:       "#38bdf8",
-    Tech:           "#a78bfa",
+    Technical:      "#a78bfa",
     Miscellaneous:  "#f472b6",
   };
 
@@ -369,9 +369,9 @@ const CATEGORY_OPTIONS = [
   { label: "Civilized", value: "Civilized" },
   { label: "Gaming", value: "Gaming" },
   { label: "Management", value: "Management" },
-  { label: "Mechanized", value: "Mechanized" },
+  { label: "Aeronautical", value: "Aeronautical" },
   { label: "Robotics", value: "Robotics" },
-  { label: "Tech", value: "Tech" },
+  { label: "Technical", value: "Technical" },
   { label: "Miscellaneous", value: "Miscellaneous" },
 ];
 
