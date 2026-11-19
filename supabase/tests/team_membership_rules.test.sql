@@ -527,8 +527,8 @@ select
             order by full_name nulls first
             limit 1
         ),
-        null::text,
-        'the roster hides a member name when that member has not consented'
+        'Team Test 3'::text,
+        'a teammate can see a member name even when the consent flag is false'
     );
 
 select
