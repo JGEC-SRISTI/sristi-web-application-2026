@@ -358,14 +358,15 @@ const Register = () => {
             </div>
 
             <div className="md:col-span-2">
-              <label className={labelClass}>ACADEMIC YEAR *</label>
+              <label htmlFor="academic-year" className={labelClass}>
+                ACADEMIC YEAR *
+              </label>
               <select
+                id="academic-year"
                 name="academic_year"
                 value={form.academic_year}
                 onChange={handleChange}
-                className={`${inputClass} ${
-                  !form.academic_year ? "text-gray-500" : ""
-                }`}
+                className={`${inputClass} registration-year-select`}
                 required
               >
                 <option value="" disabled>

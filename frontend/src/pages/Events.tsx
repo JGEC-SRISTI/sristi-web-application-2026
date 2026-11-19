@@ -387,6 +387,7 @@ const LAST_OPENED_EVENT_KEY = "sristi:last-opened-event";
 
 const Events = () => {
   const navigate = useNavigate();
+  const [verifiedPlayerId, setVerifiedPlayerId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("ALL");
   const [participationFilter, setParticipationFilter] = useState("ALL");
@@ -551,7 +552,7 @@ const Events = () => {
 
       <LiquidGradientBackground />
 
-      <Navbar />
+      <Navbar onVerifiedPlayerChange={setVerifiedPlayerId} />
 
       <div className="relative z-10 flex-1 flex flex-col pt-18 pb-4 px-4 sm:px-8">
 
@@ -591,9 +592,11 @@ const Events = () => {
                 options={CATEGORY_OPTIONS}
                 onChange={handleCategoryChange}
               />
-              <div className="events-filter-registrations">
-                <RegisteredEventsDropdown />
-              </div>
+              {verifiedPlayerId && (
+                <div className="events-filter-registrations">
+                  <RegisteredEventsDropdown key={verifiedPlayerId} />
+                </div>
+              )}
             </div>
           </div>
         </div>
