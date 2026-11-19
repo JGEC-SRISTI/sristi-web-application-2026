@@ -445,20 +445,14 @@ const Events = () => {
     return () => cancelAnimationFrame(frame);
   }, []);
 
+  const searchTerm = searchQuery.trim().toLowerCase();
   const filteredEvents = events.filter((e) => {
     const catOk =
       categoryFilter === "ALL" || e.category === categoryFilter;
     const partOk =
       participationFilter === "ALL" || e.event_type.toUpperCase() === participationFilter;
-    return catOk && partOk;
+    return catOk && partOk && e.name.toLowerCase().includes(searchTerm);
   });
-  const searchTerm = searchQuery.trim().toLowerCase();
-  const filteredEvents = mockEvents.filter(
-    (event) =>
-      (categoryFilter === "ALL" || event.category === categoryFilter) &&
-      (participationFilter === "ALL" || event.participation === participationFilter) &&
-      event.title.toLowerCase().includes(searchTerm),
-  );
 
   const cancelPendingNavigation = useCallback(() => {
     if (pendingNavigationRef.current !== null) {

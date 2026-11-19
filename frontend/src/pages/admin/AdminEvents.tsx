@@ -163,7 +163,7 @@ export default function AdminEvents() {
 
       if (!mounted) return;
       if (adminError) {
-        setAccessError(adminError.message);
+        setAccessError(adminError);
         setAccessState("denied");
         return;
       }

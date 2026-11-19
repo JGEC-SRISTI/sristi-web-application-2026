@@ -6,13 +6,14 @@ import {
   CircleCheck,
   ExternalLink,
   MapPin,
+  Trophy,
   Users,
 } from "lucide-react";
 import { Link, Navigate, useParams } from "react-router-dom";
 
 import Navbar from "../components/Navbar";
 import LiquidGradientBackground from "../components/LiquidGradientBackground";
-import { getEventImage, type EventRecord, type EventCategory } from "../data/events";
+import { getEventImage, type EventCategory } from "../data/events";
 
 import TeamModal, {
   TeamSuccessModal,
@@ -31,7 +32,7 @@ import {
   type TeamInfo,
 } from "../services/teamService";
 
-import { mockEvents, type Event, type EventCategory } from "../data/events";
+import { mockEvents, type Event } from "../data/events";
 import { supabase } from "../lib/supabase";
 
 const categoryAccent: Record<EventCategory, string> = {
@@ -114,7 +115,7 @@ const EventTitle = ({
   );
 };
 
-const EventPoster = ({ event }: { event: EventRecord }) => {
+const EventPoster = ({ event }: { event: Event }) => {
   const sceneRef = useRef<HTMLDivElement>(null);
   const accent = categoryAccent[event.category] ?? "#a78bfa";
 
@@ -174,8 +175,8 @@ const EventPoster = ({ event }: { event: EventRecord }) => {
             }}
           >
             <img
-              src={getEventImage(event.name)}
-              alt={`${event.name} event`}
+              src={getEventImage(event.title)}
+              alt={`${event.title} event`}
               className="absolute inset-0 h-full w-full object-cover opacity-75"
             />
             <div className="absolute inset-0 bg-black/35" />
@@ -187,7 +188,7 @@ const EventPoster = ({ event }: { event: EventRecord }) => {
 
           <div className="space-y-4 px-6 pb-6 pt-5">
             <h2 className="font-squid text-3xl leading-tight tracking-wide text-white sm:text-4xl">
-              {event.name}
+              {event.title}
             </h2>
 
             <div className="grid grid-cols-2 gap-x-3 gap-y-3 font-space-mono text-[9px] uppercase tracking-[0.12em] text-white/40">
@@ -221,11 +222,6 @@ const EventPoster = ({ event }: { event: EventRecord }) => {
   );
 };
 
-const EventDetail = () => {
-  const { eventSlug } = useParams();
-  const [event, setEvent] = useState<EventRecord | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState("");
 type TeamMode = "create" | "join";
 type TeamSubmission = { id: string; mode: TeamMode };
 
@@ -285,6 +281,32 @@ const EventDetailContent = ({ event }: { event: Event }) => {
   const eventType = registrationEvent?.event_type;
 
   useEffect(() => {
+    const client = supabase;
+    if (!client || !eventId) return;
+
+    let mounted = true;
+    const loadBrochure = async () => {
+      const { data: brochure, error } = await client
+        .from("event_files")
+        .select("file_path")
+        .eq("event_id", eventId)
+        .eq("file_type", "brochure")
+        .maybeSingle();
+
+      if (error || !brochure || !mounted) return;
+      const { data } = client.storage
+        .from("event-files")
+        .getPublicUrl(brochure.file_path);
+      setBrochureUrl(data.publicUrl);
+    };
+
+    void loadBrochure();
+    return () => {
+      mounted = false;
+    };
+  }, [eventId]);
+
+  useEffect(() => {
     if (!eventId) return;
     let active = true;
 
@@ -332,75 +354,6 @@ const EventDetailContent = ({ event }: { event: Event }) => {
       window.clearTimeout(timer);
     };
   }, [formingTeamId, showTeam, successTeam]);
-
-  useEffect(() => {
-    const client = supabase;
-    if (!client || !eventSlug) {
-      setIsLoading(false);
-      if (!client) setLoadError("Event service is not configured.");
-      return;
-    }
-
-    let mounted = true;
-    const loadEvent = async () => {
-      const { data, error } = await client
-        .from("events")
-        .select("id,name,slug,short_description,description,event_type,category,venue,min_team_size,max_team_size,created_at,updated_at")
-        .eq("slug", eventSlug)
-        .maybeSingle();
-
-      if (!mounted) return;
-      setIsLoading(false);
-      if (error) {
-        setLoadError(error.message);
-        return;
-      }
-      setEvent((data as EventRecord | null) ?? null);
-    };
-
-    const loadBrochure = async () => {
-      const { data: eventRow, error: eventError } = await client
-        .from("events")
-        .select("id")
-        .eq("slug", eventSlug)
-        .maybeSingle();
-
-      if (eventError || !eventRow) return;
-    if (!client || !eventId) return;
-
-    let mounted = true;
-
-    const loadBrochure = async () => {
-      const { data: brochure, error: brochureError } = await client
-        .from("event_files")
-        .select("file_path")
-        .eq("event_id", eventId)
-        .eq("file_type", "brochure")
-        .maybeSingle();
-
-      if (brochureError || !brochure || !mounted) return;
-
-      const { data } = client.storage
-        .from("event-files")
-        .getPublicUrl(brochure.file_path);
-      setBrochureUrl(data.publicUrl);
-    };
-
-    void loadEvent();
-    void loadBrochure();
-
-    return () => {
-      mounted = false;
-    };
-  }, [eventSlug]);
-
-  if (isLoading) {
-    return <main className="events-page flex h-screen items-center justify-center text-white"><p className="font-space-mono text-sm uppercase tracking-widest text-white/50">Loading event...</p></main>;
-  }
-  if (!event) {
-    if (loadError) return <main className="events-page flex h-screen items-center justify-center px-6 text-center text-red-300/80"><p className="font-space-mono text-sm uppercase tracking-widest">Could not load event: {loadError}</p></main>;
-    return <Navigate to="/events" replace />;
-  }
 
   const accent = categoryAccent[event.category] ?? "#a78bfa";
 
