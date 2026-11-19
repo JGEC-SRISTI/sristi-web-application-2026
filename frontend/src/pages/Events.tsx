@@ -12,11 +12,12 @@ import Navbar from "../components/Navbar";
 import LiquidGradientBackground from "../components/LiquidGradientBackground";
 import RegisteredEventsDropdown from "../components/teams/RegisteredEventsDropdown";
 import {
-  mockEvents,
-  type Event,
+  type EventRecord,
   type EventCategory,
   type ParticipationType,
 } from "../data/events";
+import { getEventImage } from "../data/events";
+import { supabase } from "../lib/supabase";
 
 interface DropdownProps {
   label: string;
@@ -134,7 +135,7 @@ const Dropdown = ({ label, value, options, onChange }: DropdownProps) => {
 
 // EVENT CARDS
 interface EventCardProps {
-  event: Event;
+  event: EventRecord;
   position: number; // -2, -1, 0, 1, 2
   onClick: () => void;
 }
@@ -155,7 +156,7 @@ const EventCard = ({ event, position, onClick }: EventCardProps) => {
     Miscellaneous:  "#f472b6",
   };
 
-  const accent = categoryAccent[event.category] ?? "#a78bfa";
+  const accent = categoryAccent[event.category as EventCategory] ?? "#a78bfa";
 
   // transform values for 5-card spread
   const transforms: Record<number, { scale: number; blur: string; opacity: number }> = {
@@ -248,8 +249,8 @@ const EventCard = ({ event, position, onClick }: EventCardProps) => {
             }}
           >
             <img
-              src={event.image}
-              alt={`${event.title} event`}
+              src={getEventImage(event.name)}
+              alt={`${event.name} event`}
               className="absolute inset-0 h-full w-full object-cover opacity-75"
             />
             <div className="absolute inset-0 bg-black/35" />
@@ -269,12 +270,12 @@ const EventCard = ({ event, position, onClick }: EventCardProps) => {
 
           <div className="px-4 pb-5 pt-3 space-y-2.5">
             <h3 className="font-squid text-xl sm:text-2xl text-white leading-tight tracking-wide">
-              {event.title}
+              {event.name}
             </h3>
 
             {isCenter && (
               <p className="font-space-mono text-[10px] text-white/35 leading-relaxed line-clamp-2 uppercase tracking-wider">
-                {event.description}
+                {event.short_description}
               </p>
             )}
 
@@ -282,11 +283,11 @@ const EventCard = ({ event, position, onClick }: EventCardProps) => {
               <div className="grid grid-cols-2 gap-1.5 pt-1">
                 <div className="flex items-center gap-1.5 text-white/35 text-[9px] font-space-mono uppercase tracking-[0.12em]">
                   <Trophy size={10} style={{ color: accent }} />
-                  <span>Upto {event.prize_pool}</span>
+                  <span>{event.venue}</span>
                 </div>
                 <div className="flex items-center gap-1.5 text-white/35 text-[9px] font-space-mono uppercase tracking-[0.12em]">
                   <Users size={10} style={{ color: accent }} />
-                  <span>{event.team_size.toUpperCase()}</span>
+                  <span>{event.event_type === "team" ? `${event.min_team_size}-${event.max_team_size} MEMBERS` : "INDIVIDUAL"}</span>
                 </div>
               </div>
             )}
@@ -387,23 +388,54 @@ const LAST_OPENED_EVENT_KEY = "sristi:last-opened-event";
 
 const Events = () => {
   const navigate = useNavigate();
+  const [events, setEvents] = useState<EventRecord[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("ALL");
   const [participationFilter, setParticipationFilter] = useState("ALL");
-  const [activeIndex, setActiveIndex] = useState(() => {
-    const lastOpenedSlug = sessionStorage.getItem(LAST_OPENED_EVENT_KEY);
-    const lastOpenedIndex = mockEvents.findIndex(
-      (event) => event.slug === lastOpenedSlug,
-    );
-
-    return lastOpenedIndex >= 0 ? lastOpenedIndex : 0;
-  });
+  const [activeIndex, setActiveIndex] = useState(0);
   const [filterRevision, setFilterRevision] = useState(0);
   const [showIntro, setShowIntro] = useState(true);
   const lastWheelNavigationRef = useRef(0);
+  const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
+  const swipeHandledRef = useRef(false);
   const pendingNavigationRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
+
+  useEffect(() => {
+    if (!supabase) {
+      setLoadError("Event service is not configured.");
+      setIsLoading(false);
+      return;
+    }
+
+    let mounted = true;
+    void supabase
+      .from("events")
+      .select("id,name,slug,short_description,description,event_type,category,venue,min_team_size,max_team_size,created_at,updated_at")
+      .order("name", { ascending: true })
+      .then(({ data, error }) => {
+        if (!mounted) return;
+        setIsLoading(false);
+        if (error) {
+          setLoadError(error.message);
+          return;
+        }
+        const loadedEvents = (data ?? []) as EventRecord[];
+        setEvents(loadedEvents);
+        const lastOpenedSlug = sessionStorage.getItem(LAST_OPENED_EVENT_KEY);
+        const lastOpenedIndex = loadedEvents.findIndex(
+          (event) => event.slug === lastOpenedSlug,
+        );
+        setActiveIndex(lastOpenedIndex >= 0 ? lastOpenedIndex : 0);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
@@ -413,6 +445,13 @@ const Events = () => {
     return () => cancelAnimationFrame(frame);
   }, []);
 
+  const filteredEvents = events.filter((e) => {
+    const catOk =
+      categoryFilter === "ALL" || e.category === categoryFilter;
+    const partOk =
+      participationFilter === "ALL" || e.event_type.toUpperCase() === participationFilter;
+    return catOk && partOk;
+  });
   const searchTerm = searchQuery.trim().toLowerCase();
   const filteredEvents = mockEvents.filter(
     (event) =>
@@ -501,7 +540,50 @@ const Events = () => {
     }
   };
 
-  const getVisibleCards = () => {
+  const handleStagePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!event.isPrimary || filteredEvents.length <= 1) return;
+    if (event.pointerType === "mouse") return;
+
+    swipeHandledRef.current = false;
+    swipeStartRef.current = { x: event.clientX, y: event.clientY };
+  };
+
+  const handleStagePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+    const start = swipeStartRef.current;
+    swipeStartRef.current = null;
+    if (!start) return;
+
+    const differenceX = event.clientX - start.x;
+    const differenceY = event.clientY - start.y;
+
+    if (
+      Math.abs(differenceX) >= 55
+      && Math.abs(differenceX) > Math.abs(differenceY) * 1.25
+    ) {
+      swipeHandledRef.current = true;
+      if (differenceX < 0) {
+        goRight();
+      } else {
+        goLeft();
+      }
+
+      window.setTimeout(() => {
+        swipeHandledRef.current = false;
+      }, 300);
+    }
+  };
+
+  const handleStagePointerCancel = () => {
+    swipeStartRef.current = null;
+  };
+
+  const handleStageClickCapture = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (!swipeHandledRef.current) return;
+    event.preventDefault();
+    event.stopPropagation();
+  };
+
+  const getVisibleCards = (): { event: EventRecord; position: number }[] => {
     if (filteredEvents.length === 0) return [];
     const offsets =
       filteredEvents.length === 1
@@ -513,7 +595,7 @@ const Events = () => {
             : filteredEvents.length === 4
               ? [-1, 0, 1]
               : [-2, -1, 0, 1, 2];
-    const visible: { event: Event; position: number }[] = [];
+    const visible: { event: EventRecord; position: number }[] = [];
     for (const offset of offsets) {
       const idx =
         (activeIndex + offset + filteredEvents.length) % filteredEvents.length;
@@ -522,7 +604,7 @@ const Events = () => {
     return visible;
   };
 
-  const handleCardClick = (event: Event, position: number) => {
+  const handleCardClick = (event: EventRecord, position: number) => {
     const targetIndex = filteredEvents.findIndex((item) => item.id === event.id);
 
     if (position === 0 || targetIndex === activeIndex) {
@@ -599,8 +681,12 @@ const Events = () => {
         </div>
 
         <div
-          className="events-card-stage relative flex-1 flex items-center justify-center min-h-0"
+          className="events-card-stage relative flex-1 flex items-center justify-center min-h-0 touch-pan-y"
           onWheel={handleStageWheel}
+          onPointerDown={handleStagePointerDown}
+          onPointerUp={handleStagePointerUp}
+          onPointerCancel={handleStagePointerCancel}
+          onClickCapture={handleStageClickCapture}
         >
 
           <button
@@ -641,7 +727,11 @@ const Events = () => {
             <ChevronRight size={18} />
           </button>
 
-          {filteredEvents.length > 0 ? (
+          {isLoading ? (
+            <p className="font-space-mono text-sm uppercase tracking-widest text-white/40">Loading events...</p>
+          ) : loadError ? (
+            <p className="max-w-md text-center font-space-mono text-sm uppercase tracking-widest text-red-300/80">Could not load events: {loadError}</p>
+          ) : filteredEvents.length > 0 ? (
             <div
               key={filterRevision}
               className="events-carousel event-card-filter-transition flex items-center justify-center gap-3 sm:gap-5 lg:gap-6"

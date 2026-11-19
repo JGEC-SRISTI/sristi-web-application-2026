@@ -78,6 +78,8 @@ const getEventImage = (title: string) =>
     )
   ] ?? postImages[normalizeImageName("not-found")];
 
+export { getEventImage };
+
 const event = (
   id: string,
   name: string,
