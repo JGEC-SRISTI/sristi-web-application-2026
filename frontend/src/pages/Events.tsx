@@ -395,6 +395,8 @@ const Events = () => {
   const [filterRevision, setFilterRevision] = useState(0);
   const [showIntro, setShowIntro] = useState(true);
   const lastWheelNavigationRef = useRef(0);
+  const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
+  const swipeHandledRef = useRef(false);
   const pendingNavigationRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
@@ -522,6 +524,49 @@ const Events = () => {
     }
   };
 
+  const handleStagePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!event.isPrimary || filteredEvents.length <= 1) return;
+    if (event.pointerType === "mouse") return;
+
+    swipeHandledRef.current = false;
+    swipeStartRef.current = { x: event.clientX, y: event.clientY };
+  };
+
+  const handleStagePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+    const start = swipeStartRef.current;
+    swipeStartRef.current = null;
+    if (!start) return;
+
+    const differenceX = event.clientX - start.x;
+    const differenceY = event.clientY - start.y;
+
+    if (
+      Math.abs(differenceX) >= 55
+      && Math.abs(differenceX) > Math.abs(differenceY) * 1.25
+    ) {
+      swipeHandledRef.current = true;
+      if (differenceX < 0) {
+        goRight();
+      } else {
+        goLeft();
+      }
+
+      window.setTimeout(() => {
+        swipeHandledRef.current = false;
+      }, 300);
+    }
+  };
+
+  const handleStagePointerCancel = () => {
+    swipeStartRef.current = null;
+  };
+
+  const handleStageClickCapture = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (!swipeHandledRef.current) return;
+    event.preventDefault();
+    event.stopPropagation();
+  };
+
   const getVisibleCards = (): { event: EventRecord; position: number }[] => {
     if (filteredEvents.length === 0) return [];
     const offsets =
@@ -606,8 +651,12 @@ const Events = () => {
         </div>
 
         <div
-          className="events-card-stage relative flex-1 flex items-center justify-center min-h-0"
+          className="events-card-stage relative flex-1 flex items-center justify-center min-h-0 touch-pan-y"
           onWheel={handleStageWheel}
+          onPointerDown={handleStagePointerDown}
+          onPointerUp={handleStagePointerUp}
+          onPointerCancel={handleStagePointerCancel}
+          onClickCapture={handleStageClickCapture}
         >
 
           <button
