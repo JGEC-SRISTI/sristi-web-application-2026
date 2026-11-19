@@ -1,16 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
-  Calendar,
   ExternalLink,
   MapPin,
-  Trophy,
   Users,
 } from "lucide-react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import LiquidGradientBackground from "../components/LiquidGradientBackground";
-import { mockEvents, type Event, type EventCategory } from "../data/events";
+import { getEventImage, type EventRecord, type EventCategory } from "../data/events";
 import { supabase } from "../lib/supabase";
 
 const categoryAccent: Record<EventCategory, string> = {
@@ -86,9 +84,9 @@ const EventTitle = ({ title, accent }: { title: string; accent: string }) => {
   );
 };
 
-const EventPoster = ({ event }: { event: Event }) => {
+const EventPoster = ({ event }: { event: EventRecord }) => {
   const sceneRef = useRef<HTMLDivElement>(null);
-  const accent = categoryAccent[event.category];
+  const accent = categoryAccent[event.category] ?? "#a78bfa";
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!sceneRef.current || e.pointerType !== "mouse") return;
@@ -142,8 +140,8 @@ const EventPoster = ({ event }: { event: Event }) => {
             }}
           >
             <img
-              src={event.image}
-              alt={`${event.title} event`}
+              src={getEventImage(event.name)}
+              alt={`${event.name} event`}
               className="absolute inset-0 h-full w-full object-cover opacity-75"
             />
             <div className="absolute inset-0 bg-black/35" />
@@ -153,13 +151,12 @@ const EventPoster = ({ event }: { event: Event }) => {
           </div>
           <div className="space-y-4 px-6 pb-6 pt-5">
             <h2 className="font-squid text-3xl leading-tight tracking-wide text-white sm:text-4xl">
-              {event.title}
+              {event.name}
             </h2>
             <div className="grid grid-cols-2 gap-x-3 gap-y-3 font-space-mono text-[9px] uppercase tracking-[0.12em] text-white/40">
               <span className="flex min-w-0 items-center gap-2"><MapPin size={12} style={{ color: accent }} />{event.venue}</span>
-              <span className="flex min-w-0 items-center gap-2"><Users size={12} style={{ color: accent }} />{event.team_size}</span>
-              <span className="flex min-w-0 items-center gap-2"><Calendar size={12} style={{ color: accent }} />{new Date(event.date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</span>
-              <span className="flex min-w-0 items-center gap-2"><Trophy size={12} style={{ color: accent }} />Upto {event.prize_pool}</span>
+              <span className="flex min-w-0 items-center gap-2"><Users size={12} style={{ color: accent }} />{event.event_type === "team" ? `${event.min_team_size}-${event.max_team_size} members` : "Individual"}</span>
+              <span className="flex min-w-0 items-center gap-2"><MapPin size={12} style={{ color: accent }} />{event.venue}</span>
             </div>
           </div>
         </div>
@@ -170,14 +167,36 @@ const EventPoster = ({ event }: { event: Event }) => {
 
 const EventDetail = () => {
   const { eventSlug } = useParams();
-  const event = mockEvents.find((item) => item.slug === eventSlug);
+  const [event, setEvent] = useState<EventRecord | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [brochureUrl, setBrochureUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const client = supabase;
-    if (!client || !eventSlug) return;
+    if (!client || !eventSlug) {
+      setIsLoading(false);
+      if (!client) setLoadError("Event service is not configured.");
+      return;
+    }
 
     let mounted = true;
+    const loadEvent = async () => {
+      const { data, error } = await client
+        .from("events")
+        .select("id,name,slug,short_description,description,event_type,category,venue,min_team_size,max_team_size,created_at,updated_at")
+        .eq("slug", eventSlug)
+        .maybeSingle();
+
+      if (!mounted) return;
+      setIsLoading(false);
+      if (error) {
+        setLoadError(error.message);
+        return;
+      }
+      setEvent((data as EventRecord | null) ?? null);
+    };
+
     const loadBrochure = async () => {
       const { data: eventRow, error: eventError } = await client
         .from("events")
@@ -202,15 +221,22 @@ const EventDetail = () => {
       if (mounted) setBrochureUrl(data.publicUrl);
     };
 
+    void loadEvent();
     void loadBrochure();
     return () => {
       mounted = false;
     };
   }, [eventSlug]);
 
-  if (!event) return <Navigate to="/events" replace />;
+  if (isLoading) {
+    return <main className="events-page flex h-screen items-center justify-center text-white"><p className="font-space-mono text-sm uppercase tracking-widest text-white/50">Loading event...</p></main>;
+  }
+  if (!event) {
+    if (loadError) return <main className="events-page flex h-screen items-center justify-center px-6 text-center text-red-300/80"><p className="font-space-mono text-sm uppercase tracking-widest">Could not load event: {loadError}</p></main>;
+    return <Navigate to="/events" replace />;
+  }
 
-  const accent = categoryAccent[event.category];
+  const accent = categoryAccent[event.category] ?? "#a78bfa";
 
   return (
     <main className="event-detail-page events-page relative h-[100svh] overflow-hidden text-white">
@@ -235,21 +261,14 @@ const EventDetail = () => {
                 className="mb-3 text-left font-space-mono text-[10px] uppercase tracking-[0.3em]"
                 style={{ color: accent }}
               >
-                {event.category} / {event.participation}
+                {event.category} / {event.event_type}
               </p>
-              <EventTitle title={event.title} accent={accent} />
+              <EventTitle title={event.name} accent={accent} />
             </section>
             <section className="event-detail-info relative text-left">
               <p className="mt-5 font-space-mono text-xs uppercase leading-6 tracking-[0.1em] text-white/65 sm:text-sm">
               {event.description}
               </p>
-              <div className="mt-6 border-y border-white/15 py-4">
-                <h2 className="font-a24 text-sm uppercase tracking-[0.15em] text-white">Event leads</h2>
-                <div className="mt-4 grid gap-3 font-space-mono text-xs uppercase tracking-[0.12em] text-white/65 sm:grid-cols-2">
-                  <p>Lead1 <span className="ml-3 text-white/35">+91 98765 43210</span></p>
-                  <p>Lead2 <span className="ml-3 text-white/35">+91 98765 43210</span></p>
-                </div>
-              </div>
               {brochureUrl && (
                 <a
                   href={brochureUrl}
@@ -261,7 +280,7 @@ const EventDetail = () => {
                 </a>
               )}
               <div className="mt-10 flex flex-wrap gap-3">
-                {event.participation === "TEAM" ? (
+                {event.event_type === "team" ? (
                   <>
                     <button type="button" className="event-action-button event-action-button-primary font-a24">Create team</button>
                     <button type="button" className="event-action-button font-a24">Join team</button>
