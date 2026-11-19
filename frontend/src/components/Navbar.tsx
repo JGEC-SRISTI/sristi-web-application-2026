@@ -91,6 +91,19 @@ const Navbar = ({ onVerifiedPlayerChange }: NavbarProps) => {
     };
   }, []);
 
+  useEffect(() => {
+    const openVerification = () => {
+      setVerificationCode("");
+      setVerificationError("");
+      setVerificationMessage("");
+      setIsProfileOpen(true);
+      setIsVerifyOpen(true);
+    };
+
+    window.addEventListener("sristi-open-verification", openVerification);
+    return () => window.removeEventListener("sristi-open-verification", openVerification);
+  }, []);
+
   const handleEditProfile = () => {
     if (!profile) return;
 
@@ -1200,70 +1213,81 @@ const Navbar = ({ onVerifiedPlayerChange }: NavbarProps) => {
             provided by the SRISTI organizers.
           </p>
 
-          <input
-            type="text"
-            value={verificationCode}
-            onChange={(e) => {
-              setVerificationCode(
-                e.target.value
-                  .toUpperCase()
-                  .replace(/[^A-Z0-9]/g, "")
-                  .slice(0, 6)
-              );
-
-              setVerificationError("");
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void handleVerifyCode();
             }}
-            placeholder="XXXXXX"
-            maxLength={6}
-            autoComplete="off"
-            className="
-              w-full bg-black
-              border border-pink-500/30
-              focus:border-pink-500
-              outline-none
-              text-center text-2xl
-              tracking-[0.5em] font-mono
-              text-pink-500
-              py-4 px-3
-              transition-all
-            "
-          />
-
-          <p className="text-gray-600 text-[10px] mt-2 tracking-widest text-right">
-            {verificationCode.length}/6 CHARACTERS
-          </p>
-
-          {verificationError && (
-            <p className="mt-4 p-3 text-sm text-red-400 bg-red-500/10 border border-red-500/30">
-              {verificationError}
-            </p>
-          )}
-
-          {verificationMessage && (
-            <p className="mt-4 p-3 text-sm text-sky-400 bg-sky-500/10 border border-sky-500/30">
-              {verificationMessage}
-            </p>
-          )}
-
-          <button
-            type="button"
-            onClick={handleVerifyCode}
-            disabled={
-              verificationCode.length !== 6 || isVerifying
-            }
-            className="
-              w-full mt-6 py-4
-              bg-teal-500 text-black
-              font-title tracking-widest
-              hover:bg-teal-300
-              transition-all duration-300
-              disabled:opacity-40 disabled:cursor-not-allowed
-            "
           >
-            {isVerifying
-              ? "VERIFYING..."
-              : "CONFIRM VERIFICATION"}
-          </button>
+            <label htmlFor="participant-verification-code" className="sr-only">
+              Six-character participant verification code
+            </label>
+            <input
+              id="participant-verification-code"
+              type="text"
+              value={verificationCode}
+              onChange={(e) => {
+                setVerificationCode(
+                  e.target.value
+                    .toUpperCase()
+                    .replace(/[^A-Z0-9]/g, "")
+                    .slice(0, 6)
+                );
+
+                setVerificationError("");
+              }}
+              placeholder="XXXXXX"
+              maxLength={6}
+              autoComplete="off"
+              autoCapitalize="characters"
+              spellCheck={false}
+              aria-describedby="participant-verification-count"
+              className="
+                w-full bg-black
+                border border-pink-500/30
+                focus:border-pink-500
+                outline-none
+                text-center text-2xl
+                tracking-[0.5em] font-mono
+                text-pink-500
+                py-4 px-3
+                transition-all
+              "
+            />
+
+            <p id="participant-verification-count" className="text-gray-600 text-[10px] mt-2 tracking-widest text-right">
+              {verificationCode.length}/6 CHARACTERS
+            </p>
+
+            {verificationError && (
+              <p role="alert" className="mt-4 p-3 text-sm text-red-400 bg-red-500/10 border border-red-500/30">
+                {verificationError}
+              </p>
+            )}
+
+            {verificationMessage && (
+              <p role="status" className="mt-4 p-3 text-sm text-sky-400 bg-sky-500/10 border border-sky-500/30">
+                {verificationMessage}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              disabled={isVerifying}
+              className="
+                w-full mt-6 py-4
+                bg-teal-500 text-black
+                font-title tracking-widest
+                hover:bg-teal-300
+                transition-all duration-300
+                disabled:opacity-40 disabled:cursor-not-allowed
+              "
+            >
+              {isVerifying
+                ? "VERIFYING..."
+                : "CONFIRM VERIFICATION"}
+            </button>
+          </form>
 
           <p className="text-center text-gray-600 text-[9px] tracking-widest mt-5">
             SRISTI 2K26 · PLAYER AUTHENTICATION

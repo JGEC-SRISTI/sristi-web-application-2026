@@ -13,6 +13,7 @@ import { Link, Navigate, useParams } from "react-router-dom";
 
 import Navbar from "../components/Navbar";
 import LiquidGradientBackground from "../components/LiquidGradientBackground";
+import { getEventImage, type EventCategory } from "../data/events";
 
 import TeamModal, {
   TeamSuccessModal,
@@ -21,9 +22,12 @@ import ViewTeamModal from "../components/teams/ViewTeamModal";
 
 import {
   createTeam,
+  fetchEventBrochureUrl,
   fetchPlayerTeamForEvent,
   fetchRegistrationEvent,
   fetchTeamDetails,
+  getCachedEventBrochureUrl,
+  getCachedRegistrationEvent,
   hasSoloRegistration,
   joinTeam,
   registerSoloEvent,
@@ -31,7 +35,7 @@ import {
   type TeamInfo,
 } from "../services/teamService";
 
-import { mockEvents, type Event, type EventCategory } from "../data/events";
+import { mockEvents, type Event } from "../data/events";
 import { supabase } from "../lib/supabase";
 
 const categoryAccent: Record<EventCategory, string> = {
@@ -116,7 +120,7 @@ const EventTitle = ({
 
 const EventPoster = ({ event }: { event: Event }) => {
   const sceneRef = useRef<HTMLDivElement>(null);
-  const accent = categoryAccent[event.category];
+  const accent = categoryAccent[event.category] ?? "#a78bfa";
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!sceneRef.current || e.pointerType !== "mouse") return;
@@ -174,7 +178,7 @@ const EventPoster = ({ event }: { event: Event }) => {
             }}
           >
             <img
-              src={event.image}
+              src={getEventImage(event.title)}
               alt={`${event.title} event`}
               className="absolute inset-0 h-full w-full object-cover opacity-75"
             />
@@ -239,8 +243,12 @@ function RegisteredBadge({ note }: { note?: string }) {
 const EventDetailContent = ({ event }: { event: Event }) => {
   const [registrationEvent, setRegistrationEvent] = useState<
     RegistrationEvent | null | undefined
-  >(undefined);
-  const [brochureUrl, setBrochureUrl] = useState<string | null>(null);
+  >(() => getCachedRegistrationEvent(event.slug));
+  const [brochureUrl, setBrochureUrl] = useState<string | null>(() => {
+    const cachedEvent = getCachedRegistrationEvent(event.slug);
+    return cachedEvent ? getCachedEventBrochureUrl(cachedEvent.id) : null;
+  });
+  const [brochureLoading, setBrochureLoading] = useState(false);
   const [teamMode, setTeamMode] = useState<TeamMode | null>(null);
   const [team, setTeam] = useState<TeamInfo | null>(null);
   const [submittedTeam, setSubmittedTeam] = useState<TeamSubmission | null>(null);
@@ -261,10 +269,17 @@ const EventDetailContent = ({ event }: { event: Event }) => {
 
     fetchRegistrationEvent(event.slug)
       .then((target) => {
-        if (active) setRegistrationEvent(target);
+        if (!active) return;
+        if (target || !getCachedRegistrationEvent(event.slug)) {
+          setRegistrationEvent(target);
+        }
       })
       .catch(() => {
         if (!active) return;
+        if (getCachedRegistrationEvent(event.slug)) {
+          setRegistrationMessage("Using saved event details while the connection recovers.");
+          return;
+        }
         setRegistrationEvent(null);
         setRegistrationMessage(
           "Could not check registration availability. Please reload to try again."
@@ -278,6 +293,29 @@ const EventDetailContent = ({ event }: { event: Event }) => {
 
   const eventId = registrationEvent?.id;
   const eventType = registrationEvent?.event_type;
+
+  useEffect(() => {
+    if (!supabase || !eventId) return;
+
+    let mounted = true;
+    const cachedUrl = getCachedEventBrochureUrl(eventId);
+    if (cachedUrl) setBrochureUrl(cachedUrl);
+    else setBrochureLoading(true);
+
+    void fetchEventBrochureUrl(eventId)
+      .then((url) => {
+        if (!mounted) return;
+        setBrochureUrl(url);
+        setBrochureLoading(false);
+      })
+      .catch(() => {
+        if (mounted) setBrochureLoading(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [eventId]);
 
   useEffect(() => {
     if (!eventId) return;
@@ -328,36 +366,7 @@ const EventDetailContent = ({ event }: { event: Event }) => {
     };
   }, [formingTeamId, showTeam, successTeam]);
 
-  useEffect(() => {
-    const client = supabase;
-    if (!client || !eventId) return;
-
-    let mounted = true;
-
-    const loadBrochure = async () => {
-      const { data: brochure, error: brochureError } = await client
-        .from("event_files")
-        .select("file_path")
-        .eq("event_id", eventId)
-        .eq("file_type", "brochure")
-        .maybeSingle();
-
-      if (brochureError || !brochure || !mounted) return;
-
-      const { data } = client.storage
-        .from("event-files")
-        .getPublicUrl(brochure.file_path);
-      setBrochureUrl(data.publicUrl);
-    };
-
-    void loadBrochure();
-
-    return () => {
-      mounted = false;
-    };
-  }, [eventId]);
-
-  const accent = categoryAccent[event.category];
+  const accent = categoryAccent[event.category] ?? "#a78bfa";
 
   const loadSubmittedTeam = async ({ id, mode }: TeamSubmission) => {
     setRegistrationBusy(true);
@@ -379,7 +388,7 @@ const EventDetailContent = ({ event }: { event: Event }) => {
   };
 
   const handleTeamSubmit = async (value: string) => {
-    if (!eventId || !teamMode || registrationCheck !== "ready") return;
+    if (!eventId || !teamMode) return;
 
     const existingTeam = team ?? await fetchPlayerTeamForEvent(eventId);
     if (existingTeam) {
@@ -453,7 +462,7 @@ const EventDetailContent = ({ event }: { event: Event }) => {
 
             <section className="event-detail-info relative text-left">
               <p className="mt-5 font-space-mono text-xs uppercase leading-6 tracking-[0.1em] text-white/65 sm:text-sm">
-                {event.description}
+                {registrationEvent?.description?.trim() || event.description}
               </p>
 
               <div className="mt-6 border-y border-white/15 py-4">
@@ -477,7 +486,7 @@ const EventDetailContent = ({ event }: { event: Event }) => {
                 </div>
               </div>
 
-              {brochureUrl && (
+              {brochureUrl ? (
                 <a
                   href={brochureUrl}
                   target="_blank"
@@ -486,19 +495,26 @@ const EventDetailContent = ({ event }: { event: Event }) => {
                 >
                   View brochure <ExternalLink size={13} />
                 </a>
-              )}
+              ) : brochureLoading ? (
+                <p role="status" className="mt-5 font-space-mono text-[10px] uppercase tracking-[0.18em] text-white/45">
+                  Loading brochure…
+                </p>
+              ) : null}
 
               <div className="mt-10 flex flex-wrap gap-3">
-                {!registrationEvent ? (
+                {registrationEvent === undefined ? (
+                  <div
+                    role="status"
+                    aria-label="Loading registration options"
+                    className="flex items-center gap-3"
+                  >
+                    <span className="h-10 w-32 animate-pulse rounded-lg border border-white/10 bg-white/5" />
+                    <span className="h-10 w-28 animate-pulse rounded-lg border border-white/10 bg-white/5" />
+                    <span className="sr-only">Loading registration options…</span>
+                  </div>
+                ) : registrationEvent === null ? (
                   <p role="status" className="font-space-mono text-xs text-white/65">
-                    {registrationEvent === undefined
-                      ? "Checking registration availability..."
-                      : registrationMessage ||
-                        "Registration is unavailable for this event."}
-                  </p>
-                ) : registrationCheck === "checking" ? (
-                  <p role="status" className="font-space-mono text-xs text-white/65">
-                    Checking your registration…
+                    {registrationMessage || "Registration is unavailable for this event."}
                   </p>
                 ) : registrationCheck === "failed" ? (
                   <>
@@ -579,6 +595,12 @@ const EventDetailContent = ({ event }: { event: Event }) => {
                   </button>
                 )}
               </div>
+
+              {registrationEvent && registrationCheck === "checking" && (
+                <p role="status" className="mt-3 font-space-mono text-[10px] text-white/55">
+                  Syncing your registration status…
+                </p>
+              )}
 
               {registrationEvent && registrationMessage && (
                 <p

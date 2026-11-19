@@ -1,5 +1,6 @@
 
 import { useEffect, useId, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   X,
   Users,
@@ -10,6 +11,15 @@ import {
 } from "lucide-react";
 import { fetchPlayerVerification, type TeamInfo } from "../../services/teamService";
 import TeamCodeCard from "./TeamCodeCard";
+import { supabase } from "../../lib/supabase";
+
+type VerificationState =
+  | "checking"
+  | "signed-out"
+  | "profile-required"
+  | "unverified"
+  | "verified"
+  | { message: string };
 
 interface TeamModalProps {
   mode: "create" | "join";
@@ -37,7 +47,7 @@ const TeamModal = ({
   const [value, setValue] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [verification, setVerification] = useState<"checking" | "verified" | { message: string }>("checking");
+  const [verification, setVerification] = useState<VerificationState>("checking");
   const [verificationAttempt, setVerificationAttempt] = useState(0);
 
   const formId = useId();
@@ -45,25 +55,64 @@ const TeamModal = ({
 
   useEffect(() => {
     let active = true;
-    fetchPlayerVerification()
-      .then((verified) => {
-        if (active) {
-          setVerification(
-            verified ? "verified" : { message: "Verify your participant code from your profile to continue." }
-          );
-        }
-      })
-      .catch((error: unknown) => {
-        if (active) {
-          setVerification({
-            message: error instanceof Error ? error.message : "Could not check verification.",
-          });
-        }
-      });
+    const checkAccess = async () => {
+      if (!supabase) {
+        throw new Error("Supabase is not configured. Please try again later.");
+      }
+
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError?.name === "AuthSessionMissingError") {
+        if (active) setVerification("signed-out");
+        return;
+      }
+      if (authError) throw authError;
+      if (!user) {
+        if (active) setVerification("signed-out");
+        return;
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (profileError) throw profileError;
+      if (!profile) {
+        if (active) setVerification("profile-required");
+        return;
+      }
+
+      const verified = await fetchPlayerVerification();
+      if (active) setVerification(verified ? "verified" : "unverified");
+    };
+
+    void checkAccess().catch((error: unknown) => {
+      if (active) {
+        setVerification({
+          message: error instanceof Error ? error.message : "Could not check your account.",
+        });
+      }
+    });
     return () => {
       active = false;
     };
   }, [verificationAttempt]);
+
+  const handleSignIn = async () => {
+    if (!supabase) {
+      setVerification({ message: "Sign-in is temporarily unavailable. Please try again later." });
+      return;
+    }
+
+    const { error: signInError } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/register`,
+        queryParams: { prompt: "select_account" },
+      },
+    });
+    if (signInError) setVerification({ message: signInError.message });
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -135,6 +184,8 @@ const TeamModal = ({
         </header>
 
         <form onSubmit={handleSubmit} aria-busy={loading} className="space-y-5 p-5 sm:p-7">
+          {verification === "verified" ? (
+          <>
           <div>
             <label htmlFor={`${formId}-input`} className="mb-2 block text-sm font-semibold text-white/90">
               {isCreate ? "Team name" : "Team invite code"}
@@ -165,31 +216,6 @@ const TeamModal = ({
             </p>
           </div>
 
-          {verification === "checking" && (
-            <p role="status" className="flex items-center gap-2 text-sm text-white/65">
-              <Loader2 size={16} aria-hidden="true" className="motion-safe:animate-spin" />
-              Checking player verification…
-            </p>
-          )}
-          {typeof verification === "object" && (
-            <div className="flex items-start gap-3 rounded-lg border border-amber-300/25 bg-amber-300/8 px-3 py-2.5 text-sm leading-5 text-amber-100">
-              <CircleAlert size={16} aria-hidden="true" className="mt-0.5 shrink-0" />
-              <div>
-                <p role="status">{verification.message}</p>
-                <button
-                  type="button"
-                  className="mt-1 font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200"
-                  onClick={() => {
-                    setVerification("checking");
-                    setVerificationAttempt((attempt) => attempt + 1);
-                  }}
-                >
-                  Recheck verification
-                </button>
-              </div>
-            </div>
-          )}
-
           {error && (
             <div role="alert" className="flex items-start gap-3 rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2.5 text-sm leading-5 text-red-200">
               <CircleAlert size={16} aria-hidden="true" className="mt-0.5 shrink-0" />
@@ -213,6 +239,100 @@ const TeamModal = ({
               </>
             ) : isCreate ? "Create team" : "Join team"}
           </button>
+          </>
+          ) : (
+            <div className="space-y-4">
+              {verification === "checking" && (
+                <p role="status" className="flex items-center gap-2 text-sm text-white/65">
+                  <Loader2 size={16} aria-hidden="true" className="motion-safe:animate-spin" />
+                  Checking your account…
+                </p>
+              )}
+              {verification === "signed-out" && (
+                <div className="rounded-xl border border-pink-400/35 bg-gradient-to-br from-pink-500/10 via-fuchsia-500/5 to-transparent p-4 sm:p-5">
+                  <div className="flex items-start gap-3">
+                    <span className="grid size-9 shrink-0 place-items-center rounded-full border border-pink-300/35 bg-pink-400/15 text-pink-200">
+                      <CircleAlert size={18} aria-hidden="true" />
+                    </span>
+                    <div>
+                      <h3 className="font-a24 text-sm font-bold uppercase tracking-wide text-white">
+                        Account required
+                      </h3>
+                      <p className="mt-1.5 text-sm leading-6 text-white/75">
+                        Sign in to your Sristi account or register first. You’ll need a verified participant account to create or join a team.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void handleSignIn()}
+                    className="mt-4 flex min-h-12 w-full items-center justify-center rounded-lg border border-teal-200/60 bg-teal-400 px-4 py-3 text-sm font-bold text-[#071518] shadow-[0_8px_24px_rgba(45,212,191,0.16)] transition duration-200 hover:border-teal-100 hover:bg-teal-300 hover:shadow-[0_10px_30px_rgba(45,212,191,0.28)] focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-teal-100 active:translate-y-px"
+                  >
+                    Sign in or register
+                  </button>
+                </div>
+              )}
+              {verification === "profile-required" && (
+                <div className="space-y-3 rounded-xl border border-pink-300/20 bg-pink-300/5 p-4">
+                  <div className="flex items-start gap-3 text-sm leading-5 text-white/75">
+                    <CircleAlert size={17} aria-hidden="true" className="mt-0.5 shrink-0 text-pink-200" />
+                    <p>Complete your participant registration before creating or joining a team.</p>
+                  </div>
+                  <Link to="/register" onClick={onClose} className="event-action-button event-action-button-primary flex w-full items-center justify-center font-a24">
+                    Complete registration
+                  </Link>
+                </div>
+              )}
+              {verification === "unverified" && (
+                <div className="rounded-xl border border-amber-300/25 bg-amber-300/8 p-4 text-sm leading-5 text-amber-100">
+                  <div className="flex items-start gap-3">
+                    <CircleAlert size={17} aria-hidden="true" className="mt-0.5 shrink-0" />
+                    <div>
+                      <h3 className="font-semibold text-amber-50">Participant verification required</h3>
+                      <p className="mt-1 text-amber-100/80">Enter the 6-character verification code issued to you in your profile to create or join a team.</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="mt-4 min-h-11 w-full rounded-lg border border-teal-200/60 bg-teal-400 px-4 py-2.5 font-semibold text-[#071518] transition-colors hover:border-teal-100 hover:bg-teal-300 focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-teal-100"
+                    onClick={() => window.dispatchEvent(new Event("sristi-open-verification"))}
+                  >
+                    Enter verification code
+                  </button>
+                  <div className="mt-3 text-center">
+                    <button
+                      type="button"
+                      className="font-medium text-amber-100/80 underline underline-offset-4 transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200"
+                      onClick={() => {
+                        setVerification("checking");
+                        setVerificationAttempt((attempt) => attempt + 1);
+                      }}
+                    >
+                      Recheck verification
+                    </button>
+                  </div>
+                </div>
+              )}
+              {typeof verification === "object" && (
+                <div className="flex items-start gap-3 rounded-lg border border-amber-300/25 bg-amber-300/8 px-3 py-3 text-sm leading-5 text-amber-100">
+                  <CircleAlert size={16} aria-hidden="true" className="mt-0.5 shrink-0" />
+                  <div>
+                    <p role="alert">{verification.message}</p>
+                    <button
+                      type="button"
+                      className="mt-2 font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200"
+                      onClick={() => {
+                        setVerification("checking");
+                        setVerificationAttempt((attempt) => attempt + 1);
+                      }}
+                    >
+                      Try again
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </form>
       </section>
     </div>

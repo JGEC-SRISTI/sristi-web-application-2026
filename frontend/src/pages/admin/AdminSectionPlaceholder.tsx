@@ -23,6 +23,11 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase, supabaseConfigMissing } from "../../lib/supabase";
+import {
+  clearAdminAccessCache,
+  getActiveAdminRole,
+  getCachedActiveAdminRole,
+} from "../../lib/adminAccess";
 import collegeLogo from "../../assets/icons/logo1.png";
 import sristiLogo from "../../assets/icons/sristi_logo.png";
 import { AdminAccessGate, NavItem } from "./AdminEvents";
@@ -50,7 +55,19 @@ type RegistrationRow = {
     college_roll: string;
     department: string;
   } | null;
-  teams: { team_name: string; team_code: string } | null;
+  teams: { team_name: string; team_code: string; leader_id: string } | null;
+};
+
+type TeamMemberExportRow = {
+  team_id: string;
+  user_id: string;
+  joined_at: string;
+  profiles: {
+    full_name: string;
+    college_roll: string;
+    college_name: string;
+    department: string;
+  } | null;
 };
 
 const sectionDetails: Record<
@@ -65,7 +82,8 @@ const sectionDetails: Record<
   },
   results: {
     title: "Results & leaderboard",
-    description: "Declare event winners and control public leaderboard visibility.",
+    description:
+      "Declare event winners and control public leaderboard visibility.",
     icon: Trophy,
     note: "Manage event results and leaderboard publication.",
   },
@@ -115,6 +133,8 @@ export default function AdminSectionPlaceholder({
   const [isLoadingRegistrations, setIsLoadingRegistrations] = useState(false);
   const [registrationsError, setRegistrationsError] = useState("");
   const [registrationReload, setRegistrationReload] = useState(0);
+  const [isExportingTeams, setIsExportingTeams] = useState(false);
+  const [teamExportError, setTeamExportError] = useState("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -156,23 +176,21 @@ export default function AdminSectionPlaceholder({
         setAccessState("signed-out");
         return;
       }
-      setAccessState("checking");
-      const { data, error } = await client
-        .from("admin_users")
-        .select("role,status")
-        .eq("user_id", user.id)
-        .eq("status", "active")
-        .maybeSingle();
+      const cachedRole = getCachedActiveAdminRole(user.id);
+      if (cachedRole) {
+        setRole(cachedRole);
+        setAccessState("ready");
+      } else {
+        setAccessState("checking");
+      }
+      const { role: activeRole, error } = await getActiveAdminRole(user.id);
       if (!mounted) return;
-      if (error || !data) {
-        setAccessError(
-          error?.message ??
-            "This signed-in account does not have an active admin role.",
-        );
+      if (error || !activeRole) {
+        setAccessError(error ?? "This account does not have an active admin role.");
         setAccessState("denied");
         return;
       }
-      setRole(data.role);
+      setRole(activeRole);
       setAccessState("ready");
     };
     void client.auth.getSession().then(({ data, error }) => {
@@ -187,7 +205,10 @@ export default function AdminSectionPlaceholder({
     const {
       data: { subscription },
     } = client.auth.onAuthStateChange((_event, session) => {
-      queueMicrotask(() => void checkAdmin(session?.user ?? null));
+      queueMicrotask(() => {
+        if (!session) clearAdminAccessCache();
+        void checkAdmin(session?.user ?? null);
+      });
     });
     return () => {
       mounted = false;
@@ -205,7 +226,7 @@ export default function AdminSectionPlaceholder({
     void supabase
       .from("registrations")
       .select(
-        "id,event_id,user_id,team_id,status,registered_at,events(name,event_type),profiles(full_name,college_name,college_roll,department),teams(team_name,team_code)",
+        "id,event_id,user_id,team_id,status,registered_at,events(name,event_type),profiles(full_name,college_name,college_roll,department),teams(team_name,team_code,leader_id)",
       )
       .order("registered_at", { ascending: false })
       .then(({ data: rows, error }) => {
@@ -247,6 +268,116 @@ export default function AdminSectionPlaceholder({
   const signOut = async () => {
     if (!supabase) return;
     await supabase.auth.signOut();
+  };
+
+  const exportTeamRegistrations = async () => {
+    if (!supabase || isExportingTeams) return;
+    const teamRegistrations = visibleRegistrations
+      .filter(
+        (registration) =>
+          registration.events?.event_type === "team" &&
+          registration.team_id &&
+          registration.teams,
+      )
+      .sort((a, b) => {
+        const eventOrder = (a.events?.name ?? "").localeCompare(
+          b.events?.name ?? "",
+        );
+        return (
+          eventOrder ||
+          (a.teams?.team_name ?? "").localeCompare(b.teams?.team_name ?? "")
+        );
+      });
+
+    if (teamRegistrations.length === 0) return;
+
+    setIsExportingTeams(true);
+    setTeamExportError("");
+    try {
+      const teamIds = [
+        ...new Set(teamRegistrations.map((row) => row.team_id!)),
+      ];
+      const { data, error } = await supabase
+        .from("team_members")
+        .select(
+          "team_id,user_id,joined_at,profiles(full_name,college_roll,college_name,department)",
+        )
+        .in("team_id", teamIds)
+        .order("joined_at", { ascending: true });
+
+      if (error) throw error;
+
+      const memberRows = (data ?? []) as unknown as TeamMemberExportRow[];
+      const membersByTeam = new Map<string, TeamMemberExportRow[]>();
+      memberRows.forEach((member) => {
+        const members = membersByTeam.get(member.team_id) ?? [];
+        members.push(member);
+        membersByTeam.set(member.team_id, members);
+      });
+
+      const headers = [
+        "Event",
+        "Team name",
+        "Team code",
+        "Registration status",
+        "Registered at",
+        "Team member",
+        "College roll number",
+        "College",
+        "Department",
+        "Team leader",
+      ];
+      const rows: Array<Array<string | number | null>> = [];
+      teamRegistrations.forEach((registration) => {
+        const team = registration.teams!;
+        const members = membersByTeam.get(registration.team_id!) ?? [];
+        const exportMembers: Array<TeamMemberExportRow | null> = members.length
+          ? members
+          : [null];
+        exportMembers.forEach((member) => {
+          rows.push([
+            registration.events?.name ?? "",
+            team.team_name,
+            team.team_code,
+            registration.status,
+            new Date(registration.registered_at).toISOString(),
+            member?.profiles?.full_name ?? "",
+            member?.profiles?.college_roll ?? "",
+            member?.profiles?.college_name ?? "",
+            member?.profiles?.department ?? "",
+            member ? (member.user_id === team.leader_id ? "Yes" : "No") : "",
+          ]);
+        });
+      });
+
+      const csvCell = (value: string | number | null) => {
+        const text = String(value ?? "");
+        const safeText = /^[\s]*[=+@-]/.test(text) ? `'${text}` : text;
+        return `"${safeText.replace(/"/g, '""')}"`;
+      };
+      const csv = [headers, ...rows]
+        .map((row) => row.map(csvCell).join(","))
+        .join("\r\n");
+      const blob = new Blob([`\uFEFF${csv}`], {
+        type: "text/csv;charset=utf-8",
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `sristi-team-registrations-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (error) {
+      setTeamExportError(
+        error instanceof Error
+          ? error.message
+          : "Could not export team registrations.",
+      );
+    } finally {
+      setIsExportingTeams(false);
+    }
   };
 
   if (accessState !== "ready") {
@@ -516,7 +647,33 @@ export default function AdminSectionPlaceholder({
                     />
                     Refresh
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => void exportTeamRegistrations()}
+                    disabled={
+                      isExportingTeams ||
+                      isLoadingRegistrations ||
+                      !visibleRegistrations.some(
+                        (registration) =>
+                          registration.events?.event_type === "team" &&
+                          Boolean(registration.team_id),
+                      )
+                    }
+                    title="Downloads a CSV that can be opened in Google Sheets. It follows the current filters."
+                    className="admin-team-export-button inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-55"
+                  >
+                    <Download size={14} />
+                    {isExportingTeams ? "Preparing…" : "Download teams CSV"}
+                  </button>
                 </div>
+                {teamExportError && (
+                  <p
+                    role="alert"
+                    className="border-b border-rose-300/20 bg-rose-300/5 px-5 py-3 text-sm text-rose-200"
+                  >
+                    Could not export team registrations: {teamExportError}
+                  </p>
+                )}
                 {registrationsError && (
                   <p
                     role="alert"
@@ -700,53 +857,105 @@ function AdminResultsSection() {
     setError("");
     void Promise.all([
       supabase.from("events").select("id,name,event_type").order("name"),
-      supabase.from("results").select("id,event_id,user_id,team_id,position,declared_at,profiles(full_name,college_roll),teams(team_name,team_code)").order("position"),
+      supabase
+        .from("results")
+        .select(
+          "id,event_id,user_id,team_id,position,declared_at,profiles(full_name,college_roll),teams(team_name,team_code)",
+        )
+        .order("position"),
     ]).then(([eventResponse, resultResponse]) => {
       if (!active) return;
       setLoading(false);
       const queryError = eventResponse.error ?? resultResponse.error;
-      if (queryError) { setError(queryError.message); return; }
+      if (queryError) {
+        setError(queryError.message);
+        return;
+      }
       const loadedEvents = (eventResponse.data ?? []) as ResultEvent[];
       setEvents(loadedEvents);
       setResults((resultResponse.data ?? []) as unknown as ResultRow[]);
       setSelectedEvent((current) => current || loadedEvents[0]?.id || "");
     });
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [reload]);
 
   useEffect(() => {
-    if (!supabase || !selectedEvent) { setCandidates([]); return; }
+    if (!supabase || !selectedEvent) {
+      setCandidates([]);
+      return;
+    }
     let active = true;
     const event = events.find((item) => item.id === selectedEvent);
     if (!event) return;
-    void supabase.from("registrations")
-      .select("user_id,team_id,profiles(full_name,college_roll),teams(team_name,team_code)")
-      .eq("event_id", selectedEvent).eq("status", "registered")
+    void supabase
+      .from("registrations")
+      .select(
+        "user_id,team_id,profiles(full_name,college_roll),teams(team_name,team_code)",
+      )
+      .eq("event_id", selectedEvent)
+      .eq("status", "registered")
       .then(({ data, error: queryError }) => {
         if (!active) return;
-        if (queryError) { setError(queryError.message); setCandidates([]); return; }
+        if (queryError) {
+          setError(queryError.message);
+          setCandidates([]);
+          return;
+        }
         const options = (data ?? []).flatMap((row: any): ResultCandidate[] => {
-          if (event.event_type === "team" && row.team_id) return [{ id: row.team_id, name: row.teams?.team_name ?? "Team", detail: row.teams?.team_code ?? "Registered team", userId: null, teamId: row.team_id }];
-          if (event.event_type === "solo" && row.user_id) return [{ id: row.user_id, name: row.profiles?.full_name ?? "Participant", detail: row.profiles?.college_roll ?? "Registered participant", userId: row.user_id, teamId: null }];
+          if (event.event_type === "team" && row.team_id)
+            return [
+              {
+                id: row.team_id,
+                name: row.teams?.team_name ?? "Team",
+                detail: row.teams?.team_code ?? "Registered team",
+                userId: null,
+                teamId: row.team_id,
+              },
+            ];
+          if (event.event_type === "solo" && row.user_id)
+            return [
+              {
+                id: row.user_id,
+                name: row.profiles?.full_name ?? "Participant",
+                detail: row.profiles?.college_roll ?? "Registered participant",
+                userId: row.user_id,
+                teamId: null,
+              },
+            ];
           return [];
         });
         setCandidates(options);
         setCandidateId("");
       });
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [events, selectedEvent]);
 
-  const eventResults = results.filter((row) => row.event_id === selectedEvent).sort((a, b) => a.position - b.position);
+  const eventResults = results
+    .filter((row) => row.event_id === selectedEvent)
+    .sort((a, b) => a.position - b.position);
   const usedPlaces = new Set(eventResults.map((row) => row.position));
   const availablePlaces = [1, 2, 3].filter((place) => !usedPlaces.has(place));
-  const eligibleCandidates = candidates.filter((candidate) => !eventResults.some((row) => candidate.userId ? row.user_id === candidate.userId : row.team_id === candidate.teamId));
+  const eligibleCandidates = candidates.filter(
+    (candidate) =>
+      !eventResults.some((row) =>
+        candidate.userId
+          ? row.user_id === candidate.userId
+          : row.team_id === candidate.teamId,
+      ),
+  );
 
   const recordPlacement = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!supabase) return;
     const candidate = candidates.find((item) => item.id === candidateId);
     if (!candidate) return;
-    setSaving(true); setError(""); setNotice("");
+    setSaving(true);
+    setError("");
+    setNotice("");
     const { error: rpcError } = await supabase.rpc("declare_result", {
       p_event_id: selectedEvent,
       p_user_id: candidate.userId,
@@ -754,41 +963,219 @@ function AdminResultsSection() {
       p_position: Number(position),
     });
     setSaving(false);
-    if (rpcError) { setError(rpcError.message); return; }
-    setNotice(`${placeName(Number(position))} place recorded for ${candidate.name}.`);
+    if (rpcError) {
+      setError(rpcError.message);
+      return;
+    }
+    setNotice(
+      `${placeName(Number(position))} place recorded for ${candidate.name}.`,
+    );
     setCandidateId("");
     setReload((count) => count + 1);
   };
 
   const removePlacement = async (result: ResultRow) => {
-    if (!supabase || !window.confirm(`Remove the ${placeName(result.position)} place result?`)) return;
-    setError(""); setNotice("");
-    const { error: deleteError } = await supabase.from("results").delete().eq("id", result.id);
-    if (deleteError) { setError(deleteError.message); return; }
+    if (
+      !supabase ||
+      !window.confirm(`Remove the ${placeName(result.position)} place result?`)
+    )
+      return;
+    setError("");
+    setNotice("");
+    const { error: deleteError } = await supabase
+      .from("results")
+      .delete()
+      .eq("id", result.id);
+    if (deleteError) {
+      setError(deleteError.message);
+      return;
+    }
     setNotice("Result removed. That place can now be assigned again.");
     setReload((count) => count + 1);
   };
 
-  return <div className="mt-7 space-y-5">
-    <div className="grid gap-4 sm:grid-cols-3">
-      <RegistrationSummary label="Events with results" value={new Set(results.map((row) => row.event_id)).size} />
-      <RegistrationSummary label="Placements recorded" value={results.length} accent="text-emerald-300" />
-      <RegistrationSummary label="Public results" value="Paused" accent="text-slate-300" />
+  return (
+    <div className="mt-7 space-y-5">
+      <div className="grid gap-4 sm:grid-cols-3">
+        <RegistrationSummary
+          label="Events with results"
+          value={new Set(results.map((row) => row.event_id)).size}
+        />
+        <RegistrationSummary
+          label="Placements recorded"
+          value={results.length}
+          accent="text-emerald-300"
+        />
+        <RegistrationSummary
+          label="Public results"
+          value="Paused"
+          accent="text-slate-300"
+        />
+      </div>
+      <div className="rounded-xl border border-sky-300/20 bg-sky-300/[0.06] p-5 text-sm leading-6 text-sky-100">
+        Public results are paused while the participant-facing leaderboard is
+        being planned. Placements recorded here remain available to admins.
+      </div>
+      {(error || notice) && (
+        <p
+          role={error ? "alert" : "status"}
+          className={`rounded-lg border px-4 py-3 text-sm ${error ? "border-rose-300/30 bg-rose-50 text-rose-800" : "border-emerald-300/30 bg-emerald-50 text-emerald-900"}`}
+        >
+          {error || notice}
+        </p>
+      )}
+      <div className="overflow-hidden rounded-xl border border-white/10 bg-[#0d1520]">
+        <div className="flex flex-col gap-3 border-b border-white/10 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="font-semibold">Event results</h2>
+            <p className="mt-1 text-xs text-slate-500">
+              Record up to three placements for each event.
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <select
+              aria-label="Select event"
+              value={selectedEvent}
+              onChange={(event) => setSelectedEvent(event.target.value)}
+              className="h-10 min-w-48 rounded-lg border border-white/10 bg-[#0b121c] px-3 text-sm text-slate-200"
+            >
+              <option value="">Select event</option>
+              {events.map((event) => (
+                <option key={event.id} value={event.id}>
+                  {event.name} · {event.event_type}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={() => setReload((count) => count + 1)}
+              disabled={loading}
+              className="inline-flex h-10 items-center gap-2 rounded-lg border border-white/10 px-3 text-xs text-slate-300 hover:bg-white/5 disabled:opacity-50"
+            >
+              <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+              Refresh
+            </button>
+          </div>
+        </div>
+        <form
+          onSubmit={recordPlacement}
+          className="grid gap-3 border-b border-white/10 p-5 md:grid-cols-[1fr_150px_auto]"
+        >
+          <select
+            required
+            aria-label="Registered participant or team"
+            value={candidateId}
+            onChange={(event) => setCandidateId(event.target.value)}
+            disabled={
+              !selectedEvent || eligibleCandidates.length === 0 || loading
+            }
+            className="h-11 rounded-lg border border-white/10 bg-[#0b121c] px-3 text-sm text-slate-200"
+          >
+            <option value="">
+              {!selectedEvent
+                ? "Choose an event first"
+                : eligibleCandidates.length
+                  ? "Choose registered participant / team"
+                  : candidates.length
+                    ? "All eligible candidates already have a place"
+                    : "No registered participants / teams"}
+            </option>
+            {eligibleCandidates.map((candidate) => (
+              <option key={candidate.id} value={candidate.id}>
+                {candidate.name} · {candidate.detail}
+              </option>
+            ))}
+          </select>
+          <select
+            aria-label="Placement"
+            value={position}
+            onChange={(event) => setPosition(event.target.value)}
+            className="h-11 rounded-lg border border-white/10 bg-[#0b121c] px-3 text-sm text-slate-200"
+          >
+            {(availablePlaces.length ? availablePlaces : [1, 2, 3]).map(
+              (place) => (
+                <option key={place} value={place}>
+                  {placeName(place)} place
+                </option>
+              ),
+            )}
+          </select>
+          <button
+            type="submit"
+            disabled={
+              saving || loading || !candidateId || availablePlaces.length === 0
+            }
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-emerald-200/40 bg-emerald-200 px-4 py-2 text-sm font-bold text-emerald-950 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Trophy size={16} />
+            {saving ? "Recording…" : "Record placement"}
+          </button>
+        </form>
+        {loading ? (
+          <div className="space-y-3 p-5" aria-busy="true">
+            {[0, 1, 2].map((item) => (
+              <div key={item} className="admin-skeleton h-14 rounded-lg" />
+            ))}
+          </div>
+        ) : !selectedEvent ? (
+          <p className="px-5 py-12 text-center text-sm text-slate-500">
+            Create an event first to record results.
+          </p>
+        ) : (
+          <div className="divide-y divide-white/10">
+            {[1, 2, 3].map((place) => {
+              const row = eventResults.find((item) => item.position === place);
+              const name = row?.profiles?.full_name ?? row?.teams?.team_name;
+              const detail =
+                row?.profiles?.college_roll ?? row?.teams?.team_code;
+              return (
+                <div
+                  key={place}
+                  className="flex items-center justify-between gap-4 px-5 py-4"
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span
+                      className={`grid size-10 shrink-0 place-items-center rounded-xl font-bold ${place === 1 ? "bg-amber-200 text-amber-950" : "bg-slate-200 text-slate-800"}`}
+                    >
+                      {place}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-slate-900">
+                        {name ?? `${placeName(place)} place not assigned`}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {row
+                          ? `${detail ?? (row.user_id ? "Participant" : "Team")} · declared ${new Date(row.declared_at).toLocaleDateString()}`
+                          : "Available placement"}
+                      </p>
+                    </div>
+                  </div>
+                  {row && (
+                    <button
+                      type="button"
+                      onClick={() => void removePlacement(row)}
+                      className="rounded-lg border border-rose-300/50 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-800 transition hover:bg-rose-100"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+      <p className="text-xs leading-5 text-slate-500">
+        Supabase verifies the participant or team is registered for the event
+        and prevents duplicate placements.
+      </p>
     </div>
-    <div className="rounded-xl border border-sky-300/20 bg-sky-300/[0.06] p-5 text-sm leading-6 text-sky-100">
-      Public results are paused while the participant-facing leaderboard is being planned. Placements recorded here remain available to admins.
-    </div>
-    {(error || notice) && <p role={error ? "alert" : "status"} className={`rounded-lg border px-4 py-3 text-sm ${error ? "border-rose-300/30 bg-rose-50 text-rose-800" : "border-emerald-300/30 bg-emerald-50 text-emerald-900"}`}>{error || notice}</p>}
-    <div className="overflow-hidden rounded-xl border border-white/10 bg-[#0d1520]">
-      <div className="flex flex-col gap-3 border-b border-white/10 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="font-semibold">Event results</h2><p className="mt-1 text-xs text-slate-500">Record up to three placements for each event.</p></div><div className="flex gap-2"><select aria-label="Select event" value={selectedEvent} onChange={(event) => setSelectedEvent(event.target.value)} className="h-10 min-w-48 rounded-lg border border-white/10 bg-[#0b121c] px-3 text-sm text-slate-200"><option value="">Select event</option>{events.map((event) => <option key={event.id} value={event.id}>{event.name} · {event.event_type}</option>)}</select><button type="button" onClick={() => setReload((count) => count + 1)} disabled={loading} className="inline-flex h-10 items-center gap-2 rounded-lg border border-white/10 px-3 text-xs text-slate-300 hover:bg-white/5 disabled:opacity-50"><RefreshCw size={14} className={loading ? "animate-spin" : ""} />Refresh</button></div></div>
-      <form onSubmit={recordPlacement} className="grid gap-3 border-b border-white/10 p-5 md:grid-cols-[1fr_150px_auto]"><select required aria-label="Registered participant or team" value={candidateId} onChange={(event) => setCandidateId(event.target.value)} disabled={!selectedEvent || eligibleCandidates.length === 0 || loading} className="h-11 rounded-lg border border-white/10 bg-[#0b121c] px-3 text-sm text-slate-200"><option value="">{!selectedEvent ? "Choose an event first" : eligibleCandidates.length ? "Choose registered participant / team" : candidates.length ? "All eligible candidates already have a place" : "No registered participants / teams"}</option>{eligibleCandidates.map((candidate) => <option key={candidate.id} value={candidate.id}>{candidate.name} · {candidate.detail}</option>)}</select><select aria-label="Placement" value={position} onChange={(event) => setPosition(event.target.value)} className="h-11 rounded-lg border border-white/10 bg-[#0b121c] px-3 text-sm text-slate-200">{(availablePlaces.length ? availablePlaces : [1, 2, 3]).map((place) => <option key={place} value={place}>{placeName(place)} place</option>)}</select><button type="submit" disabled={saving || loading || !candidateId || availablePlaces.length === 0} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-emerald-200/40 bg-emerald-200 px-4 py-2 text-sm font-bold text-emerald-950 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"><Trophy size={16} />{saving ? "Recording…" : "Record placement"}</button></form>
-      {loading ? <div className="space-y-3 p-5" aria-busy="true">{[0, 1, 2].map((item) => <div key={item} className="admin-skeleton h-14 rounded-lg" />)}</div> : !selectedEvent ? <p className="px-5 py-12 text-center text-sm text-slate-500">Create an event first to record results.</p> : <div className="divide-y divide-white/10">{[1, 2, 3].map((place) => { const row = eventResults.find((item) => item.position === place); const name = row?.profiles?.full_name ?? row?.teams?.team_name; const detail = row?.profiles?.college_roll ?? row?.teams?.team_code; return <div key={place} className="flex items-center justify-between gap-4 px-5 py-4"><div className="flex min-w-0 items-center gap-3"><span className={`grid size-10 shrink-0 place-items-center rounded-xl font-bold ${place === 1 ? "bg-amber-200 text-amber-950" : "bg-slate-200 text-slate-800"}`}>{place}</span><div className="min-w-0"><p className="font-semibold text-slate-900">{name ?? `${placeName(place)} place not assigned`}</p><p className="mt-1 text-xs text-slate-500">{row ? `${detail ?? (row.user_id ? "Participant" : "Team")} · declared ${new Date(row.declared_at).toLocaleDateString()}` : "Available placement"}</p></div></div>{row && <button type="button" onClick={() => void removePlacement(row)} className="rounded-lg border border-rose-300/50 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-800 transition hover:bg-rose-100">Remove</button>}</div>; })}</div>}
-    </div>
-    <p className="text-xs leading-5 text-slate-500">Supabase verifies the participant or team is registered for the event and prevents duplicate placements.</p>
-  </div>;
+  );
 }
 
-function placeName(place: number) { return place === 1 ? "1st" : place === 2 ? "2nd" : "3rd"; }
+function placeName(place: number) {
+  return place === 1 ? "1st" : place === 2 ? "2nd" : "3rd";
+}
 
 type PaymentRecordRow = {
   id: string;
@@ -1443,7 +1830,8 @@ function AdminPaymentsSection() {
               Confirm cash payment
             </h2>
             <p className="mt-2 text-sm text-slate-400">
-              Verify the cash with the participant before recording it. This uses the configured fest fee.
+              Verify the cash with the participant before recording it. This
+              uses the configured fest fee.
             </p>
             <p className="mt-4 rounded-lg bg-white/[0.04] p-3 text-sm text-slate-200">
               {verifyParticipant.full_name}{" "}
@@ -2572,7 +2960,7 @@ function AdminManagementSection() {
                         type="button"
                         onClick={() => void changeStatus(admin)}
                         disabled={isSaving}
-                        className={`rounded-lg border px-3 py-2 text-xs font-medium transition disabled:opacity-50 ${admin.status === "active" ? "border-rose-300/20 text-rose-200 hover:bg-rose-300/10" : "border-emerald-300/20 text-emerald-200 hover:bg-emerald-300/10"}`}
+                        className={`admin-admin-status-button rounded-lg border px-3 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${admin.status === "active" ? "admin-admin-status-button--deactivate" : "admin-admin-status-button--reactivate"}`}
                       >
                         {admin.status === "active"
                           ? "Deactivate"

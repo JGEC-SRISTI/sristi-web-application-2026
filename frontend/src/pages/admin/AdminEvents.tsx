@@ -35,6 +35,11 @@ import {
   X,
 } from "lucide-react";
 import { supabase, supabaseConfigMissing } from "../../lib/supabase";
+import {
+  clearAdminAccessCache,
+  getActiveAdminRole,
+  getCachedActiveAdminRole,
+} from "../../lib/adminAccess";
 import collegeLogo from "../../assets/icons/logo1.png";
 import sristiLogo from "../../assets/icons/sristi_logo.png";
 import "./AdminEvents.css";
@@ -147,21 +152,22 @@ export default function AdminEvents() {
         return;
       }
 
-      setAccessState("checking");
-      const { data, error: adminError } = await client
-        .from("admin_users")
-        .select("role, status")
-        .eq("user_id", user.id)
-        .eq("status", "active")
-        .maybeSingle();
+      const cachedRole = getCachedActiveAdminRole(user.id);
+      if (cachedRole) {
+        setAdminRole(cachedRole);
+        setAccessState("ready");
+      } else {
+        setAccessState("checking");
+      }
+      const { role, error: adminError } = await getActiveAdminRole(user.id);
 
       if (!mounted) return;
       if (adminError) {
-        setAccessError(adminError.message);
+        setAccessError(adminError);
         setAccessState("denied");
         return;
       }
-      if (!data) {
+      if (!role) {
         setAccessError(
           "This signed-in account does not have an active admin role.",
         );
@@ -169,7 +175,7 @@ export default function AdminEvents() {
         return;
       }
 
-      setAdminRole(data.role);
+      setAdminRole(role);
       setAccessState("ready");
       setIsLoadingEvents(true);
       const { data: eventRows, error: eventError } = await client
@@ -199,7 +205,10 @@ export default function AdminEvents() {
     const {
       data: { subscription },
     } = client.auth.onAuthStateChange((_event, session) => {
-      queueMicrotask(() => void checkAccess(session?.user ?? null));
+      queueMicrotask(() => {
+        if (!session) clearAdminAccessCache();
+        void checkAccess(session?.user ?? null);
+      });
     });
 
     return () => {

@@ -306,6 +306,58 @@
   outline-offset: 2px;
 }
 
+.admin-panel .admin-team-export-button {
+  border-color: var(--admin-green) !important;
+  background-color: var(--admin-green) !important;
+  color: #fff !important;
+}
+
+.admin-panel .admin-team-export-button:hover:not(:disabled) {
+  border-color: #066b59 !important;
+  background-color: #066b59 !important;
+  box-shadow: 0 5px 14px rgb(8 127 104 / 22%);
+  transform: translateY(-1px);
+}
+
+.admin-panel .admin-team-export-button:disabled {
+  border-color: #b8c8c6 !important;
+  background-color: #dce7e5 !important;
+  color: #70817e !important;
+  box-shadow: none;
+  transform: none;
+}
+
+.admin-panel .admin-admin-status-button--reactivate {
+  border-color: #a8d5ca !important;
+  background-color: #e8f5f1 !important;
+  color: #087f68 !important;
+}
+
+.admin-panel .admin-admin-status-button--reactivate:hover:not(:disabled) {
+  border-color: #066b59 !important;
+  background-color: #066b59 !important;
+  color: #fff !important;
+  box-shadow: 0 4px 12px rgb(8 127 104 / 18%);
+}
+
+.admin-panel .admin-admin-status-button--deactivate {
+  border-color: #efb6c8 !important;
+  background-color: #fff0f4 !important;
+  color: #a8204f !important;
+}
+
+.admin-panel .admin-admin-status-button--deactivate:hover:not(:disabled) {
+  border-color: #d98ba5 !important;
+  background-color: #fce0e8 !important;
+  color: #861b40 !important;
+}
+
+.admin-panel .admin-admin-status-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  box-shadow: none;
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .admin-panel button,
   .admin-panel a,
