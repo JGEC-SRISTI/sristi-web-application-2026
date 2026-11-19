@@ -15,6 +15,11 @@ import {
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase, supabaseConfigMissing } from "../../lib/supabase";
+import {
+  clearAdminAccessCache,
+  getActiveAdminRole,
+  getCachedActiveAdminRole,
+} from "../../lib/adminAccess";
 import collegeLogo from "../../assets/icons/logo1.png";
 import sristiLogo from "../../assets/icons/sristi_logo.png";
 import { AdminAccessGate, NavItem } from "./AdminEvents";
@@ -65,23 +70,21 @@ export default function AdminOverview() {
         setAccessState("signed-out");
         return;
       }
-      setAccessState("checking");
-      const { data, error } = await client
-        .from("admin_users")
-        .select("role,status")
-        .eq("user_id", user.id)
-        .eq("status", "active")
-        .maybeSingle();
+      const cachedRole = getCachedActiveAdminRole(user.id);
+      if (cachedRole) {
+        setRole(cachedRole);
+        setAccessState("ready");
+      } else {
+        setAccessState("checking");
+      }
+      const { role: activeRole, error } = await getActiveAdminRole(user.id);
       if (!mounted) return;
-      if (error || !data) {
-        setAccessError(
-          error?.message ??
-            "This signed-in account does not have an active admin role.",
-        );
+      if (error || !activeRole) {
+        setAccessError(error ?? "This account does not have an active admin role.");
         setAccessState("denied");
         return;
       }
-      setRole(data.role);
+      setRole(activeRole);
       setAccessState("ready");
       await loadCounts();
     };
@@ -97,7 +100,10 @@ export default function AdminOverview() {
     const {
       data: { subscription },
     } = client.auth.onAuthStateChange((_event, session) => {
-      queueMicrotask(() => void checkAdmin(session?.user ?? null));
+      queueMicrotask(() => {
+        if (!session) clearAdminAccessCache();
+        void checkAdmin(session?.user ?? null);
+      });
     });
     return () => {
       mounted = false;
