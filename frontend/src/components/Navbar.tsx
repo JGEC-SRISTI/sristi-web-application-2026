@@ -34,7 +34,11 @@ interface StudentProfile {
   academic_year: string;
 }
 
-const Navbar = () => {
+interface NavbarProps {
+  onVerifiedPlayerChange?: (playerId: string | null) => void;
+}
+
+const Navbar = ({ onVerifiedPlayerChange }: NavbarProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -51,7 +55,9 @@ const Navbar = () => {
 
   const [profileRefreshKey, setProfileRefreshKey] = useState(0);
 
-  const [isVerified, setIsVerified] = useState(false);
+  const [verifiedUserId, setVerifiedUserId] = useState<string | null>(null);
+  const isVerified = verifiedUserId !== null && verifiedUserId === session?.user.id;
+  const verifiedPlayerId = isVerified && profile?.id === verifiedUserId ? verifiedUserId : null;
   const [verificationLoading, setVerificationLoading] = useState(true);
 
   const [isVerifyOpen, setIsVerifyOpen] = useState(false);
@@ -344,7 +350,7 @@ const Navbar = () => {
 
     const checkVerification = async () => {
       if (!supabase || !session?.user.id) {
-        setIsVerified(false);
+        setVerifiedUserId(null);
         setVerificationLoading(false);
         return;
       }
@@ -359,9 +365,9 @@ const Navbar = () => {
 
       if (error) {
         console.error("Verification status error:", error);
-        setIsVerified(false);
+        setVerifiedUserId(null);
       } else {
-        setIsVerified(data === true);
+        setVerifiedUserId(data === true ? session.user.id : null);
       }
 
       setVerificationLoading(false);
@@ -373,6 +379,10 @@ const Navbar = () => {
       cancelled = true;
     };
   }, [session?.user.id]);
+
+  useEffect(() => {
+    onVerifiedPlayerChange?.(verifiedPlayerId);
+  }, [onVerifiedPlayerChange, verifiedPlayerId]);
 
   const handleVerifyCode = async () => {
     if (!supabase || !session?.user.id) {
@@ -424,7 +434,7 @@ const Navbar = () => {
       }
 
       if (verified === true) {
-        setIsVerified(true);
+        setVerifiedUserId(session.user.id);
         setIsVerifyOpen(false);
         setVerificationCode("");
         setVerificationMessage("");

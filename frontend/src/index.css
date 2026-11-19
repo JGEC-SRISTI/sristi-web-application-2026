@@ -73,6 +73,38 @@ body {
   background: #080808;
 }
 
+.registration-year-select {
+  background-color: transparent;
+  color-scheme: dark;
+}
+
+.registration-year-select:invalid {
+  color: var(--color-gray-400);
+}
+
+@supports (appearance: base-select) and selector(::picker(select)) {
+  .registration-year-select,
+  .registration-year-select::picker(select) {
+    appearance: base-select;
+  }
+
+  .registration-year-select::picker(select) {
+    margin-block: 0.25rem;
+    border: 1px solid rgb(236 72 153 / 35%);
+    background-color: rgb(9 9 9 / 55%);
+    color: white;
+    backdrop-filter: blur(12px);
+  }
+
+  .registration-year-select option {
+    padding: 0.5rem 1rem;
+  }
+
+  .registration-year-select option:not(:disabled):is(:hover, :focus-visible, :checked) {
+    background-color: rgb(236 72 153 / 16%);
+  }
+}
+
 .events-page {
   position: relative;
   isolation: isolate;
@@ -1879,20 +1911,22 @@ html.custom-cursor-active * {
   justify-content: center;
 }
 
-.events-filter-left {
+.events-filter-left,
+.events-filter-right {
   position: absolute;
+  top: 1rem;
+}
+
+.events-filter-left {
   left: 0;
-  top: 0;
 }
 
 .events-filter-right {
-  position: absolute;
   right: 0;
-  top: 0;
   display: flex;
   flex-direction: column;
+  gap: 0.8rem;
   align-items: flex-end;
-  gap: 0.5rem;
 }
 
 @media (width < 48rem) {
