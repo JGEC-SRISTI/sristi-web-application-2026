@@ -43,6 +43,7 @@ Call these through `supabase.rpc(name, args)`. They are protected database funct
 | `join_team` | `{ p_team_code: string, p_member_info_consent: true }` | team UUID | Signed-in verified participant; records consent on the new membership and joins a forming team subject to the event's configured capacity |
 | `get_team_roster` | `{ p_team_id: string }` | rows of `{ full_name, is_leader, is_you }` | Authenticated member of the team; returns the full roster and rejects non-members |
 | `finalize_team_registration` | `{ p_team_id: string }` | registration UUID | Verified team leader; registers a team whose member count meets the event's configured size range and returns the existing UUID on retries |
+| `delete_team` | `{ p_team_id: string }` | `boolean` | Signed-in team leader; permanently deletes the team and its registration; returns `false` if the team no longer exists; rejects deletion if attendance or results exist |
 | `register_team` | `{ p_team_id: string }` | `boolean` | Team leader; legacy/manual operation that marks a forming team registered after its configured size is valid |
 | `register_team_event` | `{ p_team_id: string }` | registration UUID | Team leader; legacy/manual operation that registers a registered team for its event |
 
@@ -112,6 +113,7 @@ The frontend must not write directly to `admin_users` or `audit_logs`. Admin acc
 - `create_team` and `join_team` perform automatic registration in the same database transaction after inserting the member. If the resulting count is below `min_team_size`, the team remains `forming`. Once the minimum is reached, the team is atomically marked `registered` and a team registration is created; it no longer accepts additional members, even when the configured maximum is larger. A count above `max_team_size` is rejected.
 - Automatic registration is backend-owned and does not require the joining participant to be the team leader. `finalize_team_registration` is also available for the verified leader and is idempotent: once a registered row exists, it returns that registration UUID. It is duplicate-safe through the active team-registration uniqueness constraint.
 - Team roster reads go through `get_team_roster`; only a member of the requested team can call it successfully. Team registration reads are likewise available to every member of the team, not only its leader.
+- `delete_team` is the supported team removal path because authenticated clients cannot delete team rows directly. Only the team leader may delete a team. Deletion cascades to its team members and registrations; teams with attendance or results cannot be deleted so event history is preserved. The frontend should update the event and Registered Events views only after the RPC returns `true`.
 - `profiles` has no email column; do not expect it in a profile query.
 - Configure Google Auth and production redirect URLs in Supabase before deployment. The checked-in local config does not contain provider credentials.
 - This contract covers existing schema functions and policies. It does not imply that the admin UI, OAuth provider setup, cloud migration deployment, or export workflows are already complete.
