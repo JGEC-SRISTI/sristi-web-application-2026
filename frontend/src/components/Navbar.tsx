@@ -523,7 +523,7 @@ const Navbar = () => {
 
               <span className="nav-text-wrap font-title text-md">
                 <span className="nav-text">contact us</span>
-                <span className="nav-text-pink">CONTACT</span>
+                <span className="nav-text-pink">CONTACT US</span>
               </span>
             </NavLink>
 

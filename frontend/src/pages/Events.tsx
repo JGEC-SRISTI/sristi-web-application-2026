@@ -4,11 +4,13 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
+  Search,
   Users,
   Trophy,
 } from "lucide-react";
 import Navbar from "../components/Navbar";
 import LiquidGradientBackground from "../components/LiquidGradientBackground";
+import RegisteredEventsDropdown from "../components/teams/RegisteredEventsDropdown";
 import {
   type EventRecord,
   type EventCategory,
@@ -148,9 +150,9 @@ const EventCard = ({ event, position, onClick }: EventCardProps) => {
     Civilized:      "#fbbf24",
     Gaming:         "#f472b6",
     Management:     "#34d399",
-    Mechanized:     "#fb923c",
+    Aeronautical:     "#fb923c",
     Robotics:       "#38bdf8",
-    Tech:           "#a78bfa",
+    Technical:      "#a78bfa",
     Miscellaneous:  "#f472b6",
   };
 
@@ -370,9 +372,9 @@ const CATEGORY_OPTIONS = [
   { label: "Civilized", value: "Civilized" },
   { label: "Gaming", value: "Gaming" },
   { label: "Management", value: "Management" },
-  { label: "Mechanized", value: "Mechanized" },
+  { label: "Aeronautical", value: "Aeronautical" },
   { label: "Robotics", value: "Robotics" },
-  { label: "Tech", value: "Tech" },
+  { label: "Technical", value: "Technical" },
   { label: "Miscellaneous", value: "Miscellaneous" },
 ];
 
@@ -389,6 +391,7 @@ const Events = () => {
   const [events, setEvents] = useState<EventRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("ALL");
   const [participationFilter, setParticipationFilter] = useState("ALL");
   const [activeIndex, setActiveIndex] = useState(0);
@@ -449,6 +452,13 @@ const Events = () => {
       participationFilter === "ALL" || e.event_type.toUpperCase() === participationFilter;
     return catOk && partOk;
   });
+  const searchTerm = searchQuery.trim().toLowerCase();
+  const filteredEvents = mockEvents.filter(
+    (event) =>
+      (categoryFilter === "ALL" || event.category === categoryFilter) &&
+      (participationFilter === "ALL" || event.participation === participationFilter) &&
+      event.title.toLowerCase().includes(searchTerm),
+  );
 
   const cancelPendingNavigation = useCallback(() => {
     if (pendingNavigationRef.current !== null) {
@@ -456,6 +466,12 @@ const Events = () => {
       pendingNavigationRef.current = null;
     }
   }, []);
+
+  const handleSearchChange = (value: string) => {
+    cancelPendingNavigation();
+    setSearchQuery(value);
+    setActiveIndex(0);
+  };
 
   const handleCategoryChange = (val: string) => {
     cancelPendingNavigation();
@@ -621,13 +637,24 @@ const Events = () => {
 
       <div className="relative z-10 flex-1 flex flex-col pt-18 pb-4 px-4 sm:px-8">
 
-        <div className="events-header grid grid-cols-[1fr_auto_1fr] items-start mb-2 sm:mb-4">
+        <div className="events-header mb-2 sm:mb-4">
 
           <div className="events-heading text-center">
             <SplashHeading />
             <p className="whitespace-nowrap font-space-mono text-[10px] sm:text-[11px] tracking-[0.35em] uppercase text-white/80 mt-2">
               SRISTI 2K26 — CHOOSE YOUR ARENA
             </p>
+            <label className="mx-auto mt-3 flex w-full max-w-72 items-center gap-2 rounded-lg border border-white/20 bg-black/30 px-3 text-white/65 transition focus-within:border-purple-300 focus-within:text-purple-200">
+              <Search size={16} className="shrink-0" aria-hidden="true" />
+              <input
+                type="search"
+                aria-label="Search events"
+                placeholder="Search by event name"
+                value={searchQuery}
+                onChange={(event) => handleSearchChange(event.target.value)}
+                className="min-w-0 flex-1 py-2 font-space-mono text-base text-white scheme-dark placeholder:text-white/55 focus:outline-none sm:text-sm"
+              />
+            </label>
           </div>
 
           <div className="events-filters">
@@ -646,6 +673,9 @@ const Events = () => {
                 options={CATEGORY_OPTIONS}
                 onChange={handleCategoryChange}
               />
+              <div className="events-filter-registrations">
+                <RegisteredEventsDropdown />
+              </div>
             </div>
           </div>
         </div>
@@ -716,11 +746,11 @@ const Events = () => {
               ))}
             </div>
           ) : (
-            <div className="text-center">
-              <p className="font-space-mono text-sm text-white/30 tracking-widest uppercase">
-                No events match your filters
-              </p>
-            </div>
+            <p role="status" className="mx-12 text-center font-space-mono text-sm text-white/60">
+              {searchTerm
+                ? "No events found. Try a different search or change your filters."
+                : "No events match your filters."}
+            </p>
           )}
         </div>
       </div>

@@ -2,9 +2,9 @@ export type EventCategory =
   | "Civilized"
   | "Gaming"
   | "Management"
-  | "Mechanized"
+  | "Aeronautical"
   | "Robotics"
-  | "Tech"
+  | "Technical"
   | "Miscellaneous";
 
 export type ParticipationType = "SOLO" | "TEAM";
@@ -87,6 +87,8 @@ const event = (
   eventType: "solo" | "team",
   shortDescription: string,
   description: string,
+  minTeamSize = 3,
+  maxTeamSize = 5,
 ): EventRecord => ({
   id,
   name,
@@ -96,54 +98,49 @@ const event = (
   event_type: eventType,
   category,
   venue: "Old Auditorium",
-  min_team_size: eventType === "team" ? 3 : null,
-  max_team_size: eventType === "team" ? 5 : null,
+  min_team_size: eventType === "team" ? minTeamSize : null,
+  max_team_size: eventType === "team" ? maxTeamSize : null,
   created_at: "2026-10-30T00:00:00.000Z",
   updated_at: "2026-10-30T00:00:00.000Z",
 });
 
 export const mockEventRecords: EventRecord[] = [
-  event("a4", "Instridge", "Civilized", "team", "Build an intelligent bridge from insight to action.", "Instridge asks teams to study a real-world situation, identify the forces shaping it, and propose a clear intervention."),
-  event("a2", "Rotolare", "Civilized", "team", "Roll forward with strategy, speed, and teamwork.", "Rotolare combines planning, coordination, and fast decisions in a lively team challenge. Participants must adapt to changing tasks, keep communication sharp, and use every round to improve their route to the final objective."),
-  event("a3", "Rise n Build", "Civilized", "team", "Create something useful from a bold shared idea.", "Rise n Build is a collaborative challenge where teams move from a rough concept to a working model or convincing prototype. Judges will look for originality, feasibility, teamwork, and the clarity of the story behind the build."),
-  event("a1", "Bridge the Gap", "Civilized", "team", "Connect ideas, people, and perspectives.", "Bridge the Gap challenges teams to design a practical solution for a social or community problem. Present your approach, defend your choices, and show how thoughtful collaboration can turn divided perspectives into measurable progress."),
-  event("a5", "CAD", "Civilized", "solo", "Turn an idea into a precise digital design.", "CAD challenges participants to create accurate, practical designs while balancing creativity with engineering constraints."),
-  event("a6", "Survey Hunt", "Civilized", "team", "Explore, observe, and uncover the right answers.", "Survey Hunt rewards careful observation, collaboration, and the ability to turn field findings into useful conclusions."),
-  event("a7", "Circuitrix", "Robotics", "team", "Trace the signal from problem to working circuit.", "Circuitrix combines electronics knowledge, debugging, and hands-on collaboration."),
-  event("a8", "ROBOWARS", "Robotics", "team", "Build a machine that can hold its ground.", "ROBOWARS puts engineered machines into a controlled arena where design, control, and durability meet."),
-  event("a9", "Takeshi's Castle", "Robotics", "team", "Navigate a chaotic challenge with control and teamwork.", "Takeshi's Castle combines fast decisions, coordination, and practical problem-solving under pressure."),
-  event("a10", "Mazemerize", "Robotics", "team", "Navigate the maze with precision and patience.", "Mazemerize challenges teams to guide a robot through a complex route while handling turns and obstacles."),
-  event("a11", "Robo-Soccer", "Robotics", "team", "Turn teamwork into precise robotic play.", "Robo-Soccer brings autonomous or remotely controlled machines onto the field for a fast, technical match."),
-  event("a12", "Hackathon", "Robotics", "team", "Build and present a working solution before time runs out.", "Hackathon challenges teams to turn a problem into a tested prototype through rapid collaboration."),
-  event("a13", "TECHZIBITION", "Robotics", "team", "Showcase a technical idea that deserves attention.", "TECHZIBITION is a focused showcase for an inventive project, prototype, or technical concept."),
-  event("a14", "E-FOOTBALL", "Gaming", "solo", "Control the pitch and compete for the win.", "E-FOOTBALL puts individual players into a competitive football bracket."),
-  event("a15", "VALORANT", "Gaming", "team", "Coordinate your squad and outplay the opposition.", "VALORANT rewards communication, timing, and adaptable tactics in a competitive team battle."),
-  event("a16", "FREEFIRE", "Gaming", "team", "Coordinate your squad and survive the final circle.", "FREEFIRE is a team battle built around communication, timing, and adaptable tactics."),
-  event("a17", "CHESS", "Gaming", "solo", "Think ahead and outplay your opponent.", "CHESS brings together players for focused, strategic matches where patience and calculation decide the result."),
-  event("a18", "BUG BOUNTY", "Tech", "solo", "Find the flaw and explain how to fix it.", "BUG BOUNTY tests careful investigation, debugging, and practical security thinking."),
-  event("a19", "CODE CHRONICLES", "Tech", "solo", "Solve a story told through code and logic.", "CODE CHRONICLES is a programming challenge built around layered problems and changing clues."),
-  event("a20", "CSS BATTLE", "Tech", "solo", "Style, structure, and precision in a front-end showdown.", "CSS BATTLE asks participants to recreate visual targets with elegant, accurate HTML and CSS."),
-  event("a21", "J-CTF", "Tech", "solo", "Find the weakness, capture the flag, and learn why it works.", "J-CTF introduces participants to practical security thinking through carefully designed challenges."),
-  event("a22", "J-ICPC", "Tech", "team", "Solve demanding problems as one programming unit.", "J-ICPC is a team programming contest that rewards communication and algorithmic depth."),
-  event("a23", "SEANCE", "Miscellaneous", "team", "Follow the clues and uncover the hidden answer.", "SEANCE is a collaborative mystery challenge filled with layered clues and patterns."),
-  event("a24", "CODEHUNT", "Miscellaneous", "team", "Hunt through puzzles, hints, and hidden logic.", "CODEHUNT blends puzzles and programming into a team expedition."),
-  event("a25", "MARATHON", "Miscellaneous", "team", "Stay focused and finish the challenge together.", "MARATHON rewards endurance, planning, and consistent teamwork from start to finish."),
-  event("a26", "SPUTNIK", "Mechanized", "team", "Design, test, and launch your way through the challenge.", "SPUTNIK is a team event about mechanical thinking, experimentation, and reliable execution."),
-  event("a27", "AEROTWIST", "Mechanized", "team", "Take engineering ideas from the ground to the skies.", "AEROTWIST invites teams to explore flight, motion, and design through an engineering-focused challenge."),
-  event("a28", "IC ENGINE", "Mechanized", "team", "Understand motion through mechanical design.", "IC ENGINE challenges teams to apply engineering principles to a practical mechanical problem."),
-  event("a29", "B-PLAN", "Management", "team", "Turn a promising idea into a convincing business plan.", "B-PLAN gives teams the opportunity to shape a business idea from problem discovery through execution."),
-  event("a30", "TRADERUSH", "Management", "solo", "Read the market and make the right move at speed.", "TRADERUSH is a fast decision-making simulation where every choice affects the next opportunity."),
-  event("a31", "STRATEDGEX", "Management", "team", "Solve a strategic problem before the clock runs out.", "STRATEDGEX places teams in a business scenario with incomplete information and competing priorities."),
-  event("a32", "CASE STUDY", "Management", "team", "Analyze a problem and present a practical solution.", "CASE STUDY tests research, reasoning, and the ability to defend a clear recommendation."),
+  event("a1", "INSTRIDGE", "Civilized", "team", "Build an intelligent bridge from insight to action.", "Instridge asks teams to study a real-world situation, identify the forces shaping it, and propose a clear intervention.",5,5),
+  event("a2", "Rotolare", "Civilized", "team", "Roll forward with strategy, speed, and teamwork.", "Rotolare combines planning, coordination, and fast decisions in a lively team challenge. Participants must adapt to changing tasks, keep communication sharp, and use every round to improve their route to the final objective.", 4, 5),
+  event("a3", "Rise n Build", "Civilized", "team", "Create something useful from a bold shared idea.", "Rise n Build is a collaborative challenge where teams move from a rough concept to a working model or convincing prototype. Judges will look for originality, feasibility, teamwork, and the clarity of the story behind the build.",5,5),
+  event("a4", "Bridge The Gap", "Civilized", "team", "Connect ideas, people, and perspectives.", "Bridge the Gap challenges teams to design a practical solution for a social or community problem. Present your approach, defend your choices, and show how thoughtful collaboration can turn divided perspectives into measurable progress.",5,5),
+  event("a5", "Survey Hunt", "Civilized", "team", "Explore, observe, and uncover the right answers.", "Survey Hunt rewards careful observation, collaboration, and the ability to turn field findings into useful conclusions.",5,5),
+  event("a6", "Circuitrix", "Robotics", "team", "Trace the signal from problem to working circuit.", "Circuitrix combines electronics knowledge, debugging, and hands-on collaboration."),
+  event("a7", "Robowar", "Robotics", "team", "Build a machine that can hold its ground.", "ROBOWARS puts engineered machines into a controlled arena where design, control, and durability meet.",5,5),
+  event("a8", "Takeshi's Castle", "Robotics", "team", "Navigate a chaotic challenge with control and teamwork.", "Takeshi's Castle combines fast decisions, coordination, and practical problem-solving under pressure.",5,5),
+  event("a9", "RoboSoccer", "Robotics", "team", "Turn teamwork into precise robotic play.", "Robo-Soccer brings autonomous or remotely controlled machines onto the field for a fast, technical match."),
+  event("a10", "Chess", "Gaming", "solo", "Think ahead and outplay your opponent.", "CHESS brings together players for focused, strategic matches where patience and calculation decide the result."),
+  event("a11", "Free Fire", "Gaming", "team", "Coordinate your squad and survive the final circle.", "FREEFIRE is a team battle built around communication, timing, and adaptable tactics.",4,4),
+  event("a12", "Code Chronicles", "Technical", "solo", "Solve a story told through code and logic.", "CODE CHRONICLES is a programming challenge built around layered problems and changing clues."),
+  event("a13", "J-ICPC", "Technical", "team", "Solve demanding problems as one programming unit.", "J-ICPC is a team programming contest that rewards communication and algorithmic depth.", 5, 5),
+  event("a14", "CSS Battle", "Technical", "solo", "Style, structure, and precision in a front-end showdown.", "CSS BATTLE asks participants to recreate visual targets with elegant, accurate HTML and CSS."),
+  event("a15", "Paradigm Shift", "Technical", "team", "Build and present a working solution before time runs out.", "Hackathon challenges teams to turn a problem into a tested prototype through rapid collaboration."),
+  event("a16", "J-CTF", "Technical", "solo", "Find the weakness, capture the flag, and learn why it works.", "J-CTF introduces participants to practical security thinking through carefully designed challenges."),
+  event("a17", "Techzibition", "Technical", "team", "Showcase a technical idea that deserves attention.", "TECHZIBITION is a focused showcase for an inventive project, prototype, or technical concept.",1,4),
+  event("a18", "Seance 7.0", "Miscellaneous", "team", "Follow the clues and uncover the hidden answer.", "SEANCE is a collaborative mystery challenge filled with layered clues and patterns.",1,3),
+  event("a19", "CodeHunt", "Miscellaneous", "team", "Hunt through puzzles, hints, and hidden logic.", "CODEHUNT blends puzzles and programming into a team expedition.",5,5),
+  event("a20","Capture it","Miscellaneous","solo","One shot, one chance, one winner — capture the moment, survive the game, and let your lens decide your fate!","Capture it is a solo photography competition that challenges participants to capture the essence of a moment, showcasing their creativity, technical skills, and storytelling through the lens."),
+  event("a21","VERBATIUM","Miscellaneous","solo","A competitive debating event where participants present, defend, and challenge ideas with clarity, logic, and persuasive reasoning.","VERBATIUM is a solo debating competition that tests participants' ability to present, defend, and challenge ideas with clarity, logic, and persuasive reasoning."),
+  event("a22", "MATHEMANIA", "Miscellaneous", "team", "A competitive mathematics event where participants solve challenging problems and puzzles, testing analytical thinking, speed, and problem-solving skills.", "MATHEMANIA is a team-based mathematics competition that challenges participants to solve complex problems and puzzles, testing their analytical thinking, speed, and problem-solving skills."),
+  event("a23", "Sputnik", "Aeronautical", "team", "Design, test, and launch your way through the challenge.", "SPUTNIK is a team event about mechanical thinking, experimentation, and reliable execution."),
+  event("a24", "AeroTwist", "Aeronautical", "team", "Take engineering ideas from the ground to the skies.", "AEROTWIST invites teams to explore flight, motion, and design through an engineering-focused challenge."),
+  event("a25", "SHARK TANK JOLU", "Management", "team", "Turn a promising idea into a convincing business plan.", "B-PLAN gives teams the opportunity to shape a business idea from problem discovery through execution.",2,5),
+  event("a26", "Stratedgex", "Management", "team", "Solve a strategic problem before the clock runs out.", "STRATEDGEX places teams in a business scenario with incomplete information and competing priorities.",1,3),
+  event("a27", "Case Study Competition", "Management", "team", "Analyze a problem and present a practical solution.", "CASE STUDY tests research, reasoning, and the ability to defend a clear recommendation.",3,3),
 ];
 
 const categoryIcons: Record<EventCategory, string> = {
   Civilized: "🌉",
   Gaming: "🎮",
   Management: "💼",
-  Mechanized: "⚙️",
+  Aeronautical: "✈️",
   Robotics: "🤖",
-  Tech: "💻",
+  Technical: "💻",
   Miscellaneous: "✨",
 };
 
@@ -191,7 +188,12 @@ export const mockEvents: Event[] = mockEventRecords.map((record) => ({
     STRATEDGEX: "₹4.5K",
     "CASE STUDY": "₹4.5K",
   }[record.name] ?? "₹0",
-  team_size: record.event_type === "team" ? "3–5 members" : "Individual",
+  team_size:
+    record.event_type === "solo"
+      ? "Individual"
+      : record.min_team_size === record.max_team_size
+        ? `${record.min_team_size} members`
+        : `${record.min_team_size}–${record.max_team_size} members`,
   registration_open: true,
   icon: categoryIcons[record.category],
 }));

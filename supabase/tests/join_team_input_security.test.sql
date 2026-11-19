@@ -5,7 +5,7 @@ select
 
 select
     is(
-        has_function_privilege('anon', 'public.join_team(text)', 'EXECUTE'),
+        has_function_privilege('anon', 'public.join_team(text, boolean)', 'EXECUTE'),
         false,
         'anonymous users cannot execute join_team'
     );
@@ -14,7 +14,7 @@ select
     is(
         has_function_privilege(
             'authenticated',
-            'public.join_team(text)',
+            'public.join_team(text, boolean)',
             'EXECUTE'
         ),
         true,
@@ -37,7 +37,7 @@ set
 
 select
     throws_ok(
-        'select public.join_team(''ANY-CODE'')',
+        'select public.join_team(''ANY-CODE'', true)',
         'P0001',
         'Authentication required',
         'join_team rejects a session without an authenticated user ID'
@@ -54,7 +54,7 @@ select
 
 select
     throws_ok(
-        'select public.join_team(null)',
+        'select public.join_team(null, true)',
         'P0001',
         'Team code cannot be empty',
         'join_team rejects a null team code'
@@ -62,7 +62,7 @@ select
 
 select
     throws_ok(
-        'select public.join_team('''')',
+        'select public.join_team('''', true)',
         'P0001',
         'Team code cannot be empty',
         'join_team rejects an empty team code'
@@ -70,7 +70,7 @@ select
 
 select
     throws_ok(
-        'select public.join_team(''   '')',
+        'select public.join_team(''   '', true)',
         'P0001',
         'Team code cannot be empty',
         'join_team rejects a whitespace-only team code'
