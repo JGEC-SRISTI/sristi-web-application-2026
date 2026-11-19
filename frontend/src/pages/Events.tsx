@@ -18,6 +18,7 @@ import {
 } from "../data/events";
 import { getEventImage } from "../data/events";
 import { supabase } from "../lib/supabase";
+import { prefetchEventBrochureUrls } from "../services/teamService";
 
 interface DropdownProps {
   label: string;
@@ -491,6 +492,7 @@ const Events = () => {
         const loadedEvents = (data ?? []) as EventRecord[];
         setEvents(loadedEvents);
         cacheEvents(loadedEvents);
+        void prefetchEventBrochureUrls(loadedEvents.map((event) => event.id)).catch(() => {});
         setLoadError("");
         const lastOpenedSlug = sessionStorage.getItem(LAST_OPENED_EVENT_KEY);
         const lastOpenedIndex = loadedEvents.findIndex(

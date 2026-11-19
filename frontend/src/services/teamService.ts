@@ -34,7 +34,9 @@ export type RegistrationItem = {
   team: TeamInfo | null;
 };
 
-export type RegistrationEvent = Pick<EventRecord, "id" | "slug" | "event_type">;
+export type RegistrationEvent = Pick<EventRecord, "id" | "slug" | "event_type"> & {
+  description?: string;
+};
 
 export function getCachedRegistrationEvent(
   eventSlug: string,
@@ -72,6 +74,10 @@ export function getCachedRegistrationEvent(
       id: row.id,
       slug: "slug" in row && typeof row.slug === "string" ? row.slug : eventSlug,
       event_type: row.event_type,
+      description:
+        "description" in row && typeof row.description === "string"
+          ? row.description
+          : undefined,
     };
   } catch {
     return undefined;
@@ -85,6 +91,76 @@ const eventRegistrationAliases: Partial<Record<string, string>> = {
   robowars: "robowar",
   seance: "seance-7-0",
 };
+
+const EVENT_BROCHURE_CACHE_KEY = "sristi:event-brochures-v1";
+
+export function getCachedEventBrochureUrl(eventId: string): string | null {
+  try {
+    const cached = sessionStorage.getItem(EVENT_BROCHURE_CACHE_KEY);
+    if (!cached) return null;
+    const parsed: unknown = JSON.parse(cached);
+    if (typeof parsed !== "object" || parsed === null) return null;
+    const url = (parsed as Record<string, unknown>)[eventId];
+    return typeof url === "string" ? url : null;
+  } catch {
+    return null;
+  }
+}
+
+function cacheEventBrochureUrls(entries: Record<string, string>) {
+  try {
+    const cached = sessionStorage.getItem(EVENT_BROCHURE_CACHE_KEY);
+    const previous: unknown = cached ? JSON.parse(cached) : {};
+    const existing =
+      typeof previous === "object" && previous !== null
+        ? (previous as Record<string, unknown>)
+        : {};
+    sessionStorage.setItem(
+      EVENT_BROCHURE_CACHE_KEY,
+      JSON.stringify({ ...existing, ...entries }),
+    );
+  } catch {
+    // Brochure links still load from Supabase when session storage is unavailable.
+  }
+}
+
+export async function fetchEventBrochureUrl(eventId: string): Promise<string | null> {
+  const cached = getCachedEventBrochureUrl(eventId);
+  if (cached) return cached;
+
+  const { data, error } = await client()
+    .from("event_files")
+    .select("file_path")
+    .eq("event_id", eventId)
+    .eq("file_type", "brochure")
+    .maybeSingle();
+
+  if (error || !data) return null;
+  const { data: publicUrl } = client()
+    .storage
+    .from("event-files")
+    .getPublicUrl(data.file_path);
+  cacheEventBrochureUrls({ [eventId]: publicUrl.publicUrl });
+  return publicUrl.publicUrl;
+}
+
+export async function prefetchEventBrochureUrls(eventIds: string[]): Promise<void> {
+  if (!eventIds.length) return;
+  const { data, error } = await client()
+    .from("event_files")
+    .select("event_id,file_path")
+    .eq("file_type", "brochure")
+    .in("event_id", eventIds);
+
+  if (error || !data?.length) return;
+  const entries = Object.fromEntries(
+    data.map((file) => [
+      file.event_id,
+      client().storage.from("event-files").getPublicUrl(file.file_path).data.publicUrl,
+    ]),
+  );
+  cacheEventBrochureUrls(entries);
+}
 
 const teamApiUnavailable =
   "Team registration is temporarily unavailable. The event organizers need to update the team service.";
@@ -124,7 +200,7 @@ export async function fetchRegistrationEvent(
 
   const { data } = await client()
     .from("events")
-    .select("id,slug,event_type")
+    .select("id,slug,event_type,description")
     .in("slug", slugs)
     .throwOnError();
 

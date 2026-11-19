@@ -22,9 +22,11 @@ import ViewTeamModal from "../components/teams/ViewTeamModal";
 
 import {
   createTeam,
+  fetchEventBrochureUrl,
   fetchPlayerTeamForEvent,
   fetchRegistrationEvent,
   fetchTeamDetails,
+  getCachedEventBrochureUrl,
   getCachedRegistrationEvent,
   hasSoloRegistration,
   joinTeam,
@@ -242,7 +244,11 @@ const EventDetailContent = ({ event }: { event: Event }) => {
   const [registrationEvent, setRegistrationEvent] = useState<
     RegistrationEvent | null | undefined
   >(() => getCachedRegistrationEvent(event.slug));
-  const [brochureUrl, setBrochureUrl] = useState<string | null>(null);
+  const [brochureUrl, setBrochureUrl] = useState<string | null>(() => {
+    const cachedEvent = getCachedRegistrationEvent(event.slug);
+    return cachedEvent ? getCachedEventBrochureUrl(cachedEvent.id) : null;
+  });
+  const [brochureLoading, setBrochureLoading] = useState(false);
   const [teamMode, setTeamMode] = useState<TeamMode | null>(null);
   const [team, setTeam] = useState<TeamInfo | null>(null);
   const [submittedTeam, setSubmittedTeam] = useState<TeamSubmission | null>(null);
@@ -289,26 +295,23 @@ const EventDetailContent = ({ event }: { event: Event }) => {
   const eventType = registrationEvent?.event_type;
 
   useEffect(() => {
-    const client = supabase;
-    if (!client || !eventId) return;
+    if (!supabase || !eventId) return;
 
     let mounted = true;
-    const loadBrochure = async () => {
-      const { data: brochure, error } = await client
-        .from("event_files")
-        .select("file_path")
-        .eq("event_id", eventId)
-        .eq("file_type", "brochure")
-        .maybeSingle();
+    const cachedUrl = getCachedEventBrochureUrl(eventId);
+    if (cachedUrl) setBrochureUrl(cachedUrl);
+    else setBrochureLoading(true);
 
-      if (error || !brochure || !mounted) return;
-      const { data } = client.storage
-        .from("event-files")
-        .getPublicUrl(brochure.file_path);
-      setBrochureUrl(data.publicUrl);
-    };
+    void fetchEventBrochureUrl(eventId)
+      .then((url) => {
+        if (!mounted) return;
+        setBrochureUrl(url);
+        setBrochureLoading(false);
+      })
+      .catch(() => {
+        if (mounted) setBrochureLoading(false);
+      });
 
-    void loadBrochure();
     return () => {
       mounted = false;
     };
@@ -459,7 +462,7 @@ const EventDetailContent = ({ event }: { event: Event }) => {
 
             <section className="event-detail-info relative text-left">
               <p className="mt-5 font-space-mono text-xs uppercase leading-6 tracking-[0.1em] text-white/65 sm:text-sm">
-                {event.description}
+                {registrationEvent?.description?.trim() || event.description}
               </p>
 
               <div className="mt-6 border-y border-white/15 py-4">
@@ -483,7 +486,7 @@ const EventDetailContent = ({ event }: { event: Event }) => {
                 </div>
               </div>
 
-              {brochureUrl && (
+              {brochureUrl ? (
                 <a
                   href={brochureUrl}
                   target="_blank"
@@ -492,7 +495,11 @@ const EventDetailContent = ({ event }: { event: Event }) => {
                 >
                   View brochure <ExternalLink size={13} />
                 </a>
-              )}
+              ) : brochureLoading ? (
+                <p role="status" className="mt-5 font-space-mono text-[10px] uppercase tracking-[0.18em] text-white/45">
+                  Loading brochure…
+                </p>
+              ) : null}
 
               <div className="mt-10 flex flex-wrap gap-3">
                 {registrationEvent === undefined ? (
