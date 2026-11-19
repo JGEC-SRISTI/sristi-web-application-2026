@@ -36,6 +36,48 @@ export type RegistrationItem = {
 
 export type RegistrationEvent = Pick<EventRecord, "id" | "slug" | "event_type">;
 
+export function getCachedRegistrationEvent(
+  eventSlug: string,
+): RegistrationEvent | undefined {
+  try {
+    const cached = sessionStorage.getItem("sristi:events-cache-v1");
+    if (!cached) return undefined;
+    const rows: unknown = JSON.parse(cached);
+    if (!Array.isArray(rows)) return undefined;
+
+    const slugs = [eventSlug];
+    const alias = eventRegistrationAliases[eventSlug];
+    if (alias) slugs.push(alias);
+
+    const row = rows.find(
+      (item) =>
+        typeof item === "object" &&
+        item !== null &&
+        "slug" in item &&
+        typeof item.slug === "string" &&
+        slugs.includes(item.slug),
+    );
+    if (
+      !row ||
+      typeof row !== "object" ||
+      !("id" in row) ||
+      typeof row.id !== "string" ||
+      !("event_type" in row) ||
+      (row.event_type !== "solo" && row.event_type !== "team")
+    ) {
+      return undefined;
+    }
+
+    return {
+      id: row.id,
+      slug: "slug" in row && typeof row.slug === "string" ? row.slug : eventSlug,
+      event_type: row.event_type,
+    };
+  } catch {
+    return undefined;
+  }
+}
+
 const eventRegistrationAliases: Partial<Record<string, string>> = {
   freefire: "free-fire",
   hackathon: "paradigm-shift",

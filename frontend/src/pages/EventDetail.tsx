@@ -25,6 +25,7 @@ import {
   fetchPlayerTeamForEvent,
   fetchRegistrationEvent,
   fetchTeamDetails,
+  getCachedRegistrationEvent,
   hasSoloRegistration,
   joinTeam,
   registerSoloEvent,
@@ -240,7 +241,7 @@ function RegisteredBadge({ note }: { note?: string }) {
 const EventDetailContent = ({ event }: { event: Event }) => {
   const [registrationEvent, setRegistrationEvent] = useState<
     RegistrationEvent | null | undefined
-  >(undefined);
+  >(() => getCachedRegistrationEvent(event.slug));
   const [brochureUrl, setBrochureUrl] = useState<string | null>(null);
   const [teamMode, setTeamMode] = useState<TeamMode | null>(null);
   const [team, setTeam] = useState<TeamInfo | null>(null);
@@ -262,10 +263,17 @@ const EventDetailContent = ({ event }: { event: Event }) => {
 
     fetchRegistrationEvent(event.slug)
       .then((target) => {
-        if (active) setRegistrationEvent(target);
+        if (!active) return;
+        if (target || !getCachedRegistrationEvent(event.slug)) {
+          setRegistrationEvent(target);
+        }
       })
       .catch(() => {
         if (!active) return;
+        if (getCachedRegistrationEvent(event.slug)) {
+          setRegistrationMessage("Using saved event details while the connection recovers.");
+          return;
+        }
         setRegistrationEvent(null);
         setRegistrationMessage(
           "Could not check registration availability. Please reload to try again."
@@ -377,7 +385,7 @@ const EventDetailContent = ({ event }: { event: Event }) => {
   };
 
   const handleTeamSubmit = async (value: string) => {
-    if (!eventId || !teamMode || registrationCheck !== "ready") return;
+    if (!eventId || !teamMode) return;
 
     const existingTeam = team ?? await fetchPlayerTeamForEvent(eventId);
     if (existingTeam) {
@@ -487,16 +495,19 @@ const EventDetailContent = ({ event }: { event: Event }) => {
               )}
 
               <div className="mt-10 flex flex-wrap gap-3">
-                {!registrationEvent ? (
+                {registrationEvent === undefined ? (
+                  <div
+                    role="status"
+                    aria-label="Loading registration options"
+                    className="flex items-center gap-3"
+                  >
+                    <span className="h-10 w-32 animate-pulse rounded-lg border border-white/10 bg-white/5" />
+                    <span className="h-10 w-28 animate-pulse rounded-lg border border-white/10 bg-white/5" />
+                    <span className="sr-only">Loading registration options…</span>
+                  </div>
+                ) : registrationEvent === null ? (
                   <p role="status" className="font-space-mono text-xs text-white/65">
-                    {registrationEvent === undefined
-                      ? "Checking registration availability..."
-                      : registrationMessage ||
-                        "Registration is unavailable for this event."}
-                  </p>
-                ) : registrationCheck === "checking" ? (
-                  <p role="status" className="font-space-mono text-xs text-white/65">
-                    Checking your registration…
+                    {registrationMessage || "Registration is unavailable for this event."}
                   </p>
                 ) : registrationCheck === "failed" ? (
                   <>
@@ -577,6 +588,12 @@ const EventDetailContent = ({ event }: { event: Event }) => {
                   </button>
                 )}
               </div>
+
+              {registrationEvent && registrationCheck === "checking" && (
+                <p role="status" className="mt-3 font-space-mono text-[10px] text-white/55">
+                  Syncing your registration status…
+                </p>
+              )}
 
               {registrationEvent && registrationMessage && (
                 <p

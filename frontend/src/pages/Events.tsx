@@ -140,6 +140,71 @@ interface EventCardProps {
   onClick: () => void;
 }
 
+const EventCardSkeleton = ({ position }: { position: number }) => {
+  const distance = Math.abs(position);
+  const isCenter = distance === 0;
+
+  return (
+    <div
+      aria-hidden="true"
+      className={`event-card event-card-position-${position} flex-shrink-0 ${isCenter ? "z-20" : "z-10"}`}
+      style={{
+        width: isCenter ? "360px" : "240px",
+        transform: `scale(${isCenter ? 1 : 0.88})`,
+        opacity: isCenter ? 1 : 0.55,
+      }}
+    >
+      <div className="event-card-shell overflow-hidden rounded-2xl border border-white/15 bg-[#111116ee] shadow-[0_24px_64px_rgba(0,0,0,0.45)]">
+        <div className="h-52 animate-pulse bg-white/[0.06] sm:h-72" />
+        <div className="space-y-3 px-4 pb-5 pt-4">
+          <div className="h-6 w-2/3 animate-pulse rounded bg-white/10" />
+          {isCenter && (
+            <>
+              <div className="h-3 w-full animate-pulse rounded bg-white/[0.07]" />
+              <div className="h-3 w-4/5 animate-pulse rounded bg-white/[0.07]" />
+              <div className="flex gap-3 pt-1">
+                <div className="h-3 w-1/3 animate-pulse rounded bg-white/[0.06]" />
+                <div className="h-3 w-1/3 animate-pulse rounded bg-white/[0.06]" />
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const EVENTS_CACHE_KEY = "sristi:events-cache-v1";
+
+const readCachedEvents = (): EventRecord[] => {
+  try {
+    const cached = sessionStorage.getItem(EVENTS_CACHE_KEY);
+    if (!cached) return [];
+    const parsed: unknown = JSON.parse(cached);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (event): event is EventRecord =>
+        typeof event === "object" &&
+        event !== null &&
+        typeof event.id === "string" &&
+        typeof event.name === "string" &&
+        typeof event.slug === "string" &&
+        typeof event.event_type === "string" &&
+        typeof event.category === "string",
+    );
+  } catch {
+    return [];
+  }
+};
+
+const cacheEvents = (events: EventRecord[]) => {
+  try {
+    sessionStorage.setItem(EVENTS_CACHE_KEY, JSON.stringify(events));
+  } catch {
+    // The page still works when session storage is unavailable or full.
+  }
+};
+
 const EventCard = ({ event, position, onClick }: EventCardProps) => {
   const sceneRef = useRef<HTMLDivElement>(null);
   const isCenter = position === 0;
@@ -388,8 +453,8 @@ const LAST_OPENED_EVENT_KEY = "sristi:last-opened-event";
 
 const Events = () => {
   const navigate = useNavigate();
-  const [events, setEvents] = useState<EventRecord[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [events, setEvents] = useState<EventRecord[]>(readCachedEvents);
+  const [isLoading, setIsLoading] = useState(events.length === 0);
   const [loadError, setLoadError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("ALL");
@@ -425,11 +490,19 @@ const Events = () => {
         }
         const loadedEvents = (data ?? []) as EventRecord[];
         setEvents(loadedEvents);
+        cacheEvents(loadedEvents);
+        setLoadError("");
         const lastOpenedSlug = sessionStorage.getItem(LAST_OPENED_EVENT_KEY);
         const lastOpenedIndex = loadedEvents.findIndex(
           (event) => event.slug === lastOpenedSlug,
         );
         setActiveIndex(lastOpenedIndex >= 0 ? lastOpenedIndex : 0);
+      }, (error: unknown) => {
+        if (!mounted) return;
+        setIsLoading(false);
+        setLoadError(
+          error instanceof Error ? error.message : "Unable to refresh events.",
+        );
       });
 
     return () => {
@@ -721,11 +794,26 @@ const Events = () => {
             <ChevronRight size={18} />
           </button>
 
-          {isLoading ? (
-            <p className="font-space-mono text-sm uppercase tracking-widest text-white/40">Loading events...</p>
-          ) : loadError ? (
-            <p className="max-w-md text-center font-space-mono text-sm uppercase tracking-widest text-red-300/80">Could not load events: {loadError}</p>
+          {isLoading && events.length === 0 ? (
+            <div
+              role="status"
+              aria-label="Loading the event lineup"
+              className="events-carousel flex items-center justify-center gap-3 sm:gap-5 lg:gap-6"
+            >
+              {[-1, 0, 1].map((position) => (
+                <EventCardSkeleton key={position} position={position} />
+              ))}
+            </div>
           ) : filteredEvents.length > 0 ? (
+            <>
+              {loadError && events.length > 0 && (
+                <p
+                  role="status"
+                  className="absolute bottom-3 left-1/2 z-30 -translate-x-1/2 rounded-full border border-white/10 bg-black/50 px-3 py-1.5 text-center font-space-mono text-[9px] uppercase tracking-wider text-white/55 backdrop-blur"
+                >
+                  Showing saved events — refresh unavailable
+                </p>
+              )}
             <div
               key={filterRevision}
               className="events-carousel event-card-filter-transition flex items-center justify-center gap-3 sm:gap-5 lg:gap-6"
@@ -739,6 +827,9 @@ const Events = () => {
                 />
               ))}
             </div>
+            </>
+          ) : loadError ? (
+            <p className="max-w-md text-center font-space-mono text-sm uppercase tracking-widest text-red-300/80">Could not load events: {loadError}</p>
           ) : (
             <p role="status" className="mx-12 text-center font-space-mono text-sm text-white/60">
               {searchTerm
