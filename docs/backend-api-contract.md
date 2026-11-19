@@ -58,7 +58,7 @@ const { data, error } = await supabase.rpc('register_solo_event', {
 
 Handle the returned `error` for every request. Database functions raise errors for invalid, unauthorized, duplicate, consent, capacity, or registration failures; map those to helpful UI messages rather than relying only on client-side checks.
 
-The consent checkbox must be explicit and must submit `true`; omitted or false consent is rejected. Consent is stored on `team_members.member_info_consent`. It authorizes visibility of the participant's name and team membership to other members of that team only. Do not query `profiles` to display team members: it contains private fields. Use `get_team_roster` for the event UI; it returns only `full_name`, `is_leader`, and `is_you` and rejects authenticated users who are not members of the requested team. `full_name` is null for a membership without recorded consent (for example, legacy membership rows created before the consent field existed); show a generic member label in that case.
+The consent checkbox for creating or joining a team must be explicit and submit `true`; omitted or false consent is rejected. Consent is stored on `team_members.member_info_consent`. Do not query `profiles` to display teammates: it contains private fields. Use `get_team_roster` for the event UI; it returns only `full_name`, `is_leader`, and `is_you`, and names are visible only to authenticated members of that team. The roster does not hide names based on the consent flag.
 
 ## Admin payment and verification-code workflow
 
