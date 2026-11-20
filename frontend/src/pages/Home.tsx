@@ -17,6 +17,7 @@ import Gallery from "../components/Gallary";
 import Contact from "../components/Contact";
 import pinkSoldier from "../assets/images/pink_soldier.png";
 import countdownVideo from "../assets/videos/sristi_countdown.mp4";
+import countdownMobileVideo from "../assets/videos/sristi_countdown_mobile.mp4";
 
 const COUNTDOWN_END = new Date("2026-12-01T00:00:00+05:30").getTime();
 
@@ -38,6 +39,7 @@ const Home = () => {
 
   const [isVideo, setIsVideo] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
+  const [isMobile, setIsMobile] = useState(() => window.matchMedia("(max-width: 640px)").matches);
   const [soldierScroll, setSoldierScroll] = useState(0);
   const [countdown, setCountdown] = useState(() => getCountdown(Date.now()));
   const [showCountdown, setShowCountdown] = useState(() => Date.now() < COUNTDOWN_END);
@@ -71,11 +73,24 @@ const Home = () => {
   }, [showCountdown]);
 
   useEffect(() => {
-    const isMobile = window.matchMedia("(max-width: 768px)").matches;
+    const mobileQuery = window.matchMedia("(max-width: 768px)");
+    const countdownMobileQuery = window.matchMedia("(max-width: 640px)");
 
-    if (isMobile) {
-      setIsVideo(false);
-    }
+    const updateMobileState = () => {
+      setIsMobile(countdownMobileQuery.matches);
+      if (mobileQuery.matches) {
+        setIsVideo(false);
+      }
+    };
+
+    updateMobileState();
+    mobileQuery.addEventListener("change", updateMobileState);
+    countdownMobileQuery.addEventListener("change", updateMobileState);
+
+    return () => {
+      mobileQuery.removeEventListener("change", updateMobileState);
+      countdownMobileQuery.removeEventListener("change", updateMobileState);
+    };
   }, []);
 
   const toggleBackground = () => {
@@ -146,7 +161,7 @@ const Home = () => {
       <main className="countdown-view relative min-h-screen overflow-hidden bg-black text-white">
         <video
           className="absolute inset-0 h-full w-full object-cover"
-          src={countdownVideo}
+          src={isMobile ? countdownMobileVideo : countdownVideo}
           autoPlay
           loop
           muted

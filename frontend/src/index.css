@@ -2305,23 +2305,68 @@ COUNTDOWN OPENING
 
 @media (max-width: 640px) {
   .countdown-stage {
- padding-top: 48vh;
+    padding-top: 52vh;
   }
 
   .countdown-brand {
- font-size: clamp(1.75rem, 9.5vw, 3.25rem);
+    font-size: clamp(1.8rem, 9vw, 2.8rem);
+  }
+
+  .countdown-sristi,
+  .countdown-year {
+    font-size: clamp(1.8rem, 19vw, 2.8rem);
+  }
+
+  .countdown-year {
+    margin-left: 0.28em;
+  }
+
+  .countdown-label {
+    margin-top: 0.55rem;
+    font-size: 0.48rem;
   }
 
   .countdown-clock {
- width: min(420px, 94vw);
+    width: min(420px, 92vw);
+    gap: 0.18rem;
   }
 
   .countdown-number {
- font-size: clamp(2rem, 11vw, 3.5rem);
+    font-size: clamp(1.25rem, 1vw, 2.35rem);
+    letter-spacing: 0.02em;
   }
 
   .countdown-unit-label {
- font-size: 0.52rem;
+    margin-top: 0.4rem;
+    font-size: 0.42rem;
+    letter-spacing: 0.08em;
+  }
+
+  .countdown-enter {
+    max-width: 92vw;
+    min-height: 44px;
+    margin-top: 1.5rem;
+    padding: 0.7rem 0.9rem;
+    font-size: 0.62rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .countdown-stage {
+    padding-inline: 0.75rem;
+  }
+
+  .countdown-sristi,
+  .countdown-year {
+    font-size: clamp(1.55rem, 8.8vw, 2.1rem);
+  }
+
+  .countdown-number {
+    font-size: clamp(1.35rem, 7.5vw, 1.85rem);
+  }
+
+  .countdown-unit-label {
+    font-size: 0.38rem;
   }
 }
 
