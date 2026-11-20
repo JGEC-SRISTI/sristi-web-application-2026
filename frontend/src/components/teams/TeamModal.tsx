@@ -25,7 +25,7 @@ interface TeamModalProps {
   mode: "create" | "join";
   eventName: string;
   onClose: () => void;
-  onSubmit: (value: string, memberInfoConsent: boolean) => Promise<void>;
+  onSubmit: (value: string) => Promise<void>;
 }
 
 interface TeamSuccessModalProps {
@@ -45,7 +45,6 @@ const TeamModal = ({
   onSubmit,
 }: TeamModalProps) => {
   const [value, setValue] = useState("");
-  const [memberInfoConsent, setMemberInfoConsent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [verification, setVerification] = useState<VerificationState>("checking");
@@ -124,14 +123,9 @@ const TeamModal = ({
       setError(isCreate ? "Please enter a team name." : "Please enter your team code.");
       return;
     }
-    if (!memberInfoConsent) {
-      setError("Please consent to share your name with your team members.");
-      return;
-    }
-
     try {
       setLoading(true);
-      await onSubmit(value.trim(), memberInfoConsent);
+      await onSubmit(value.trim());
     } catch (err) {
       setError(
         err instanceof Error
@@ -221,19 +215,6 @@ const TeamModal = ({
             </p>
           </div>
 
-          <label className="flex cursor-pointer items-start gap-3 text-sm leading-5 text-white/75">
-            <input
-              type="checkbox"
-              checked={memberInfoConsent}
-              onChange={(e) => {
-                setMemberInfoConsent(e.target.checked);
-                setError("");
-              }}
-              className="mt-0.5 size-4 shrink-0 accent-pink-500"
-            />
-            <span>I agree to share my name with other members of this team so they can see the team roster.</span>
-          </label>
-
           {error && (
             <div role="alert" className="flex items-start gap-3 rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2.5 text-sm leading-5 text-red-200">
               <CircleAlert size={16} aria-hidden="true" className="mt-0.5 shrink-0" />
@@ -243,7 +224,7 @@ const TeamModal = ({
 
           <button
             type="submit"
-            disabled={loading || verification !== "verified" || !value.trim() || !memberInfoConsent}
+            disabled={loading || verification !== "verified" || !value.trim()}
             className={`flex min-h-12 w-full items-center justify-center gap-2 font-a24 disabled:cursor-not-allowed disabled:opacity-40 ${
               isCreate
                 ? "rounded-lg border border-pink-400 bg-pink-600 px-4 py-3 text-xs uppercase tracking-widest text-white transition-colors enabled:hover:bg-pink-500 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-pink-300"

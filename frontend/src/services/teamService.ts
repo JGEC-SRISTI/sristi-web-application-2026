@@ -296,18 +296,14 @@ export async function fetchPlayerTeamForEvent(
 export async function createTeam(
   eventId: string,
   teamName: string,
-  memberInfoConsent: boolean,
 ): Promise<string> {
   const name = teamName.trim();
   if (!name) throw new Error("Enter a team name.");
-  if (!memberInfoConsent) {
-    throw new Error("Consent is required to create a team.");
-  }
 
   const { data, error, status } = await client().rpc("create_team", {
     p_event_id: eventId,
     p_team_name: name,
-    p_member_info_consent: memberInfoConsent,
+    p_member_info_consent: true,
   });
 
   if (error?.code === "PGRST202" || error?.code === "42501" && status === 403) {
@@ -332,17 +328,13 @@ export async function createTeam(
 
 export async function joinTeam(
   teamCode: string,
-  memberInfoConsent: boolean,
 ): Promise<string> {
   const normalizedCode = teamCode.trim().toUpperCase();
   if (!normalizedCode) throw new Error("Enter your team invite code.");
-  if (!memberInfoConsent) {
-    throw new Error("Consent is required to join a team.");
-  }
 
   const { data, error, status } = await client().rpc("join_team", {
     p_team_code: normalizedCode,
-    p_member_info_consent: memberInfoConsent,
+    p_member_info_consent: true,
   });
 
   if (error?.code === "PGRST202" || error?.code === "42501" && status === 403) {
