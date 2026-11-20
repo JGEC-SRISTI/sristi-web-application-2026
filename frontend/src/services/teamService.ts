@@ -35,6 +35,7 @@ export type RegistrationItem = {
 };
 
 export type RegistrationEvent = Pick<EventRecord, "id" | "slug" | "event_type"> & {
+  short_description?: string;
   description?: string;
 };
 
@@ -74,6 +75,10 @@ export function getCachedRegistrationEvent(
       id: row.id,
       slug: "slug" in row && typeof row.slug === "string" ? row.slug : eventSlug,
       event_type: row.event_type,
+      short_description:
+        "short_description" in row && typeof row.short_description === "string"
+          ? row.short_description
+          : undefined,
       description:
         "description" in row && typeof row.description === "string"
           ? row.description
@@ -200,7 +205,7 @@ export async function fetchRegistrationEvent(
 
   const { data } = await client()
     .from("events")
-    .select("id,slug,event_type,description")
+    .select("id,slug,event_type,short_description,description")
     .in("slug", slugs)
     .throwOnError();
 
