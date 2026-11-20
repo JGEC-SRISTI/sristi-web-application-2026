@@ -16,6 +16,22 @@ import AboutSection from "../components/AboutSection";
 import Gallery from "../components/Gallary";
 import Contact from "../components/Contact";
 import pinkSoldier from "../assets/images/pink_soldier.png";
+import countdownVideo from "../assets/videos/sristi_countdown.mp4";
+
+const COUNTDOWN_END = new Date("2026-12-01T00:00:00+05:30").getTime();
+
+const getCountdown = (now: number) => {
+  const remaining = Math.max(COUNTDOWN_END - now, 0);
+
+  return {
+    days: Math.floor(remaining / 86_400_000),
+    hours: Math.floor((remaining / 3_600_000) % 24),
+    minutes: Math.floor((remaining / 60_000) % 60),
+    seconds: Math.floor((remaining / 1_000) % 60),
+  };
+};
+
+const padCountdownPart = (value: number) => String(value).padStart(2, "0");
 
 const Home = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -23,6 +39,36 @@ const Home = () => {
   const [isVideo, setIsVideo] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
   const [soldierScroll, setSoldierScroll] = useState(0);
+  const [countdown, setCountdown] = useState(() => getCountdown(Date.now()));
+  const [showCountdown, setShowCountdown] = useState(() => Date.now() < COUNTDOWN_END);
+  const [showCountdownButton, setShowCountdownButton] = useState(false);
+
+  useEffect(() => {
+    if (!showCountdown) return;
+
+    const updateCountdown = () => {
+      const now = Date.now();
+      if (now >= COUNTDOWN_END) {
+        setCountdown(getCountdown(now));
+        setShowCountdown(false);
+        setShowCountdownButton(false);
+        return;
+      }
+
+      setCountdown(getCountdown(now));
+    };
+
+    updateCountdown();
+    const interval = window.setInterval(updateCountdown, 1000);
+    return () => window.clearInterval(interval);
+  }, [showCountdown]);
+
+  useEffect(() => {
+    if (!showCountdown) return;
+
+    const timeout = window.setTimeout(() => setShowCountdownButton(true), 5000);
+    return () => window.clearTimeout(timeout);
+  }, [showCountdown]);
 
   useEffect(() => {
     const isMobile = window.matchMedia("(max-width: 768px)").matches;
@@ -94,6 +140,63 @@ const Home = () => {
 
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  if (showCountdown) {
+    return (
+      <main className="countdown-view relative min-h-screen overflow-hidden bg-black text-white">
+        <video
+          className="absolute inset-0 h-full w-full object-cover"
+          src={countdownVideo}
+          autoPlay
+          loop
+          muted
+          playsInline
+          aria-hidden="true"
+        />
+        <div className="countdown-overlay absolute inset-0" />
+
+        <div className="countdown-stage relative z-10 flex min-h-screen items-center justify-center px-5 py-10 text-center">
+          <div className="countdown-content w-full max-w-5xl">
+            <h1 className="countdown-brand font-title leading-none">
+              <span className="countdown-sristi">SRISTI</span>{" "}
+              <span className="countdown-year">2K26</span>
+            </h1>
+
+            <p className="countdown-label font-a24">STARTS IN</p>
+
+            <div
+              className="countdown-clock mx-auto mt-3 grid grid-cols-4 items-start"
+              aria-label={`${countdown.days} days, ${countdown.hours} hours, ${countdown.minutes} minutes, ${countdown.seconds} seconds until SRISTI 2K26`}
+            >
+              {[
+                [countdown.days, "DAYS"],
+                [countdown.hours, "HOURS"],
+                [countdown.minutes, "MINUTES"],
+                [countdown.seconds, "SECONDS"],
+              ].map(([value, label]) => (
+                <div className="countdown-unit" key={String(label)}>
+                  <span className="countdown-number font-speedy">
+                    {padCountdownPart(Number(value))}
+                  </span>
+                  <span className="countdown-unit-label font-a24">{String(label)}</span>
+                </div>
+              ))}
+            </div>
+
+            {showCountdownButton && (
+              <button
+                type="button"
+                onClick={() => setShowCountdown(false)}
+                className="countdown-enter font-space-mono"
+              >
+                ENTER THE HOME PAGE
+              </button>
+            )}
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-[#080808] text-white">
