@@ -3,6 +3,7 @@ import { ChevronDown, Circle, Square, Triangle } from "lucide-react";
 import Navbar from "../components/Navbar";
 import LiquidGradientBackground from "../components/LiquidGradientBackground";
 import { mockEvents, type EventCategory } from "../data/events";
+import { eventContacts } from "../data/eventContacts";
 
 const categories: EventCategory[] = [
   "Civilized",
@@ -159,27 +160,32 @@ function ContactUs() {
 
                             {openEvent === event.id && (
                               <span className="contact-coordinator-grid">
-                                {["NAME 1", "NAME 2"].map((coordinator) => (
-                                  <span key={coordinator} className="contact-coordinator-card">
-                                    <span className="contact-coordinator-copy">
-                                      <span className="contact-coordinator-name">{coordinator}</span>
+                                {(() => {
+                                  const contacts = eventContacts[event.id];
+                                  if (!contacts) return null;
+
+                                  return [contacts.coordinator1, contacts.coordinator2].map((coordinator) => (
+                                    <span key={coordinator.name} className="contact-coordinator-card">
+                                      <span className="contact-coordinator-copy">
+                                        <span className="contact-coordinator-name">{coordinator.name}</span>
+                                        <a
+                                          href={`mailto:${coordinator.email}`}
+                                          onClick={(clickEvent) => clickEvent.stopPropagation()}
+                                          className="contact-coordinator-detail contact-coordinator-link"
+                                        >
+                                          {coordinator.email}
+                                        </a>
+                                      </span>
                                       <a
-                                        href="mailto:placeholder@email.com"
-                                        onClick={(clickEvent) => clickEvent.stopPropagation()}
-                                        className="contact-coordinator-detail contact-coordinator-link"
-                                      >
-                                        placeholder@email.com
-                                      </a>
-                                    </span>
-                                      <a
-                                        href="tel:+910000000000"
+                                        href={`tel:${coordinator.phone.replace(/[^+0-9]/g, "")}`}
                                         onClick={(clickEvent) => clickEvent.stopPropagation()}
                                         className="contact-coordinator-phone contact-coordinator-link"
                                       >
-                                        +91 00000 00000
+                                        {coordinator.phone}
                                       </a>
-                                  </span>
-                                ))}
+                                    </span>
+                                  ))
+                                })()}
                               </span>
                             )}
                             </div>
