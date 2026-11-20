@@ -11,6 +11,7 @@ import { Link, Navigate, useParams } from "react-router-dom";
 
 import Navbar from "../components/Navbar";
 import LiquidGradientBackground from "../components/LiquidGradientBackground";
+import { getEventCoordinators } from "../data/eventContacts";
 import { getEventImage, type EventCategory } from "../data/events";
 
 import TeamModal, {
@@ -401,6 +402,7 @@ const EventDetailContent = ({ event }: { event: Event }) => {
     };
   }, [formingTeamId, showTeam, successTeam]);
 
+  const coordinators = getEventCoordinators(event.id);
   const accent = categoryAccent[event.category] ?? "#a78bfa";
   const cardMetadata: EventCardMetadata = eventCardMetadata ?? {
     venue: event.venue,
@@ -506,26 +508,27 @@ const EventDetailContent = ({ event }: { event: Event }) => {
                 {registrationEvent?.short_description?.trim() || event.short_description}
               </p>
 
-              <div className="mt-6 border-y border-white/15 py-4">
-                <h2 className="font-a24 text-sm uppercase tracking-[0.15em] text-white">
-                  Event leads
-                </h2>
+              {coordinators.length > 0 && (
+                <div className="mt-6 border-y border-white/15 py-4">
+                  <h2 className="font-a24 text-sm uppercase tracking-[0.15em] text-white">
+                    Event leads
+                  </h2>
 
-                <div className="mt-4 grid gap-3 font-space-mono text-xs uppercase tracking-[0.12em] text-white/65 sm:grid-cols-2">
-                  <p>
-                    Lead1{" "}
-                    <span className="ml-3 text-white/35">
-                      +91 98765 43210
-                    </span>
-                  </p>
-                  <p>
-                    Lead2{" "}
-                    <span className="ml-3 text-white/35">
-                      +91 98765 43210
-                    </span>
-                  </p>
+                  <ul className="mt-4 grid gap-3 font-space-mono text-xs uppercase tracking-[0.12em] text-white/65 sm:grid-cols-2">
+                    {coordinators.map(({ name, email, phone }) => (
+                      <li key={email} className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                        <span>{name}</span>
+                        <a
+                          href={`tel:${phone.replace(/[^+0-9]/g, "")}`}
+                          className="whitespace-nowrap underline underline-offset-4 transition-colors hover:text-white focus-visible:text-white"
+                        >
+                          {phone}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-              </div>
+              )}
 
               {brochureUrl ? (
                 <a

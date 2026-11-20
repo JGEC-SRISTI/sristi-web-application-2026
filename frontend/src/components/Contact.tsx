@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
+import { Circle, Square, Triangle } from "lucide-react";
 import SristiLogo from "../assets/icons/logo.png";
 import JGECLogo from "../assets/icons/logo1.png";
 import { Link } from "react-router-dom";
@@ -315,16 +317,56 @@ const Contact = () => {
             <h4 className="footer-heading">Legal</h4>
 
             <div className="flex flex-col gap-3 pl-1">
-              <a
-                href="/privacy-policy"
-                className="footer-link"
-              >
-                Privacy Policy
-              </a>
+              <FooterLegalDialog id="sristi-privacy" label="Privacy Policy">
+                <section>
+                  <h3 className="mb-1 font-semibold text-white">Information we collect</h3>
+                  <p>
+                    Google sign-in provides your name and email address. When you complete
+                    your participant profile, we also collect your phone number, college,
+                    roll number, department, and academic year.
+                  </p>
+                </section>
 
-              <Link to="/terms" className="footer-link">
-                Terms
-              </Link>
+                <section>
+                  <h3 className="mb-1 font-semibold text-white">How we use your information</h3>
+                  <p>
+                    Authorized organizers use participant records to verify payments, manage
+                    event registrations, and record attendance and results. If you create or
+                    join a team, signed-in members of that team can see your name on the roster.
+                  </p>
+                </section>
+
+                <section>
+                  <h3 className="mb-1 font-semibold text-white">Account and browser storage</h3>
+                  <p>
+                    Supabase stores participant records. Your browser stores your sign-in
+                    session so you can stay signed in between visits.
+                  </p>
+                </section>
+
+                <section>
+                  <h3 className="mb-1 font-semibold text-white">Privacy questions</h3>
+                  <p>Use the General Queries contact in the homepage footer to reach the organizers.</p>
+                </section>
+              </FooterLegalDialog>
+
+              <FooterLegalDialog id="sristi-terms" label="Terms" title="Terms & Conditions">
+                <p>
+                  Welcome to SRISTI 2K26, the techno-management fest of Jalpaiguri
+                  Government Engineering College.
+                </p>
+                <section>
+                  <h3 className="mb-1 font-semibold text-white">Use of the site</h3>
+                  <p>Use this site for festival information and provide accurate details when registering.</p>
+                </section>
+                <section>
+                  <h3 className="mb-1 font-semibold text-white">Event registrations</h3>
+                  <p>
+                    Registrations are subject to availability and the rules for each event.
+                    Contact the organizers with questions about cancellations.
+                  </p>
+                </section>
+              </FooterLegalDialog>
 
               <Link to="/events" className="footer-link">
                 Games
@@ -344,14 +386,16 @@ const Contact = () => {
           ref={wordmarkRef}
           className="contact-wordmark-wrapper"
         >
-          <div
-            className="contact-wordmark"
+          <a
+            href="#home-hero"
+            aria-label="SRISTI 2K26, back to top"
+            className="contact-wordmark focus-visible:outline-2 focus-visible:outline-pink-400"
             style={{
               "--fill-level": `${fillProgress * 100}%`,
             } as React.CSSProperties}
           >
             sristi'26
-          </div>
+          </a>
         </div>
 
       </div>
@@ -359,5 +403,76 @@ const Contact = () => {
     </section>
   );
 };
+
+interface FooterLegalDialogProps {
+  id: string;
+  label: string;
+  title?: string;
+  children: ReactNode;
+}
+
+function FooterLegalDialog({ id, label, title = label, children }: FooterLegalDialogProps) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+
+  return (
+    <>
+      <button
+        type="button"
+        className="footer-link text-left focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-pink-400"
+        aria-haspopup="dialog"
+        aria-controls={`${id}-dialog`}
+        onClick={() => dialogRef.current?.showModal()}
+      >
+        {label}
+      </button>
+      <dialog
+        ref={dialogRef}
+        id={`${id}-dialog`}
+        aria-labelledby={`${id}-title`}
+        className="footer-legal-dialog fixed inset-0 m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-3xl overflow-y-auto overscroll-contain border border-pink-500/50 bg-[#0d0a0c] text-white shadow-[0_0_40px_rgba(236,72,153,0.18)] backdrop:bg-black/75 backdrop:backdrop-blur-sm"
+        onKeyDown={(event) => event.stopPropagation()}
+        onClick={(event) => {
+          const dialog = event.currentTarget;
+          if (event.target !== dialog) return;
+
+          const { left, right, top, bottom } = dialog.getBoundingClientRect();
+          const { clientX, clientY } = event;
+          if (clientX < left || clientX > right || clientY < top || clientY > bottom) {
+            dialog.close();
+          }
+        }}
+      >
+        <div className="p-5 sm:p-7">
+          <header className="flex items-start justify-between gap-3 border-b border-pink-500/25 pb-4">
+            <div>
+              <div className="mb-2 flex items-center gap-2.5 text-pink-400">
+                <div aria-hidden="true" className="flex items-center gap-1">
+                  <Circle size={13} />
+                  <Triangle size={13} />
+                  <Square size={13} />
+                </div>
+                <p className="font-mono text-xs tracking-widest">SRISTI 2K26</p>
+              </div>
+              <h2 id={`${id}-title`} className="font-title text-base leading-snug sm:text-xl">
+                {title}
+              </h2>
+            </div>
+            <button
+              type="button"
+              className="shrink-0 border border-pink-500/45 px-3 py-2 font-mono text-xs text-pink-300 hover:bg-pink-500 hover:text-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-400"
+              onClick={() => dialogRef.current?.close()}
+            >
+              Close
+            </button>
+          </header>
+
+          <div className="mt-4 space-y-4 font-mono text-sm leading-relaxed text-white/75">
+            {children}
+          </div>
+        </div>
+      </dialog>
+    </>
+  );
+}
 
 export default Contact;

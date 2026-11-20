@@ -6,10 +6,10 @@ export interface EventCoordinator {
 
 export interface EventContact {
   coordinator1: EventCoordinator;
-  coordinator2: EventCoordinator;
+  coordinator2?: EventCoordinator;
 }
 
-export const eventContacts: Record<string, EventContact> = {
+const eventContacts: Partial<Record<string, EventContact>> = {
   a1: {
     coordinator1: {
       name: "Gaurav Saha",
@@ -256,11 +256,6 @@ export const eventContacts: Record<string, EventContact> = {
       email: "dm2843@ee.jgec.ac.in",
       phone: "+91 7865997544",
     },
-    coordinator2: {
-      name: "VERBATIUM 2",
-      email: "placeholder@email.com",
-      phone: "+91 00000 00000",
-    },
   },
   a22: {
     coordinator1: {
@@ -335,3 +330,11 @@ export const eventContacts: Record<string, EventContact> = {
     },
   },
 };
+
+export function getEventCoordinators(eventId: string): EventCoordinator[] {
+  const contacts = eventContacts[eventId];
+  if (!contacts) return [];
+
+  const { coordinator1, coordinator2 } = contacts;
+  return coordinator2 ? [coordinator1, coordinator2] : [coordinator1];
+}

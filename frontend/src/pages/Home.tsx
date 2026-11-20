@@ -167,8 +167,11 @@ const Home = () => {
 
         {/* CINEMATIC HERO */}
         <div
-        ref={heroRef}
-        className="hero-stage relative z-10 min-h-screen flex items-center justify-center px-5 pt-30 pb-16">
+          id="home-hero"
+          ref={heroRef}
+          tabIndex={-1}
+          className="hero-stage relative z-10 min-h-screen flex items-center justify-center px-5 pt-30 pb-16"
+        >
           <div className="hero-content w-full max-w-7xl mx-auto text-center">
 
             {/* Intro label */}
