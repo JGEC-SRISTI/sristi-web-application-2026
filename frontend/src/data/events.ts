@@ -42,7 +42,7 @@ export interface Event {
 }
 
 const postImageModules = import.meta.glob(
-  "../assets/images/posts/event_image-*",
+  "../assets/images/posts/event[-_]image[-_]*",
   {
     eager: true,
     query: "?url",
@@ -58,26 +58,25 @@ const postImages = Object.entries(postImageModules).reduce<
 >((images, [path, image]) => {
   const filename = path.split("/").pop() ?? "";
   const name = filename
-    .replace(/^event_image-/, "")
+    .replace(/^event[-_]image[-_]/, "")
     .replace(/\.[^.]+$/, "");
   images[normalizeImageName(name)] = image;
   return images;
 }, {});
 
 const eventImageAliases: Record<string, string> = {
-  circuitrix: "not-found",
-  hackathon: "Paradigm_Shift",
-  mazemerize: "Mazemarize",
-  robowars: "Robowar",
-  seance: "Seance_60",
+  captureit: "photography",
+  casestudycompetition: "casestudy",
+  hackathon: "paradigmshift",
+  mazemerize: "mazemarize",
+  robowars: "robowar",
+  seance70: "seance",
 };
 
-const getEventImage = (title: string) =>
-  postImages[
-    normalizeImageName(
-      eventImageAliases[normalizeImageName(title)] ?? title,
-    )
-  ] ?? postImages[normalizeImageName("not-found")];
+const getEventImage = (title: string) => {
+  const name = normalizeImageName(title);
+  return postImages[name] ?? postImages[eventImageAliases[name]] ?? postImages.notfound;
+};
 
 export { getEventImage };
 

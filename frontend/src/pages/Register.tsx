@@ -130,9 +130,9 @@ const Register = () => {
     let filteredValue = value;
 
     if (name === "college_roll") {
-      filteredValue = value.replace(/[^0-9]/g, "");
+      filteredValue = value.replace(/[^0-9 ]/g, "");
     } else if (name === "college_name" || name === "department") {
-      filteredValue = value.replace(/[^a-zA-Z]/g, "");
+      filteredValue = value.replace(/[^a-zA-Z ]/g, "");
     }
 
     setForm((previous) => ({
@@ -333,7 +333,7 @@ const Register = () => {
               <input
                 id="college-name"
                 name="college_name"
-                pattern="[A-Za-z]+"
+                pattern="[A-Za-z ]+"
                 aria-describedby="college-name-format"
                 value={form.college_name}
                 onChange={handleChange}
@@ -342,7 +342,7 @@ const Register = () => {
                 required
               />
               <p id="college-name-format" className="mt-1 text-xs text-gray-400">
-                Letters A–Z and a–z only.
+                Letters A–Z, a–z, and spaces only.
               </p>
             </div>
 
@@ -351,8 +351,7 @@ const Register = () => {
               <input
                 id="college-roll"
                 name="college_roll"
-                inputMode="numeric"
-                pattern="[0-9]+"
+                pattern="[0-9 ]+"
                 aria-describedby="college-roll-format"
                 value={form.college_roll}
                 onChange={handleChange}
@@ -361,7 +360,7 @@ const Register = () => {
                 required
               />
               <p id="college-roll-format" className="mt-1 text-xs text-gray-400">
-                Digits 0–9 only.
+                Digits 0–9 and spaces only.
               </p>
             </div>
 
@@ -370,7 +369,7 @@ const Register = () => {
               <input
                 id="department"
                 name="department"
-                pattern="[A-Za-z]+"
+                pattern="[A-Za-z ]+"
                 aria-describedby="department-format"
                 value={form.department}
                 onChange={handleChange}
@@ -379,7 +378,7 @@ const Register = () => {
                 required
               />
               <p id="department-format" className="mt-1 text-xs text-gray-400">
-                Letters A–Z and a–z only.
+                Letters A–Z, a–z, and spaces only.
               </p>
             </div>
 
