@@ -7,6 +7,7 @@ export interface EventCoordinator {
 export interface EventContact {
   coordinator1: EventCoordinator;
   coordinator2?: EventCoordinator;
+  coordinator3?: EventCoordinator;
 }
 
 const eventContacts: Partial<Record<string, EventContact>> = {
@@ -201,6 +202,11 @@ const eventContacts: Partial<Record<string, EventContact>> = {
       email: "sd2818@it.jgec.ac.in",
       phone: "+91 7318725154",
     },
+    coordinator3: {
+      name: "Tiyasa Patra",
+      email: "tp2867@cse.jgec.ac.in",
+      phone: "+91 7908606962",
+    },
   },
   a17: {
     coordinator1: {
@@ -335,6 +341,6 @@ export function getEventCoordinators(eventId: string): EventCoordinator[] {
   const contacts = eventContacts[eventId];
   if (!contacts) return [];
 
-  const { coordinator1, coordinator2 } = contacts;
-  return coordinator2 ? [coordinator1, coordinator2] : [coordinator1];
+  const { coordinator1, coordinator2, coordinator3 } = contacts;
+  return [coordinator1, coordinator2, coordinator3].filter((coordinator) => coordinator !== undefined);
 }
