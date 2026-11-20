@@ -462,7 +462,7 @@ const EventDetailContent = ({ event }: { event: Event }) => {
 
             <section className="event-detail-info relative text-left">
               <p className="mt-5 font-space-mono text-xs uppercase leading-6 tracking-[0.1em] text-white/65 sm:text-sm">
-                {registrationEvent?.description?.trim() || event.description}
+                {registrationEvent?.short_description?.trim() || event.short_description}
               </p>
 
               <div className="mt-6 border-y border-white/15 py-4">

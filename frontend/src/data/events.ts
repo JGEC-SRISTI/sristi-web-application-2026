@@ -31,6 +31,7 @@ export interface Event {
   image: string;
   category: EventCategory;
   participation: ParticipationType;
+  short_description: string;
   description: string;
   date: string;
   venue: string;
@@ -151,6 +152,7 @@ export const mockEvents: Event[] = mockEventRecords.map((record) => ({
   image: getEventImage(record.name),
   category: record.category,
   participation: record.event_type.toUpperCase() as ParticipationType,
+  short_description: record.short_description,
   description: record.description,
   date: "2026-11-15",
   venue: record.venue,
