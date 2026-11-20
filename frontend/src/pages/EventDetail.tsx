@@ -2,11 +2,9 @@
 import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
-  Calendar,
   CircleCheck,
   ExternalLink,
   MapPin,
-  Trophy,
   Users,
 } from "lucide-react";
 import { Link, Navigate, useParams } from "react-router-dom";
@@ -46,6 +44,13 @@ const categoryAccent: Record<EventCategory, string> = {
   Robotics: "#38bdf8",
   Technical: "#a78bfa",
   Miscellaneous: "#f472b6",
+};
+
+type EventCardMetadata = {
+  venue: string;
+  event_type: "solo" | "team";
+  min_team_size: number | null;
+  max_team_size: number | null;
 };
 
 const EventTitle = ({
@@ -118,7 +123,13 @@ const EventTitle = ({
   );
 };
 
-const EventPoster = ({ event }: { event: Event }) => {
+const EventPoster = ({
+  event,
+  metadata,
+}: {
+  event: Event;
+  metadata: EventCardMetadata;
+}) => {
   const sceneRef = useRef<HTMLDivElement>(null);
   const accent = categoryAccent[event.category] ?? "#a78bfa";
 
@@ -197,25 +208,16 @@ const EventPoster = ({ event }: { event: Event }) => {
             <div className="grid grid-cols-2 gap-x-3 gap-y-3 font-space-mono text-[9px] uppercase tracking-[0.12em] text-white/40">
               <span className="flex min-w-0 items-center gap-2">
                 <MapPin size={12} style={{ color: accent }} />
-                {event.venue}
+                {metadata.venue}
               </span>
 
               <span className="flex min-w-0 items-center gap-2">
                 <Users size={12} style={{ color: accent }} />
-                {event.team_size}
-              </span>
-
-              <span className="flex min-w-0 items-center gap-2">
-                <Calendar size={12} style={{ color: accent }} />
-                {new Date(event.date).toLocaleDateString("en-IN", {
-                  day: "numeric",
-                  month: "short",
-                })}
-              </span>
-
-              <span className="flex min-w-0 items-center gap-2">
-                <Trophy size={12} style={{ color: accent }} />
-                Upto {event.prize_pool}
+                {metadata.event_type === "team"
+                  ? metadata.min_team_size !== null && metadata.max_team_size !== null
+                    ? `${metadata.min_team_size}-${metadata.max_team_size} members`
+                    : event.team_size
+                  : "Individual"}
               </span>
             </div>
           </div>
@@ -241,6 +243,8 @@ function RegisteredBadge({ note }: { note?: string }) {
 }
 
 const EventDetailContent = ({ event }: { event: Event }) => {
+  const [eventCardMetadata, setEventCardMetadata] =
+    useState<EventCardMetadata | null>(null);
   const [registrationEvent, setRegistrationEvent] = useState<
     RegistrationEvent | null | undefined
   >(() => getCachedRegistrationEvent(event.slug));
@@ -263,6 +267,37 @@ const EventDetailContent = ({ event }: { event: Event }) => {
   const [registrationCheckAttempt, setRegistrationCheckAttempt] = useState(0);
   const [registrationBusy, setRegistrationBusy] = useState(false);
   const [registrationMessage, setRegistrationMessage] = useState("");
+
+  useEffect(() => {
+    if (!supabase) return;
+
+    let active = true;
+    const client = supabase;
+    const loadEventCardMetadata = async () => {
+      try {
+        const { data, error } = await client
+          .from("events")
+          .select("venue,event_type,min_team_size,max_team_size")
+          .eq("slug", event.slug)
+          .maybeSingle();
+        if (!active) return;
+        if (error) {
+          setRegistrationMessage("Could not load the latest event details.");
+          return;
+        }
+        if (data) setEventCardMetadata(data as EventCardMetadata);
+      } catch {
+        if (active) {
+          setRegistrationMessage("Could not load the latest event details.");
+        }
+      }
+    };
+    void loadEventCardMetadata();
+
+    return () => {
+      active = false;
+    };
+  }, [event.slug]);
 
   useEffect(() => {
     let active = true;
@@ -367,6 +402,12 @@ const EventDetailContent = ({ event }: { event: Event }) => {
   }, [formingTeamId, showTeam, successTeam]);
 
   const accent = categoryAccent[event.category] ?? "#a78bfa";
+  const cardMetadata: EventCardMetadata = eventCardMetadata ?? {
+    venue: event.venue,
+    event_type: event.participation === "TEAM" ? "team" : "solo",
+    min_team_size: null,
+    max_team_size: null,
+  };
 
   const loadSubmittedTeam = async ({ id, mode }: TeamSubmission) => {
     setRegistrationBusy(true);
@@ -445,7 +486,7 @@ const EventDetailContent = ({ event }: { event: Event }) => {
 
         <div className="event-detail-content grid min-h-0 flex-1 items-center gap-8 lg:grid-cols-[minmax(280px,0.55fr)_minmax(0,1.45fr)] lg:gap-8">
           <div className="event-detail-poster-wrap relative right-20 bottom-5 lg:justify-start">
-            <EventPoster event={event} />
+            <EventPoster event={event} metadata={cardMetadata} />
           </div>
 
           <div className="event-detail-copy min-w-0">
