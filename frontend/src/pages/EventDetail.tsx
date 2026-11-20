@@ -430,7 +430,10 @@ const EventDetailContent = ({ event }: { event: Event }) => {
     }
   };
 
-  const handleTeamSubmit = async (value: string) => {
+  const handleTeamSubmit = async (
+    value: string,
+    memberInfoConsent: boolean,
+  ) => {
     if (!eventId || !teamMode) return;
 
     const existingTeam = team ?? await fetchPlayerTeamForEvent(eventId);
@@ -442,8 +445,8 @@ const EventDetailContent = ({ event }: { event: Event }) => {
 
     const id =
       teamMode === "create"
-        ? await createTeam(eventId, value)
-        : await joinTeam(value);
+        ? await createTeam(eventId, value, memberInfoConsent)
+        : await joinTeam(value, memberInfoConsent);
     const submission = { id, mode: teamMode };
     setSubmittedTeam(submission);
     setTeamMode(null);
