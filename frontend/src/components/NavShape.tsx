@@ -1,5 +1,5 @@
 
-type Shape = "square" | "triangle" | "circle" | "house";
+type Shape = "square" | "triangle" | "circle" | "house" | "phone";
 
 interface NavShapeProps {
   shape: Shape;
@@ -39,6 +39,18 @@ const NavShape = ({ shape }: NavShapeProps) => {
         <path
           className="nav-shape"
           d="M10 36 L50 5 L90 36 V90 H10 Z"
+          pathLength="100"
+        />
+      </svg>
+    );
+  }
+
+  if (shape === "phone") {
+    return (
+      <svg viewBox="0 0 100 100" className="w-5 h-5 overflow-visible" aria-hidden="true">
+        <path
+          className="nav-shape"
+          d="M24 10h12a5 5 0 0 1 5 4l3 15a5 5 0 0 1-2 5l-9 7a63 63 0 0 0 26 26l7-9a5 5 0 0 1 5-2l15 3a5 5 0 0 1 4 5v12a12 12 0 0 1-13 12A77 77 0 0 1 12 23a12 12 0 0 1 12-13Z"
           pathLength="100"
         />
       </svg>

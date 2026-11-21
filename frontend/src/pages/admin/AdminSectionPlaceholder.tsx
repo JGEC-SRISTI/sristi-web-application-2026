@@ -133,8 +133,8 @@ export default function AdminSectionPlaceholder({
   const [isLoadingRegistrations, setIsLoadingRegistrations] = useState(false);
   const [registrationsError, setRegistrationsError] = useState("");
   const [registrationReload, setRegistrationReload] = useState(0);
-  const [isExportingTeams, setIsExportingTeams] = useState(false);
-  const [teamExportError, setTeamExportError] = useState("");
+  const [isExportingRegistrations, setIsExportingRegistrations] = useState(false);
+  const [registrationExportError, setRegistrationExportError] = useState("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -270,44 +270,43 @@ export default function AdminSectionPlaceholder({
     await supabase.auth.signOut();
   };
 
-  const exportTeamRegistrations = async () => {
-    if (!supabase || isExportingTeams) return;
-    const teamRegistrations = visibleRegistrations
-      .filter(
-        (registration) =>
-          registration.events?.event_type === "team" &&
-          registration.team_id &&
-          registration.teams,
-      )
+  const exportRegistrations = async () => {
+    if (!supabase || isExportingRegistrations) return;
+    const exportableRegistrations = visibleRegistrations
+      .filter((registration) => registration.events)
       .sort((a, b) => {
-        const eventOrder = (a.events?.name ?? "").localeCompare(
-          b.events?.name ?? "",
-        );
-        return (
-          eventOrder ||
-          (a.teams?.team_name ?? "").localeCompare(b.teams?.team_name ?? "")
-        );
+        const eventOrder = (a.events?.name ?? "").localeCompare(b.events?.name ?? "");
+        const nameA = a.teams?.team_name ?? a.profiles?.full_name ?? "";
+        const nameB = b.teams?.team_name ?? b.profiles?.full_name ?? "";
+        return eventOrder || nameA.localeCompare(nameB);
       });
 
-    if (teamRegistrations.length === 0) return;
+    if (exportableRegistrations.length === 0) return;
 
-    setIsExportingTeams(true);
-    setTeamExportError("");
+    setIsExportingRegistrations(true);
+    setRegistrationExportError("");
     try {
       const teamIds = [
-        ...new Set(teamRegistrations.map((row) => row.team_id!)),
+        ...new Set(
+          exportableRegistrations
+            .filter((row) => row.events?.event_type === "team" && row.team_id)
+            .map((row) => row.team_id!),
+        ),
       ];
-      const { data, error } = await supabase
-        .from("team_members")
-        .select(
-          "team_id,user_id,joined_at,profiles(full_name,college_roll,college_name,department)",
-        )
-        .in("team_id", teamIds)
-        .order("joined_at", { ascending: true });
+      let memberRows: TeamMemberExportRow[] = [];
+      if (teamIds.length > 0) {
+        const { data, error } = await supabase
+          .from("team_members")
+          .select(
+            "team_id,user_id,joined_at,profiles(full_name,college_roll,college_name,department)",
+          )
+          .in("team_id", teamIds)
+          .order("joined_at", { ascending: true });
 
-      if (error) throw error;
+        if (error) throw error;
+        memberRows = (data ?? []) as unknown as TeamMemberExportRow[];
+      }
 
-      const memberRows = (data ?? []) as unknown as TeamMemberExportRow[];
       const membersByTeam = new Map<string, TeamMemberExportRow[]>();
       memberRows.forEach((member) => {
         const members = membersByTeam.get(member.team_id) ?? [];
@@ -317,36 +316,80 @@ export default function AdminSectionPlaceholder({
 
       const headers = [
         "Event",
+        "Row type",
         "Team name",
         "Team code",
-        "Registration status",
-        "Registered at",
-        "Team member",
+        "Participant name",
         "College roll number",
         "College",
         "Department",
         "Team leader",
+        "Registration status",
+        "Registered at",
       ];
       const rows: Array<Array<string | number | null>> = [];
-      teamRegistrations.forEach((registration) => {
-        const team = registration.teams!;
-        const members = membersByTeam.get(registration.team_id!) ?? [];
-        const exportMembers: Array<TeamMemberExportRow | null> = members.length
-          ? members
-          : [null];
-        exportMembers.forEach((member) => {
+      const registrationsByEvent = new Map<string, RegistrationRow[]>();
+      exportableRegistrations.forEach((registration) => {
+        const eventRows = registrationsByEvent.get(registration.event_id) ?? [];
+        eventRows.push(registration);
+        registrationsByEvent.set(registration.event_id, eventRows);
+      });
+
+      registrationsByEvent.forEach((eventRows) => {
+        const eventName = eventRows[0]?.events?.name ?? "";
+        rows.push([eventName, "EVENT", "", "", "", "", "", "", "", "", ""]);
+
+        eventRows.forEach((registration) => {
+          if (registration.events?.event_type !== "team") {
+            const participant = registration.profiles;
+            rows.push([
+              "",
+              "  SOLO PARTICIPANT",
+              "",
+              "",
+              participant?.full_name ?? "",
+              participant?.college_roll ?? "",
+              participant?.college_name ?? "",
+              participant?.department ?? "",
+              "",
+              registration.status,
+              registration.registered_at,
+            ]);
+            return;
+          }
+
+          const team = registration.teams;
+          const members = registration.team_id
+            ? membersByTeam.get(registration.team_id) ?? []
+            : [];
           rows.push([
-            registration.events?.name ?? "",
-            team.team_name,
-            team.team_code,
+            "",
+            "  TEAM",
+            team?.team_name ?? "",
+            team?.team_code ?? "",
+            "",
+            "",
+            "",
+            "",
+            "",
             registration.status,
-            new Date(registration.registered_at).toISOString(),
-            member?.profiles?.full_name ?? "",
-            member?.profiles?.college_roll ?? "",
-            member?.profiles?.college_name ?? "",
-            member?.profiles?.department ?? "",
-            member ? (member.user_id === team.leader_id ? "Yes" : "No") : "",
+            registration.registered_at,
           ]);
+          members.forEach((member) => {
+            rows.push([
+              "",
+              "",
+              "",
+              "    TEAM MEMBER",
+              member.profiles?.full_name ?? "",
+              member.profiles?.college_roll ?? "",
+              member.profiles?.college_name ?? "",
+              member.profiles?.department ?? "",
+              team ? (member.user_id === team.leader_id ? "Yes" : "No") : "",
+              "",
+              "",
+            ]);
+          });
         });
       });
 
@@ -364,19 +407,26 @@ export default function AdminSectionPlaceholder({
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `sristi-team-registrations-${new Date().toISOString().slice(0, 10)}.csv`;
+      const selectedEventName = eventFilter === "all"
+        ? "all-events"
+        : registrations.find((row) => row.event_id === eventFilter)?.events?.name ?? "event";
+      const filenameEvent = selectedEventName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "");
+      link.download = `sristi-${filenameEvent}-registrations-${new Date().toISOString().slice(0, 10)}.csv`;
       document.body.appendChild(link);
       link.click();
       link.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (error) {
-      setTeamExportError(
+      setRegistrationExportError(
         error instanceof Error
           ? error.message
-          : "Could not export team registrations.",
+          : "Could not export registrations.",
       );
     } finally {
-      setIsExportingTeams(false);
+      setIsExportingRegistrations(false);
     }
   };
 
@@ -647,31 +697,32 @@ export default function AdminSectionPlaceholder({
                     />
                     Refresh
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => void exportTeamRegistrations()}
-                    disabled={
-                      isExportingTeams ||
-                      isLoadingRegistrations ||
-                      !visibleRegistrations.some(
-                        (registration) =>
-                          registration.events?.event_type === "team" &&
-                          Boolean(registration.team_id),
-                      )
-                    }
-                    title="Downloads a CSV that can be opened in Google Sheets. It follows the current filters."
-                    className="admin-team-export-button inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-55"
-                  >
-                    <Download size={14} />
-                    {isExportingTeams ? "Preparing…" : "Download teams CSV"}
-                  </button>
+                  <div className="ml-auto flex flex-col items-end gap-1">
+                    <button
+                      type="button"
+                      onClick={() => void exportRegistrations()}
+                      disabled={
+                        isExportingRegistrations ||
+                        isLoadingRegistrations ||
+                        !visibleRegistrations.some((registration) => Boolean(registration.events))
+                      }
+                      title="Downloads a CSV with solo participants and team rosters, following the current filters."
+                      className="admin-team-export-button inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-55"
+                    >
+                      <Download size={14} />
+                      {isExportingRegistrations ? "Preparing…" : "Download CSV"}
+                    </button>
+                    <p className="text-right text-[10px] text-slate-500">
+                      Follows filters; choose an event for a separate file.
+                    </p>
+                  </div>
                 </div>
-                {teamExportError && (
+                {registrationExportError && (
                   <p
                     role="alert"
                     className="border-b border-rose-300/20 bg-rose-300/5 px-5 py-3 text-sm text-rose-200"
                   >
-                    Could not export team registrations: {teamExportError}
+                    Could not export registrations: {registrationExportError}
                   </p>
                 )}
                 {registrationsError && (

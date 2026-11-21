@@ -35,6 +35,7 @@ export type RegistrationItem = {
 };
 
 export type RegistrationEvent = Pick<EventRecord, "id" | "slug" | "event_type"> & {
+  short_description?: string;
   description?: string;
 };
 
@@ -74,6 +75,10 @@ export function getCachedRegistrationEvent(
       id: row.id,
       slug: "slug" in row && typeof row.slug === "string" ? row.slug : eventSlug,
       event_type: row.event_type,
+      short_description:
+        "short_description" in row && typeof row.short_description === "string"
+          ? row.short_description
+          : undefined,
       description:
         "description" in row && typeof row.description === "string"
           ? row.description
@@ -200,7 +205,7 @@ export async function fetchRegistrationEvent(
 
   const { data } = await client()
     .from("events")
-    .select("id,slug,event_type,description")
+    .select("id,slug,event_type,short_description,description")
     .in("slug", slugs)
     .throwOnError();
 
@@ -290,7 +295,7 @@ export async function fetchPlayerTeamForEvent(
 
 export async function createTeam(
   eventId: string,
-  teamName: string
+  teamName: string,
 ): Promise<string> {
   const name = teamName.trim();
   if (!name) throw new Error("Enter a team name.");
@@ -298,6 +303,7 @@ export async function createTeam(
   const { data, error, status } = await client().rpc("create_team", {
     p_event_id: eventId,
     p_team_name: name,
+    p_member_info_consent: true,
   });
 
   if (error?.code === "PGRST202" || error?.code === "42501" && status === 403) {
@@ -320,12 +326,15 @@ export async function createTeam(
   return data;
 }
 
-export async function joinTeam(teamCode: string): Promise<string> {
+export async function joinTeam(
+  teamCode: string,
+): Promise<string> {
   const normalizedCode = teamCode.trim().toUpperCase();
   if (!normalizedCode) throw new Error("Enter your team invite code.");
 
   const { data, error, status } = await client().rpc("join_team", {
     p_team_code: normalizedCode,
+    p_member_info_consent: true,
   });
 
   if (error?.code === "PGRST202" || error?.code === "42501" && status === 403) {
@@ -395,21 +404,23 @@ export async function fetchPlayerRegistrations(): Promise<
   const userId = await getCurrentUserId();
   if (!userId) throw new Error("Sign in to see your registered events.");
 
-  const { data: ownRows, error: ownError } = await db
-    .from("registrations")
-    .select("id,event_id,team_id,status")
-    .eq("user_id", userId)
-    .eq("status", "registered");
+  const [ownResult, membershipResult] = await Promise.all([
+    db
+      .from("registrations")
+      .select("id,event_id,team_id,status")
+      .eq("user_id", userId)
+      .eq("status", "registered"),
+    db
+      .from("team_members")
+      .select("team_id,teams!inner(id,event_id,status)")
+      .eq("user_id", userId)
+      .neq("teams.status", "cancelled"),
+  ]);
 
-  if (ownError) throw ownError;
-
-  const { data: memberships, error: membershipError } = await db
-    .from("team_members")
-    .select("team_id,teams!inner(id,event_id,status)")
-    .eq("user_id", userId)
-    .neq("teams.status", "cancelled");
-
-  if (membershipError) throw membershipError;
+  if (ownResult.error) throw ownResult.error;
+  if (membershipResult.error) throw membershipResult.error;
+  const ownRows = ownResult.data;
+  const memberships = membershipResult.data;
 
   const teamIds = [
     ...new Set((memberships ?? []).map((row) => row.team_id as string)),
@@ -442,25 +453,21 @@ export async function fetchPlayerRegistrations(): Promise<
 
   const eventIds = [...new Set(allRows.map((row) => row.event_id))];
 
-  const { data: events, error: eventsError } = await db
-    .from("events")
-    .select("id,name,slug")
-    .in("id", eventIds);
-
-  if (eventsError) throw eventsError;
-
   const teamIdSet = [
     ...new Set(
       allRows.map((row) => row.team_id).filter(Boolean) as string[]
     ),
   ];
 
-  const teams = await Promise.all(
-    teamIdSet.map((teamId) => fetchTeamDetails(teamId))
-  );
+  const [eventsResult, teams] = await Promise.all([
+    db.from("events").select("id,name,slug").in("id", eventIds),
+    Promise.all(teamIdSet.map((teamId) => fetchTeamDetails(teamId))),
+  ]);
+
+  if (eventsResult.error) throw eventsResult.error;
 
   const teamById = new Map(teams.map((team) => [team.id, team]));
-  const eventById = new Map((events ?? []).map((event) => [event.id, event]));
+  const eventById = new Map((eventsResult.data ?? []).map((event) => [event.id, event]));
 
   return allRows.flatMap((row) => {
     const event = eventById.get(row.event_id);

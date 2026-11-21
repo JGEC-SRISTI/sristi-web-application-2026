@@ -18,6 +18,7 @@ export default function RegisteredEventsDropdown() {
   const panelId = useId();
   const ref = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const hasLoadedRef = useRef(false);
 
   useLayoutEffect(() => {
     if (!open) return;
@@ -72,11 +73,20 @@ export default function RegisteredEventsDropdown() {
     let active = true;
     fetchPlayerRegistrations()
       .then((registrations) => {
-        if (active) setItems(registrations);
+        if (active) {
+          hasLoadedRef.current = true;
+          setItems(registrations);
+        }
       })
       .catch((error: unknown) => {
         if (active) {
-          setMessage(error instanceof Error ? error.message : "Unable to load registrations.");
+          setMessage(
+            hasLoadedRef.current
+              ? "Could not refresh. Showing your last loaded registrations."
+              : error instanceof Error
+                ? error.message
+                : "Unable to load registrations."
+          );
         }
       })
       .finally(() => {
@@ -89,6 +99,7 @@ export default function RegisteredEventsDropdown() {
 
   const toggle = () => {
     if (!open) {
+      // Keep the last result on screen while refreshing in the background.
       setLoading(true);
       setMessage("");
     }

@@ -1,9 +1,12 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { galleryData } from "../data/gallery";
 
 const Gallery = () => {
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [{ activeIndex, animateRotation }, setSlide] = useState({
+    activeIndex: 0,
+    animateRotation: true,
+  });
 
   // Used to detect mouse dragging and touch swiping.
   const pointerStartX = useRef<number | null>(null);
@@ -12,18 +15,21 @@ const Gallery = () => {
 
   const totalImages = galleryData.length;
 
-  const goToSlide = (index: number) => {
-    if (totalImages === 0) return;
+  const stepSlide = useCallback((direction: -1 | 1) => {
+    if (totalImages < 2) return;
 
-    setActiveIndex((index + totalImages) % totalImages);
-  };
+    setSlide((current) => ({
+      activeIndex: (current.activeIndex + direction + totalImages) % totalImages,
+      animateRotation: true,
+    }));
+  }, [totalImages]);
 
   const nextSlide = () => {
-    goToSlide(activeIndex + 1);
+    stepSlide(1);
   };
 
   const previousSlide = () => {
-    goToSlide(activeIndex - 1);
+    stepSlide(-1);
   };
 
   // Keyboard navigation.
@@ -31,16 +37,12 @@ const Gallery = () => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "ArrowLeft") {
         event.preventDefault();
-        setActiveIndex((current) =>
-          (current - 1 + totalImages) % totalImages
-        );
+        stepSlide(-1);
       }
 
       if (event.key === "ArrowRight") {
         event.preventDefault();
-        setActiveIndex((current) =>
-          (current + 1) % totalImages
-        );
+        stepSlide(1);
       }
     };
 
@@ -51,7 +53,7 @@ const Gallery = () => {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [totalImages]);
+  }, [stepSlide, totalImages]);
 
   // Start mouse drag or touch swipe.
   const handlePointerDown = (
@@ -166,8 +168,7 @@ const Gallery = () => {
     );
   }
 
-  // const currentImage = galleryData[activeIndex];  // Currently not used, but can be used for future features.
-  const visibleRange = 4;
+  const visibleRange = 2;
   const panelAngle = 20;
 
   /*
@@ -188,6 +189,14 @@ const Gallery = () => {
     }
 
     return offset;
+  };
+
+  const goToSlide = (index: number) => {
+    const distance = Math.abs(getRelativeOffset(index));
+    if (distance === 0) return;
+
+    // Distant jumps can send panels across the same point on the visible arc.
+    setSlide({ activeIndex: index, animateRotation: distance === 1 });
   };
 
   return (
@@ -310,6 +319,10 @@ const Gallery = () => {
         <div
           className="
             gallery-3d-stage
+            [--gallery-panel-width:44vw]
+            sm:[--gallery-panel-width:36vw]
+            md:[--gallery-panel-width:30vw]
+            lg:[--gallery-panel-width:25vw]
             relative
             w-full
             h-60
@@ -333,6 +346,7 @@ const Gallery = () => {
             const distance = Math.abs(offset);
             const isVisible = distance <= visibleRange;
             const isActive = offset === 0;
+            const panelOffset = Math.sign(offset) * Math.min(distance, visibleRange + 1);
 
             const scale = isActive
               ? 1
@@ -351,11 +365,6 @@ const Gallery = () => {
                   ${isActive ? "gallery-3d-panel-active" : ""}
                   left-1/2
                   top-1/2
-                  w-[44vw]
-                  sm:w-[36vw]
-                  md:w-[30vw]
-                  lg:w-[25vw]
-                  max-w-65
                   aspect-16/10
                   overflow-hidden
                   bg-black
@@ -365,15 +374,18 @@ const Gallery = () => {
                 style={{
                   transform: `
                     translate(-50%, -50%)
-                    rotateY(${offset * panelAngle}deg)
+                    translateZ(calc(var(--gallery-front-depth) - var(--gallery-radius)))
+                    rotateY(${panelOffset * panelAngle}deg)
                     translateZ(var(--gallery-radius))
                     scale(${scale})
                   `,
                   opacity,
+                  visibility: isVisible ? "visible" : "hidden",
                   zIndex: 10 - distance,
                   pointerEvents: isVisible ? "auto" : "none",
-                  transition:
-                    "transform 700ms cubic-bezier(0.22, 1, 0.36, 1), opacity 500ms ease, border-color 500ms ease",
+                  transition: animateRotation
+                    ? "transform 700ms cubic-bezier(0.22, 1, 0.36, 1), opacity 500ms ease, border-color 500ms ease"
+                    : "none",
                   borderColor: isActive
                     ? "rgba(236, 72, 153, 0.8)"
                     : "rgba(255, 255, 255, 0.12)",
@@ -391,6 +403,7 @@ const Gallery = () => {
                     goToSlide(index);
                   }
                 }}
+                aria-hidden={!isVisible}
                 aria-label={`View gallery image ${index + 1}`}
               >
                 <div

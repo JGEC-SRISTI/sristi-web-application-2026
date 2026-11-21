@@ -1,7 +1,7 @@
 begin;
 
 select
-    plan(19);
+    plan(20);
 
 -- These six local-only identities all have completed verification. Every
 -- fixture is rolled back at the end of the test.
@@ -338,11 +338,10 @@ select
     );
 
 select
-    throws_ok(
-        'select public.join_team(current_setting(''test.team_code''), true)',
-        'P0001',
-        'Team is not accepting new members',
-        'the team is registered automatically when it reaches the minimum size'
+    is(
+        public.join_team(current_setting('test.team_code'), true),
+        current_setting('test.team_id') :: uuid,
+        'a forming team continues accepting members after reaching its minimum size'
     );
 
 reset role;
@@ -357,8 +356,8 @@ select
             where
                 team_id = current_setting('test.team_id') :: uuid
         ),
-        3,
-        'automatic registration closes the team at the minimum size'
+        4,
+        'the team remains open after reaching its minimum size'
     );
 
 set
@@ -372,11 +371,17 @@ select
     );
 
 select
-    throws_ok(
-        'select public.join_team(current_setting(''test.team_code''), true)',
-        'P0001',
-        'Team is not accepting new members',
-        'a participant cannot join an automatically registered team'
+    is(
+        public.join_team(current_setting('test.team_code'), true),
+        current_setting('test.team_id') :: uuid,
+        'a fifth participant can join before the leader registers the team'
+    );
+
+select
+    set_config(
+        'request.jwt.claim.sub',
+        '11000000-0000-4000-8000-000000000005',
+        true
     );
 
 select
@@ -425,11 +430,29 @@ select
     );
 
 select
+    throws_ok(
+        $$select public.create_team(
+            '21000000-0000-4000-8000-000000000001',
+            'Duplicate Membership Team',
+            true
+        )$$,
+        'P0001',
+        'User is already a member of a team for this event',
+        'a participant cannot create a second team for the same event'
+    );
+
+select
     set_config(
         'request.jwt.claim.sub',
         '11000000-0000-4000-8000-000000000001',
         true
     );
+
+select set_config(
+    'test.registration_id',
+    public.finalize_team_registration(current_setting('test.team_id')::uuid)::text,
+    true
+);
 
 select
     ok(
@@ -438,7 +461,7 @@ select
             from public.teams
             where id = current_setting('test.team_id') :: uuid
         ) = 'registered',
-        'automatic registration changes the team status to registered'
+        'only the leader action changes the team status to registered'
     );
 
 reset role;
@@ -514,7 +537,7 @@ select
             from
                 public.get_team_roster(current_setting('test.team_id') :: uuid)
         ),
-        3,
+        5,
         'a team member can read the complete team roster'
     );
 
@@ -562,7 +585,7 @@ select
 select
     set_config(
         'request.jwt.claim.sub',
-        '11000000-0000-4000-8000-000000000004',
+        '11000000-0000-4000-8000-000000000005',
         true
     );
 

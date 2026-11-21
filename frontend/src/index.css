@@ -119,7 +119,7 @@ body {
   height: 100%;
   display: block;
   pointer-events: none;
-  opacity: 0.77;
+  opacity: 0.65;
   transition: opacity 0.95s ease;
 }
 
@@ -128,34 +128,41 @@ body {
 }
 
 .contact-us-page .liquid-gradient-background {
-  opacity: 0.5;
+  opacity: 0.65;
 }
 
 .contact-category-card,
 .contact-event-list {
-  isolation: isolate;
-  overflow: hidden;
-  position: relative;
+  border: 1px solid rgba(255, 195, 226, 0.25);
+  background-color: rgba(18, 12, 23, 0.44);
+  backdrop-filter: blur(16px);
 }
 
-.contact-category-card::before,
-.contact-event-list::before {
-  background-image: url("./assets/textures/paper_texture.jpg");
-  background-position: center;
-  background-size: cover;
-  content: "";
-  inset: 0;
-  color: black;
-  opacity: 0.1;
-  pointer-events: none;
-  position: absolute;
-  z-index: 0;
+.contact-category-card {
+  min-height: 6rem;
+  border-radius: 0.875rem;
+  background-image: linear-gradient(120deg, rgba(255, 207, 232, 0.13), rgba(255, 255, 255, 0.04) 60%, rgba(236, 72, 153, 0.08));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 8px 24px rgba(0, 0, 0, 0.16);
+  transition: border-color 0.3s ease, background-color 0.3s ease;
 }
 
-.contact-category-card > *,
-.contact-event-list > * {
-  position: relative;
-  z-index: 1;
+.contact-category-card:hover,
+.contact-category-card[aria-expanded="true"] {
+  border-color: rgba(255, 181, 221, 0.5);
+  background-color: rgba(42, 17, 40, 0.5);
+}
+
+.contact-category-card:focus-visible,
+.contact-social-link:focus-visible,
+.contact-coordinator-link:focus-visible {
+  outline: 2px solid #ff5ca8;
+  outline-offset: 2px;
+}
+
+.contact-event-list {
+  border-top: 0;
+  border-radius: 0 0 0.875rem 0.875rem;
+  background-image: linear-gradient(rgba(255, 210, 236, 0.055), transparent);
 }
 
 .contact-category-shape {
@@ -1397,21 +1404,11 @@ a {
   background: rgba(0, 0, 0, 0.35);
 }
 
-.contact-category-card{
-  min-height: 7.25rem;
-}
-.contact-event-card {
-  min-height: 4.75rem;
-}
-
-.contact-category-card {
-  text-transform: uppercase;
-}
-
 .contact-event-card {
   position: relative;
   isolation: isolate;
   display: flex;
+  min-height: 4.75rem;
   width: calc(100% - 1rem);
   margin-left: 0.5rem;
   flex-direction: column;
@@ -1471,6 +1468,42 @@ a {
   width: 100%;
 }
 
+.contact-director-branches {
+  --branch-indent: clamp(1.25rem, 4vw, 2.5rem);
+  padding: 0 clamp(0.75rem, 3vw, 2rem) clamp(1rem, 3vw, 2rem);
+}
+
+.contact-director-branch {
+  position: relative;
+  display: grid;
+  gap: 0.75rem;
+  padding: 1.25rem 0 0 var(--branch-indent);
+}
+
+.contact-director-branch::before,
+.contact-director-branch::after {
+  position: absolute;
+  left: 0;
+  content: "";
+  background-color: rgba(255, 181, 221, 0.4);
+}
+
+.contact-director-branch::before {
+  top: 0;
+  width: 1px;
+  height: 100%;
+}
+
+.contact-director-branch:last-child::before {
+  height: 1.875rem;
+}
+
+.contact-director-branch::after {
+  top: 1.875rem;
+  width: calc(var(--branch-indent) - 0.5rem);
+  height: 1px;
+}
+
 .contact-event-card.is-open .contact-coordinator-grid {
   animation: contact-event-content-reveal 1100ms cubic-bezier(0.16, 1, 0.3, 1) 120ms both;
 }
@@ -1499,20 +1532,25 @@ a {
   }
 }
 
+.contact-coordinator-card,
+.contact-social-link {
+  min-width: 0;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 0.75rem;
+  padding: 0.8rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  transition: border-color 0.3s ease, background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+}
+
 .contact-coordinator-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-width: 0;
   gap: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 0.75rem;
-  padding: 0.8rem 1rem;
-  background: rgba(0, 0, 0, 0.2);
-  transition: border-color 0.3s ease, background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.contact-coordinator-card:hover {
+.contact-coordinator-card:hover,
+.contact-social-link:hover {
   border-color: rgba(255, 92, 168, 0.55);
   background: rgba(255, 92, 168, 0.08);
   box-shadow: 0 8px 22px rgba(0, 0, 0, 0.25);
@@ -1536,7 +1574,7 @@ a {
 
 .contact-coordinator-detail {
   overflow-wrap: anywhere;
-  color: rgba(255, 255, 255, 0.48);
+  color: rgba(255, 255, 255, 0.76);
   font-family: "JetBrains Mono", monospace;
   font-size: 0.65rem;
   letter-spacing: 0.04em;
@@ -1555,7 +1593,7 @@ a {
 
 .contact-coordinator-phone {
   flex-shrink: 0;
-  color: #3b9cff;
+  color: #8ec4ff;
   font-family: "Space Grotesk", sans-serif;
   font-size: 0.75rem;
   font-weight: 500;
@@ -1573,6 +1611,12 @@ a {
   text-shadow: 0 0 12px rgba(59, 156, 255, 0.65);
 }
 
+@media (max-width: 767px) {
+  .contact-coordinator-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 540px) {
   .contact-category-card {
     min-height: 5.25rem;
@@ -1580,16 +1624,9 @@ a {
     padding-left: 1.25rem;
   }
 
-  .contact-category-card > span:last-child {
-    margin-right: -0.5rem;
-  }
-
-  .contact-category-chevron {
-    display: none;
-  }
-
-  .contact-coordinator-grid {
-    grid-template-columns: 1fr;
+  .contact-category-shape {
+    width: 1rem;
+    height: 1rem;
   }
 
   .contact-coordinator-card {
@@ -1605,6 +1642,12 @@ a {
     -webkit-line-clamp: 2;
     font-size: 0.95rem;
     line-height: 1.15;
+  }
+}
+
+@media (max-width: 420px) {
+  .contact-category-shape {
+    display: none;
   }
 }
 
@@ -2983,6 +3026,21 @@ a {
   color: #ff5ca8;
 }
 
+html:has(.footer-legal-dialog[open]) {
+  overflow: hidden;
+  scrollbar-gutter: stable;
+}
+
+/* The modal sits above the custom cursor in the browser's top layer. */
+html.custom-cursor-active #root .footer-legal-dialog,
+html.custom-cursor-active #root .footer-legal-dialog * {
+  cursor: auto !important;
+}
+
+html.custom-cursor-active #root .footer-legal-dialog button {
+  cursor: pointer !important;
+}
+
 .footer-social {
   display: flex;
   align-items: center;
@@ -3015,7 +3073,10 @@ a {
 ========================================= */
 
 .gallery-3d-stage {
-  --gallery-radius: clamp(420px, 48vw, 700px);
+  --gallery-card-width: min(var(--gallery-panel-width), 16.25rem);
+  /* Keep the front card at the same depth while spacing the cards on the ring. */
+  --gallery-front-depth: clamp(420px, 48vw, 700px);
+  --gallery-radius: calc(3 * var(--gallery-card-width));
 
   perspective: 1600px;
   perspective-origin: 50% 45%;
@@ -3025,6 +3086,7 @@ a {
 }
 
 .gallery-3d-panel {
+  width: var(--gallery-card-width);
   transform-style: preserve-3d;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;

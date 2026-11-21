@@ -101,14 +101,20 @@ function TeamDetails({
   const needsRetry =
     !statusLoading && !statusError && !isRegistered &&
     !isCancelled && sizeMeetsRequirements;
-  const canInvite = team.status === "forming" && !isRegistered && !sizeMeetsRequirements;
+  const canInvite =
+    team.status === "forming" &&
+    !isRegistered &&
+    max !== null &&
+    count < max;
   const statusLabel = isRegistered
     ? "Registered"
     : isCancelled
       ? "Cancelled"
-      : needsRetry || team.status === "registered"
-        ? "Registration pending"
-        : "Forming";
+      : sizeMeetsRequirements
+        ? "Ready to register"
+        : team.status === "registered"
+          ? "Registration pending"
+          : "Forming";
   const needsLeaderVerification = Boolean(needsRetry && isLeader);
   const waitingForLeader = leader && !isLeader && !isRegistered && !isCancelled;
   const busy = registering || deleting;

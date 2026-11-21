@@ -10,6 +10,7 @@ import {
   Square,
   Triangle,
   Circle,
+  Phone,
   CircleUserRound,
   UserRound,
   X,
@@ -285,7 +286,10 @@ const Navbar = ({ onVerifiedPlayerChange }: NavbarProps) => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/register`,
+        redirectTo: new URL(
+          `${import.meta.env.BASE_URL}register`,
+          window.location.origin,
+        ).toString(),
         queryParams: {
           prompt: "select_account",
         },
@@ -482,7 +486,8 @@ const Navbar = ({ onVerifiedPlayerChange }: NavbarProps) => {
             flex
             items-center
             justify-between
-            px-5
+            gap-4
+            px-3 sm:px-5
             py-3
             bg-black/30
             backdrop-blur-xl
@@ -493,12 +498,12 @@ const Navbar = ({ onVerifiedPlayerChange }: NavbarProps) => {
         >
           {/* ================= LOGO ================= */}
 
-          <Link to="/" className="flex items-center gap-3 group">
+          <Link to="/" className="flex shrink-0 items-center gap-2 sm:gap-3 group">
             {/* jgec logo */}
             <img
               src={jgeclogo}
               alt="JGECL Logo"
-              className="w-10 h-10 group-hover:scale-90 transition-transform duration-300"
+              className="w-9 h-9 shrink-0 sm:w-10 sm:h-10 group-hover:scale-90 transition-transform duration-300"
             ></img>
 
             {/* Logo Text */}
@@ -506,14 +511,14 @@ const Navbar = ({ onVerifiedPlayerChange }: NavbarProps) => {
               <img
                 src={sristilogo}
                 alt="SRISTI Logo"
-                className="h-9 group-hover:scale-110 transition-transform duration-300"
+                className="h-8 w-auto sm:h-9 group-hover:scale-110 transition-transform duration-300"
               />
             </div>
           </Link>
 
           {/* ================= DESKTOP NAV ================= */}
 
-          <div className="hidden no-trail md:flex items-center gap-10 py-2">
+          <div className="hidden no-trail xl:flex shrink-0 items-center gap-5 py-2 2xl:gap-10">
             <NavLink to="/" className={navLinkClass}>
               <NavShape shape="square" />
 
@@ -542,7 +547,7 @@ const Navbar = ({ onVerifiedPlayerChange }: NavbarProps) => {
             </NavLink>
 
             <NavLink to="/contact_us" className={navLinkClass}>
-              <NavShape shape="circle" />
+              <NavShape shape="phone" />
 
               <span className="nav-text-wrap font-title text-md">
                 <span className="nav-text">contact us</span>
@@ -566,7 +571,7 @@ const Navbar = ({ onVerifiedPlayerChange }: NavbarProps) => {
 
                     {/* REGISTER / PROFILE */}
 
-          <div className="hidden md:flex items-center">
+          <div className="hidden xl:flex shrink-0 items-center">
 
             {authLoading || profileLoading ? (
               <div className="w-10 h-10 rounded-full border border-pink-500/30 animate-pulse" />
@@ -618,10 +623,13 @@ const Navbar = ({ onVerifiedPlayerChange }: NavbarProps) => {
           <button
             type="button"
             aria-label="Toggle menu"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            aria-expanded={isMenuOpen}
+            aria-controls="site-navigation-menu"
+            onClick={() => setIsMenuOpen((open) => !open)}
             className="
-              md:hidden
+              xl:hidden
               w-10 h-10
+              shrink-0
               flex flex-col
               items-center justify-center
               gap-1.5
@@ -658,12 +666,14 @@ const Navbar = ({ onVerifiedPlayerChange }: NavbarProps) => {
         {/* ================= MOBILE MENU ================= */}
 
         <div
+          id="site-navigation-menu"
+          inert={!isMenuOpen}
           className={`
-            md:hidden
-            overflow-hidden
-            transition-all
+            xl:hidden
+            overflow-x-hidden overflow-y-auto
+            transition-[max-height,opacity]
             duration-300
-            ${isMenuOpen ? "max-h-144 opacity-100" : "max-h-0 opacity-0"}
+            ${isMenuOpen ? "max-h-[calc(100dvh-4.125rem)] opacity-100" : "max-h-0 opacity-0"}
           `}
         >
           <div
@@ -712,7 +722,7 @@ const Navbar = ({ onVerifiedPlayerChange }: NavbarProps) => {
               className={navLinkClass}
               onClick={() => setIsMenuOpen(false)}
             >
-              <Circle size={16} className="inline-block mr-1" />
+              <Phone size={16} className="inline-block mr-1" aria-hidden="true" />
               <span className="font-title">CONTACT US</span>
             </NavLink>
 

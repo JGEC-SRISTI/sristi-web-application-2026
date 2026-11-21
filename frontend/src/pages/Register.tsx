@@ -127,10 +127,17 @@ const Register = () => {
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
+    let filteredValue = value;
+
+    if (name === "college_roll") {
+      filteredValue = value.replace(/[^0-9 ]/g, "");
+    } else if (name === "college_name" || name === "department") {
+      filteredValue = value.replace(/[^a-zA-Z ]/g, "");
+    }
 
     setForm((previous) => ({
       ...previous,
-      [name]: value,
+      [name]: filteredValue,
     }));
   };
 
@@ -322,39 +329,57 @@ const Register = () => {
             </div>
 
             <div>
-              <label className={labelClass}>COLLEGE NAME *</label>
+              <label htmlFor="college-name" className={labelClass}>COLLEGE NAME *</label>
               <input
+                id="college-name"
                 name="college_name"
+                pattern="[A-Za-z ]+"
+                aria-describedby="college-name-format"
                 value={form.college_name}
                 onChange={handleChange}
                 placeholder="Enter college name"
                 className={inputClass}
                 required
               />
+              <p id="college-name-format" className="mt-1 text-xs text-gray-400">
+                Letters A–Z, a–z, and spaces only.
+              </p>
             </div>
 
             <div>
-              <label className={labelClass}>COLLEGE ROLL NUMBER *</label>
+              <label htmlFor="college-roll" className={labelClass}>COLLEGE ROLL NUMBER *</label>
               <input
+                id="college-roll"
                 name="college_roll"
+                pattern="[0-9 ]+"
+                aria-describedby="college-roll-format"
                 value={form.college_roll}
                 onChange={handleChange}
                 placeholder="Enter roll number"
                 className={inputClass}
                 required
               />
+              <p id="college-roll-format" className="mt-1 text-xs text-gray-400">
+                Digits 0–9 and spaces only.
+              </p>
             </div>
 
             <div>
-              <label className={labelClass}>DEPARTMENT *</label>
+              <label htmlFor="department" className={labelClass}>DEPARTMENT *</label>
               <input
+                id="department"
                 name="department"
+                pattern="[A-Za-z ]+"
+                aria-describedby="department-format"
                 value={form.department}
                 onChange={handleChange}
                 placeholder="e.g. CSE, ECE, IT"
                 className={inputClass}
                 required
               />
+              <p id="department-format" className="mt-1 text-xs text-gray-400">
+                Letters A–Z, a–z, and spaces only.
+              </p>
             </div>
 
             <div className="md:col-span-2">
