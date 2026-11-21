@@ -262,6 +262,11 @@ const eventContacts: Partial<Record<string, EventContact>> = {
       email: "dm2843@ee.jgec.ac.in",
       phone: "+91 7865997544",
     },
+    coordinator2: {
+      name: "Satadal Gain",
+      email: "sg2832@ce.jgec.ac.in",
+      phone: "+91 9734193989",
+    },
   },
   a22: {
     coordinator1: {

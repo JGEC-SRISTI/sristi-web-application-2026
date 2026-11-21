@@ -643,10 +643,12 @@ const Gallery = () => {
           flex
           items-center
           justify-center
-          flex-wrap
-          gap-2
+          flex-nowrap
+          gap-1
+          sm:gap-2
           mt-6
-          px-6
+          px-4
+          sm:px-6
         "
       >
         {galleryData.map((_, index) => (
