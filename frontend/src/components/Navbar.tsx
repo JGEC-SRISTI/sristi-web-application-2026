@@ -135,8 +135,13 @@ const Navbar = ({ onVerifiedPlayerChange }: NavbarProps) => {
       return;
     }
 
-    if (!/^[0-9+\-\s()]{10,15}$/.test(phone)) {
-      setEditError("Please enter a valid mobile number.");
+    if (!/^\d{10}$/.test(phone)) {
+      setEditError("Mobile number must contain exactly 10 digits.");
+      return;
+    }
+
+    if (!/^\d+$/.test(collegeRoll)) {
+      setEditError("College roll number must contain digits only.");
       return;
     }
 
@@ -994,11 +999,32 @@ const Navbar = ({ onVerifiedPlayerChange }: NavbarProps) => {
                       type="text"
                       value={editForm[item.key]}
                       onChange={(e) =>
-                        setEditForm((previous) => ({
-                          ...previous,
-                          [item.key!]: e.target.value,
-                        }))
+                        {
+                          const field = item.key!;
+                          const value =
+                            field === "phone" || field === "college_roll"
+                              ? e.target.value.replace(/[^0-9]/g, "")
+                              : e.target.value;
+
+                          setEditForm((previous) => ({
+                            ...previous,
+                            [field]: value,
+                          }));
+                        }
                       }
+                      inputMode={
+                        item.key === "phone" || item.key === "college_roll"
+                          ? "numeric"
+                          : undefined
+                      }
+                      pattern={
+                        item.key === "phone"
+                          ? "[0-9]{10}"
+                          : item.key === "college_roll"
+                            ? "[0-9]+"
+                            : undefined
+                      }
+                      maxLength={item.key === "phone" ? 10 : undefined}
                       className="
                         w-full bg-white/5
                         border border-pink-500/40
