@@ -12,7 +12,13 @@ import { Link, Navigate, useParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import LiquidGradientBackground from "../components/LiquidGradientBackground";
 import { getEventCoordinators } from "../data/eventContacts";
-import { getEventImage, type EventCategory } from "../data/events";
+import {
+  externalRegistrationUrls,
+  getEventImage,
+  mockEvents,
+  type Event,
+  type EventCategory,
+} from "../data/events";
 
 import TeamModal, {
   TeamSuccessModal,
@@ -34,7 +40,6 @@ import {
   type TeamInfo,
 } from "../services/teamService";
 
-import { mockEvents, type Event } from "../data/events";
 import { supabase } from "../lib/supabase";
 
 const categoryAccent: Record<EventCategory, string> = {
@@ -410,6 +415,8 @@ const EventDetailContent = ({ event }: { event: Event }) => {
     min_team_size: null,
     max_team_size: null,
   };
+  const externalRegistrationUrl = externalRegistrationUrls[event.slug];
+  const isTeamEvent = (eventType ?? cardMetadata.event_type) === "team";
 
   const loadSubmittedTeam = async ({ id, mode }: TeamSubmission) => {
     setRegistrationBusy(true);
@@ -546,7 +553,24 @@ const EventDetailContent = ({ event }: { event: Event }) => {
               ) : null}
 
               <div className="mt-10 flex flex-wrap gap-3">
-                {registrationEvent === undefined ? (
+                {externalRegistrationUrl && !team && !registered ? (
+                  <>
+                    <a
+                      href={externalRegistrationUrl}
+                      className="event-action-button event-action-button-primary text-center font-a24"
+                    >
+                      {isTeamEvent ? "Create team" : "Register"}
+                    </a>
+                    {isTeamEvent && (
+                      <a
+                        href={externalRegistrationUrl}
+                        className="event-action-button event-action-button-teal text-center font-a24"
+                      >
+                        Join team
+                      </a>
+                    )}
+                  </>
+                ) : registrationEvent === undefined ? (
                   <div
                     role="status"
                     aria-label="Loading registration options"
