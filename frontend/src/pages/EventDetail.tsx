@@ -71,8 +71,21 @@ const EventTitle = ({
   const mouse = useRef({ x: 0, y: 0 });
   const position = useRef({ x: 0, y: 0 });
   const rafId = useRef(0);
+  const [isMobileInput, setIsMobileInput] = useState(() =>
+    window.matchMedia("(hover: none), (pointer: coarse), (max-width: 768px)").matches,
+  );
 
   useEffect(() => {
+    const mediaQuery = window.matchMedia("(hover: none), (pointer: coarse), (max-width: 768px)");
+    const updateMobileInput = () => setIsMobileInput(mediaQuery.matches);
+    updateMobileInput();
+    mediaQuery.addEventListener("change", updateMobileInput);
+    return () => mediaQuery.removeEventListener("change", updateMobileInput);
+  }, []);
+
+  useEffect(() => {
+    if (isMobileInput) return;
+
     const lerp = (from: number, to: number, amount: number) =>
       from + (to - from) * amount;
 
@@ -96,7 +109,7 @@ const EventTitle = ({
 
     rafId.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafId.current);
-  }, []);
+  }, [isMobileInput]);
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!wrapRef.current) return;
@@ -117,14 +130,16 @@ const EventTitle = ({
         {title}
       </h1>
 
-      <h1
-        ref={overlayRef}
-        aria-hidden="true"
-        className="events-splash-overlay max-w-full break-words text-left font-squid text-5xl leading-[0.88] tracking-wide sm:text-7xl lg:text-8xl [overflow-wrap:anywhere] pointer-events-none"
-        style={{ color: accent }}
-      >
-        {title}
-      </h1>
+      {!isMobileInput && (
+        <h1
+          ref={overlayRef}
+          aria-hidden="true"
+          className="events-splash-overlay max-w-full break-words text-left font-squid text-5xl leading-[0.88] tracking-wide sm:text-7xl lg:text-8xl [overflow-wrap:anywhere] pointer-events-none"
+          style={{ color: accent }}
+        >
+          {title}
+        </h1>
+      )}
     </div>
   );
 };
