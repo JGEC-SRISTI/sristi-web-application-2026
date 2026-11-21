@@ -127,8 +127,21 @@ const ContactHeading = () => {
   const mouse = useRef({ x: 0, y: 0 });
   const pos = useRef({ x: 0, y: 0 });
   const rafId = useRef(0);
+  const [isMobileInput, setIsMobileInput] = useState(() =>
+    window.matchMedia("(hover: none), (pointer: coarse), (max-width: 768px)").matches,
+  );
 
   useEffect(() => {
+    const mediaQuery = window.matchMedia("(hover: none), (pointer: coarse), (max-width: 768px)");
+    const updateMobileInput = () => setIsMobileInput(mediaQuery.matches);
+    updateMobileInput();
+    mediaQuery.addEventListener("change", updateMobileInput);
+    return () => mediaQuery.removeEventListener("change", updateMobileInput);
+  }, []);
+
+  useEffect(() => {
+    if (isMobileInput) return;
+
     const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
     const tick = () => {
@@ -145,7 +158,7 @@ const ContactHeading = () => {
 
     rafId.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafId.current);
-  }, []);
+  }, [isMobileInput]);
 
   const handleMouseMove = (event: React.MouseEvent) => {
     if (!wrapRef.current) return;
@@ -165,13 +178,15 @@ const ContactHeading = () => {
       <h1 className="font-squid text-4xl sm:text-6xl md:text-7xl text-white/90 leading-none tracking-wider select-none py-4">
         contact us
       </h1>
-      <h1
-        ref={overlayRef}
-        aria-hidden="true"
-        className="events-splash-overlay font-squid text-4xl sm:text-6xl md:text-7xl leading-none tracking-wider select-none pointer-events-none"
-      >
-        contact us
-      </h1>
+      {!isMobileInput && (
+        <h1
+          ref={overlayRef}
+          aria-hidden="true"
+          className="events-splash-overlay font-squid text-4xl sm:text-6xl md:text-7xl leading-none tracking-wider select-none pointer-events-none"
+        >
+          contact us
+        </h1>
+      )}
     </div>
   );
 };

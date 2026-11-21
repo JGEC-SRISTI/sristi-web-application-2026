@@ -372,6 +372,9 @@ const EventCard = ({ event, position, onClick }: EventCardProps) => {
 const SplashHeading = () => {
   const wrapRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLHeadingElement>(null);
+  const [isMobileInput, setIsMobileInput] = useState(() =>
+    window.matchMedia("(hover: none), (pointer: coarse), (max-width: 768px)").matches,
+  );
 
   const mouse = useRef({ x: 0, y: 0 });
   const pos = useRef({ x: 0, y: 0 });
@@ -379,8 +382,15 @@ const SplashHeading = () => {
   const rafId = useRef(0);
 
   useEffect(() => {
-    const mobileInput = window.matchMedia("(hover: none), (pointer: coarse), (max-width: 640px)").matches;
-    if (mobileInput) return;
+    const mediaQuery = window.matchMedia("(hover: none), (pointer: coarse), (max-width: 768px)");
+    const updateMobileInput = () => setIsMobileInput(mediaQuery.matches);
+    updateMobileInput();
+    mediaQuery.addEventListener("change", updateMobileInput);
+    return () => mediaQuery.removeEventListener("change", updateMobileInput);
+  }, []);
+
+  useEffect(() => {
+    if (isMobileInput) return;
 
     const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
@@ -398,7 +408,7 @@ const SplashHeading = () => {
 
     rafId.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafId.current);
-  }, []);
+  }, [isMobileInput]);
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!wrapRef.current) return;
@@ -428,13 +438,15 @@ const SplashHeading = () => {
       <h1 className="font-squid text-5xl sm:text-6xl md:text-7xl lg:text-8xl text-white/90 leading-none tracking-wider select-none py-4">
         events
       </h1>
-      <h1
-        ref={overlayRef}
-        aria-hidden="true"
-        className="events-splash-overlay font-squid text-5xl sm:text-6xl md:text-7xl lg:text-8xl leading-none tracking-wider select-none pointer-events-none"
-      >
-        events
-      </h1>
+      {!isMobileInput && (
+        <h1
+          ref={overlayRef}
+          aria-hidden="true"
+          className="events-splash-overlay font-squid text-5xl sm:text-6xl md:text-7xl lg:text-8xl leading-none tracking-wider select-none pointer-events-none"
+        >
+          events
+        </h1>
+      )}
     </div>
   );
 };

@@ -955,7 +955,7 @@ a {
   }
 }
 
-@media (hover: none), (pointer: coarse), (max-width: 640px) {
+@media (hover: none), (pointer: coarse), (max-width: 768px) {
   .events-page .event-card-scene {
     transform: none !important;
     transform-style: flat;
