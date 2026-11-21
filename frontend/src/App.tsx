@@ -1,6 +1,7 @@
-import { useLayoutEffect } from "react";
+import { useEffect, useLayoutEffect } from "react";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import "boxicons/css/boxicons.min.css";
+import { trackPageView } from "./lib/analytics.ts";
 
 import Home from "./pages/Home.tsx";
 import Events from "./pages/Events.tsx";
@@ -18,6 +19,10 @@ import Dev from "./pages/Dev.tsx";
 function AppRoutes() {
   const { pathname } = useLocation();
   const isAdminRoute = pathname.startsWith("/admin");
+
+  useEffect(() => {
+    trackPageView(pathname);
+  }, [pathname]);
 
   useLayoutEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
