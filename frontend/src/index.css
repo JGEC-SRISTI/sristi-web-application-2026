@@ -119,7 +119,7 @@ body {
   height: 100%;
   display: block;
   pointer-events: none;
-  opacity: 0.77;
+  opacity: 0.65;
   transition: opacity 0.95s ease;
 }
 
