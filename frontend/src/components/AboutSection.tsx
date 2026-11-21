@@ -55,7 +55,7 @@ const AboutSection = () => {
             return totalJgecCharacters;
           }
 
-          return current + 1;
+          return Math.min(current + 2, totalJgecCharacters);
         });
       }, 16);
 
@@ -128,7 +128,7 @@ const AboutSection = () => {
             return totalCharacters;
           }
 
-          return current + 1;
+          return Math.min(current + 2, totalCharacters);
         });
       }, 16);
 

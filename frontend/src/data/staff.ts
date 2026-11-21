@@ -12,12 +12,12 @@ export interface StaffMember {
 }
 
 const staffImages = import.meta.glob(
-  "../assets/images/staffs/**/*.jpg",
+  "../assets/images/staffs/**/*.webp",
   { eager: true, import: "default", query: "?url" },
 ) as Record<string, string>;
 
 const getImage = (group: StaffGroup, filename: string) =>
-  staffImages[`../assets/images/staffs/${group}/${filename}.jpg`];
+  staffImages[`../assets/images/staffs/${group}/${filename}.webp`];
 
 export const faculty: StaffMember[] = [
   ["Dr. Ayan Pramanick", "ayan_pramanik", "Faculty coordinator"],
