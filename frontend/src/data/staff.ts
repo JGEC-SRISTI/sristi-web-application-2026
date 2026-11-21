@@ -20,14 +20,14 @@ const getImage = (group: StaffGroup, filename: string) =>
   staffImages[`../assets/images/staffs/${group}/${filename}.webp`];
 
 export const faculty: StaffMember[] = [
-  ["Dr. Ayan Pramanick", "ayan_pramanik", "Faculty coordinator"],
-  ["Sri Debjyoti Chatterjee", "dc_sir", "Faculty coordinator"],
+  ["Dr. Sudip Mandal", "sudip_mandal", "Faculty coordinator"],
   ["Smt. Gopa Mondal", "gopa_mondal", "Faculty coordinator"],
   ["Dr. Samir Das", "samir_das", "Faculty coordinator"],
-  ["Dr. Sobhraj Halder", "sobhraj_halder", "Faculty coordinator"],
   ["Sri Somnath Dhibar", "somenath_dhibar", "Faculty coordinator"],
-  ["Dr. Sudip Mandal", "sudip_mandal", "Faculty coordinator"],
+  ["Dr. Ayan Pramanick", "ayan_pramanik", "Faculty coordinator"],
+  ["Dr. Sobhraj Halder", "sobhraj_halder", "Faculty coordinator"],
   ["Sri Ujjal Dey", "ujjal_dey", "Faculty coordinator"],
+  ["Sri Debjyoti Chatterjee", "dc_sir", "Faculty coordinator"],
 ].map(([name, filename, role]) => ({
   name,
   group: "faculty",
