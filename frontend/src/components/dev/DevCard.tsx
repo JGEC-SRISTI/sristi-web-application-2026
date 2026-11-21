@@ -22,7 +22,7 @@ function DevCard({ developer, index }: DevCardProps) {
     >
       <div className="dev-card-top">
         <span className="dev-card-number">
-          Soldier {developer.number}
+          Frontman {developer.number}
         </span>
 
         <span className="dev-card-symbol">
