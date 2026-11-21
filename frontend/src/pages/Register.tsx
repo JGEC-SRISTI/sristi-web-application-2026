@@ -7,6 +7,7 @@ import {
 } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
+import { trackSignUp } from "../lib/analytics";
 import { Loader2, UserPlus, UserRound } from "lucide-react";
 
 interface FormData {
@@ -211,6 +212,8 @@ const Register = () => {
         });
 
       if (error) throw error;
+
+      trackSignUp("google");
 
       // Tell the Navbar to reload the newly created profile.
       window.dispatchEvent(new Event("sristi-profile-updated"));
