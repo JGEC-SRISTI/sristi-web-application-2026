@@ -129,8 +129,8 @@ const Register = () => {
     const { name, value } = e.target;
     let filteredValue = value;
 
-    if (name === "college_roll") {
-      filteredValue = value.replace(/[^0-9 ]/g, "");
+    if (name === "phone" || name === "college_roll") {
+      filteredValue = value.replace(/[^0-9]/g, "");
     } else if (name === "college_name" || name === "department") {
       filteredValue = value.replace(/[^a-zA-Z ]/g, "");
     }
@@ -174,8 +174,13 @@ const Register = () => {
       return;
     }
 
-    if (!/^[0-9+\-\s()]{10,15}$/.test(form.phone.trim())) {
-      setErrorMessage("Please enter a valid mobile number.");
+    if (!/^\d{10}$/.test(form.phone)) {
+      setErrorMessage("Mobile number must contain exactly 10 digits.");
+      return;
+    }
+
+    if (!/^\d+$/.test(form.college_roll)) {
+      setErrorMessage("College roll number must contain digits only.");
       return;
     }
 
@@ -322,10 +327,15 @@ const Register = () => {
                 name="phone"
                 value={form.phone}
                 onChange={handleChange}
-                placeholder="Enter mobile number"
+                inputMode="numeric"
+                pattern="[0-9]{10}"
+                maxLength={10}
+                title="Enter exactly 10 digits"
+                placeholder="10-digit mobile number"
                 className={inputClass}
                 required
               />
+              <p className="mt-1 text-xs text-gray-400">Enter exactly 10 digits.</p>
             </div>
 
             <div>
@@ -351,7 +361,8 @@ const Register = () => {
               <input
                 id="college-roll"
                 name="college_roll"
-                pattern="[0-9 ]+"
+                inputMode="numeric"
+                pattern="[0-9]+"
                 aria-describedby="college-roll-format"
                 value={form.college_roll}
                 onChange={handleChange}
@@ -360,7 +371,7 @@ const Register = () => {
                 required
               />
               <p id="college-roll-format" className="mt-1 text-xs text-gray-400">
-                Digits 0–9 and spaces only.
+                Digits 0–9 only; no spaces or letters.
               </p>
             </div>
 
