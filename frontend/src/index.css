@@ -608,56 +608,6 @@ a {
 /*-----------------------------------------*/
 
 /* =========================================
-   CUSTOM SQUID GAME CURSOR
-========================================= */
-
-/* Hide native cursor */
-html.custom-cursor-active,
-html.custom-cursor-active * {
-  cursor: none !important;
-}
-
-/* Show custom PNG cursor */
-.custom-cursor {
-  display: block !important;
-
-  position: fixed;
-  top: 0;
-  left: 0;
-
-  width: 20px;
-  height: 20px;
-
-  z-index: 2147483647;
-  pointer-events: none;
-
-  transform: none !important;
-}
-
-.cursor-image {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  pointer-events: none;
-}
-
-/* Mobile devices */
-
-@media (hover: none), (pointer: coarse) {
-  html.custom-cursor-active,
-  html.custom-cursor-active * {
-    cursor: auto !important;
-  }
-
-  .custom-cursor {
-    display: none;
-  }
-}
-
-/*-----------------------------------------*/
-
-/* =========================================
    SRISTI LOGO NEON LIGHT SWEEP
 ========================================= */
 
@@ -3723,6 +3673,12 @@ html.custom-cursor-active #root .footer-legal-dialog button {
 }
 
 /* Hide native cursor only when custom cursor is active */
+
+/* =========================================
+   CUSTOM SQUID GAME CURSOR
+========================================= */
+
+/* Hide native cursor only when custom cursor is active */
 html.custom-cursor-active,
 html.custom-cursor-active body,
 html.custom-cursor-active #root,
@@ -3730,27 +3686,50 @@ html.custom-cursor-active #root * {
   cursor: none !important;
 }
 
-/* Custom cursor */
+/* Custom PNG cursor */
 .custom-cursor {
   position: fixed;
   top: 0;
   left: 0;
+
   width: 20px;
   height: 20px;
+
   z-index: 2147483647;
   pointer-events: none;
+
   transform: translate(-50%, -50%);
   will-change: left, top;
+
+  visibility: hidden;
 }
 
 .cursor-image {
   display: block;
   width: 100%;
   height: 100%;
+
   object-fit: contain;
   pointer-events: none;
 
-  filter: drop-shadow(0px 2px 3px rgb(255, 31, 162));
+  filter: drop-shadow(
+    0px 2px 3px rgb(255, 31, 162)
+  );
+}
+
+/* Mobile and touch devices: native cursor only */
+@media (hover: none), (pointer: coarse) {
+  html.custom-cursor-active,
+  html.custom-cursor-active *,
+  html.custom-cursor-active body,
+  html.custom-cursor-active #root,
+  html.custom-cursor-active #root * {
+    cursor: auto !important;
+  }
+
+  .custom-cursor {
+    display: none !important;
+  }
 }
 
 /* Restore native cursor inside admin */
@@ -3769,6 +3748,7 @@ html.custom-cursor-active #root * {
 .admin-panel textarea {
   cursor: text !important;
 }
+
 
 .profile-edit-button {
   box-shadow: 2px 2px 10px rgba(236, 72, 153, 0.4);

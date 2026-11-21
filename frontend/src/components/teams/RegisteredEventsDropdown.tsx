@@ -133,7 +133,7 @@ export default function RegisteredEventsDropdown() {
           <div
             id={panelId}
             style={{ maxHeight: placement.maxHeight }}
-            className={`absolute left-1/2 z-[90] w-[min(360px,calc(100vw_-_2rem))] -translate-x-1/2 overflow-y-auto overscroll-contain border border-white/15 bg-[#101014]/95 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.65)] backdrop-blur-xl md:right-0 md:left-auto md:translate-x-0 ${
+            className={`absolute left-1/2 z-[90] w-[min(360px,calc(100vw_-_2rem))] -translate-x-1/2 overflow-y-auto overscroll-contain border border-white/15 bg-[#101014]/15 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.65)] backdrop-blur-xl md:right-0 md:left-auto md:translate-x-0 ${
               placement.above ? "bottom-full mb-3" : "top-full mt-3"
             }`}
           >
@@ -141,17 +141,11 @@ export default function RegisteredEventsDropdown() {
               Your registrations
             </p>
 
-            {loading && items.length === 0 && !hasLoadedRef.current ? (
-              <div aria-label="Loading registered events" aria-live="polite" className="space-y-3 px-2 py-2">
-                <p className="font-space-mono text-[10px] text-white/55">Getting your registrations…</p>
-                {[0, 1].map((row) => (
-                  <div key={row} className="animate-pulse border-b border-white/[0.07] py-3 last:border-0">
-                    <div className="h-3 w-2/3 rounded bg-white/10" />
-                    <div className="mt-2 h-2 w-1/3 rounded bg-white/[0.07]" />
-                  </div>
-                ))}
-              </div>
-            ) : message && items.length === 0 ? (
+            {loading ? (
+              <p className="px-2 py-5 font-space-mono text-[10px] text-white/50">
+                Loading...
+              </p>
+            ) : message ? (
               <p
                 role="alert"
                 className="px-2 py-4 font-space-mono text-[10px] text-red-200"
@@ -163,56 +157,46 @@ export default function RegisteredEventsDropdown() {
                 No registered events yet.
               </p>
             ) : (
-              <>
-                {loading && (
-                  <p className="px-2 pb-1 font-space-mono text-[9px] text-white/40" aria-live="polite">
-                    Updating…
-                  </p>
-                )}
-                {message && (
-                  <p role="status" className="px-2 pb-2 font-space-mono text-[9px] text-amber-100/75">
-                    {message}
-                  </p>
-                )}
-                {items.length === 0 ? (
-                  <p className="px-2 py-5 font-space-mono text-[10px] text-white/45">
-                    No registered events yet.
-                  </p>
-                ) : (
-                  <ul className="space-y-1">
-                    {items.map((item) => (
-                      <li
-                        key={item.id}
-                        className="flex items-center justify-between gap-3 border-b border-white/[0.07] px-2 py-3 last:border-0"
-                      >
-                        <div className="min-w-0">
-                          <p className="truncate font-a24 text-xs uppercase text-white">
-                            {item.event_name}
-                          </p>
-                          <p className="mt-1 font-space-mono text-[9px] uppercase tracking-wider text-emerald-200/70">
-                            Registered
-                            {item.team ? ` · ${item.team.team_name}` : " · Solo"}
-                          </p>
-                        </div>
+              
+                <ul
+                  className={`space-y-1 ${
+                    items.length > 4
+                      ? "max-h-60 overflow-y-auto overscroll-contain pr-2 registered-events-list"
+                      : ""
+                  }`}
+                >
 
-                        {item.team && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedTeam(item.team);
-                              setOpen(false);
-                            }}
-                            className="flex shrink-0 items-center gap-1.5 border border-cyan-300/25 px-2.5 py-2 font-space-mono text-[9px] uppercase text-cyan-100/80 hover:border-cyan-200/60 hover:text-cyan-100"
-                          >
-                            <Users size={12} />
-                            View team
-                          </button>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </>
+                {items.map((item) => (
+                  <li
+                    key={item.id}
+                    className="flex items-center justify-between gap-3 border-b border-white/[0.07] px-2 py-3 last:border-0"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate font-a24 text-xs uppercase text-white">
+                        {item.event_name}
+                      </p>
+                      <p className="mt-1 font-space-mono text-[9px] uppercase tracking-wider text-emerald-200/70">
+                        Registered
+                        {item.team ? ` · ${item.team.team_name}` : " · Solo"}
+                      </p>
+                    </div>
+
+                    {item.team && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedTeam(item.team);
+                          setOpen(false);
+                        }}
+                        className="flex shrink-0 items-center gap-1.5 border border-cyan-300/25 px-2.5 py-2 font-space-mono text-[9px] uppercase text-cyan-100/80 hover:border-cyan-200/60 hover:text-cyan-100"
+                      >
+                        <Users size={12} />
+                        View team
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
         )}

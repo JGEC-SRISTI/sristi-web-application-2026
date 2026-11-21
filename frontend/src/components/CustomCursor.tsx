@@ -8,30 +8,83 @@ const CustomCursor = () => {
   const location = useLocation();
 
   useEffect(() => {
+    const root = document.documentElement;
+    const cursor = cursorRef.current;
+
     const isAdminRoute = location.pathname.startsWith("/admin");
 
-    const root = document.documentElement;
+    // Always restore native cursor first.
+    root.classList.remove("custom-cursor-active");
 
-    if (isAdminRoute) {
-      root.classList.remove("custom-cursor-active");
+    if (isAdminRoute || !cursor) {
       return;
     }
 
-    root.classList.add("custom-cursor-active");
+    // Only enable custom cursor on devices with a precise pointer.
+    const pointerQuery = window.matchMedia(
+      "(hover: hover) and (pointer: fine)"
+    );
+
+    if (!pointerQuery.matches) {
+      return;
+    }
+
+    const hideCustomCursor = () => {
+      root.classList.remove("custom-cursor-active");
+      cursor.style.visibility = "hidden";
+    };
+
+    const showCustomCursor = () => {
+      cursor.style.visibility = "visible";
+    };
 
     const handleMouseMove = (event: MouseEvent) => {
-      if (cursorRef.current) {
-        cursorRef.current.style.left = `${event.clientX}px`;
-        cursorRef.current.style.top = `${event.clientY}px`;
+      cursor.style.left = `${event.clientX}px`;
+      cursor.style.top = `${event.clientY}px`;
+
+      root.classList.add("custom-cursor-active");
+      showCustomCursor();
+    };
+
+    const handleMouseEnter = () => {
+      showCustomCursor();
+    };
+
+    const handleMouseLeave = () => {
+      hideCustomCursor();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        hideCustomCursor();
       }
     };
+
+    // Initially hide until the first mouse movement.
+    cursor.style.visibility = "hidden";
 
     window.addEventListener("mousemove", handleMouseMove, {
       passive: true,
     });
 
+    window.addEventListener("mouseenter", handleMouseEnter);
+    window.addEventListener("mouseleave", handleMouseLeave);
+
+    document.addEventListener(
+      "visibilitychange",
+      handleVisibilityChange
+    );
+
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseenter", handleMouseEnter);
+      window.removeEventListener("mouseleave", handleMouseLeave);
+
+      document.removeEventListener(
+        "visibilitychange",
+        handleVisibilityChange
+      );
+
       root.classList.remove("custom-cursor-active");
     };
   }, [location.pathname]);
