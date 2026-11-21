@@ -715,14 +715,14 @@ const Events = () => {
               SRISTI 2K26 — CHOOSE YOUR ARENA
             </p>
             <label className="mx-auto mt-3 flex w-full max-w-72 items-center gap-2 rounded-lg border border-white/20 bg-black/30 px-3 text-white/65 transition focus-within:border-purple-300 focus-within:text-purple-200">
-              <Search size={16} className="shrink-0" aria-hidden="true" />
+              <Search size={12} className="shrink-0" aria-hidden="true" />
               <input
                 type="search"
                 aria-label="Search events"
-                placeholder="Search by event name"
+                placeholder="SEARCH BY EVENT NAME"
                 value={searchQuery}
                 onChange={(event) => handleSearchChange(event.target.value)}
-                className="min-w-0 flex-1 py-2 font-space-mono text-base text-white scheme-dark placeholder:text-white/55 focus:outline-none sm:text-sm"
+                className="min-w-0 flex-1 py-2 text-[12px] font-space-mono text-white scheme-dark placeholder:text-white/55 focus:outline-none"
               />
             </label>
           </div>
