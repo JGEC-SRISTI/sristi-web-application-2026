@@ -107,7 +107,10 @@ const TeamModal = ({
     const { error: signInError } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/register`,
+        redirectTo: new URL(
+          `${import.meta.env.BASE_URL}register`,
+          window.location.origin,
+        ).toString(),
         queryParams: { prompt: "select_account" },
       },
     });
