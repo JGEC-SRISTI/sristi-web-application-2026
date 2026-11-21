@@ -8,7 +8,7 @@ import sponsor7 from "../assets/images/sponsors/gdg_siliguri.png";
 import sponsor8 from "../assets/images/sponsors/images.png";
 import sponsor9 from "../assets/images/sponsors/India_post.png";
 import sponsor10 from "../assets/images/sponsors/star_cement.png";
-import sponsor11 from "../assets/images/sponsors/STPI.png";
+import sponsor11 from "../assets/images/sponsors/stpi.png";
 import sponsor12 from "../assets/images/sponsors/xyz.png";
 import sponsor13 from "../assets/images/sponsors/bim_mantra.png";    
 import sponsor14 from "../assets/images/sponsors/blackboard.png";
