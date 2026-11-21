@@ -901,11 +901,11 @@ a {
   color: #fff0f8;
 }
 
-.event-action-button:is(.event-action-button-teal, .event-action-button-neon-pink):enabled:is(:hover, :focus-visible) {
+.event-action-button:is(.event-action-button-teal, .event-action-button-neon-pink):is(:enabled, a[href]):is(:hover, :focus-visible) {
   background-size: 100% 100%;
 }
 
-.event-action-button-teal:enabled:is(:hover, :focus-visible) {
+.event-action-button-teal:is(:enabled, a[href]):is(:hover, :focus-visible) {
   border-color: #5eead4;
 }
 
