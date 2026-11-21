@@ -955,6 +955,39 @@ a {
   }
 }
 
+@media (hover: none), (pointer: coarse), (max-width: 640px) {
+  .events-page .event-card-scene {
+    transform: none !important;
+    transform-style: flat;
+    transition: none;
+    will-change: auto;
+  }
+
+  .events-page .event-card-scene:hover {
+    --card-hover-scale: 1;
+  }
+
+  .events-page .event-card-scene::before {
+    display: none;
+  }
+
+  .events-page .event-card-shell::after {
+    display: none;
+  }
+
+  .events-page .event-card-shell:hover::after {
+    opacity: 0;
+  }
+
+  .events-page .event-action-button:hover {
+    transform: none;
+  }
+
+  .events-page .events-splash-overlay {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .event-card-scene,
     .event-card-scene::before,

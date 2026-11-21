@@ -241,7 +241,8 @@ const EventCard = ({ event, position, onClick }: EventCardProps) => {
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!sceneRef.current || e.pointerType !== "mouse") return;
+    const mobileInput = window.matchMedia("(hover: none), (pointer: coarse), (max-width: 640px)").matches;
+    if (mobileInput || !sceneRef.current || e.pointerType !== "mouse") return;
 
     const rect = sceneRef.current.getBoundingClientRect();
     const x = (e.clientX - rect.left) / rect.width * 2 - 1;
@@ -258,6 +259,9 @@ const EventCard = ({ event, position, onClick }: EventCardProps) => {
   };
 
   const resetTilt = () => {
+    const mobileInput = window.matchMedia("(hover: none), (pointer: coarse), (max-width: 640px)").matches;
+    if (mobileInput) return;
+
     if (sceneRef.current) {
       sceneRef.current.style.setProperty("--card-sheen-x", "50%");
       sceneRef.current.style.setProperty("--card-sheen-y", "35%");
@@ -375,6 +379,9 @@ const SplashHeading = () => {
   const rafId = useRef(0);
 
   useEffect(() => {
+    const mobileInput = window.matchMedia("(hover: none), (pointer: coarse), (max-width: 640px)").matches;
+    if (mobileInput) return;
+
     const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
     const tick = () => {
