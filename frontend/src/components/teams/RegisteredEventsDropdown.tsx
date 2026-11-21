@@ -122,7 +122,7 @@ export default function RegisteredEventsDropdown() {
           <div
             id={panelId}
             style={{ maxHeight: placement.maxHeight }}
-            className={`absolute left-1/2 z-[90] w-[min(360px,calc(100vw_-_2rem))] -translate-x-1/2 overflow-y-auto overscroll-contain border border-white/15 bg-[#101014]/95 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.65)] backdrop-blur-xl md:right-0 md:left-auto md:translate-x-0 ${
+            className={`absolute left-1/2 z-[90] w-[min(360px,calc(100vw_-_2rem))] -translate-x-1/2 overflow-y-auto overscroll-contain border border-white/15 bg-[#101014]/15 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.65)] backdrop-blur-xl md:right-0 md:left-auto md:translate-x-0 ${
               placement.above ? "bottom-full mb-3" : "top-full mt-3"
             }`}
           >
@@ -146,7 +146,15 @@ export default function RegisteredEventsDropdown() {
                 No registered events yet.
               </p>
             ) : (
-              <ul className="space-y-1">
+              
+                <ul
+                  className={`space-y-1 ${
+                    items.length > 4
+                      ? "max-h-60 overflow-y-auto overscroll-contain pr-2 registered-events-list"
+                      : ""
+                  }`}
+                >
+
                 {items.map((item) => (
                   <li
                     key={item.id}
