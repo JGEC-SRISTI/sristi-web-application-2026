@@ -15,6 +15,7 @@ import AdminSectionPlaceholder from "./pages/admin/AdminSectionPlaceholder.tsx";
 import CustomCursor from "./components/CustomCursor.tsx";
 import Register from "./pages/Register.tsx";
 import Dev from "./pages/Dev.tsx";
+import NotFound from "./pages/NotFound.tsx";
 
 function AppRoutes() {
   const { pathname } = useLocation();
@@ -67,6 +68,7 @@ function AppRoutes() {
           path="/admin/settings"
           element={<AdminSectionPlaceholder section="settings" />}
         />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </>
   );
