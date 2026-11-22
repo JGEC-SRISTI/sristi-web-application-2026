@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { ArrowLeft, Compass, Home } from "lucide-react";
 import { Link } from "react-router-dom";
 import soldierImage from "../assets/images/pink_soldier.png";
 import "./NotFound.css";
 
 export default function NotFound() {
+  const [shakeCount, setShakeCount] = useState(0);
+
   return (
     <main className="not-found-page">
       <div className="not-found-grid" aria-hidden="true" />
@@ -23,7 +26,16 @@ export default function NotFound() {
           <div className="not-found-eyebrow">
             <span className="not-found-live-dot" /> LOST IN THE ARENA
           </div>
-          <h1 className="not-found-number" aria-label="404">404</h1>
+          <button
+            className={`not-found-number${shakeCount ? " is-shaking" : ""}`}
+            type="button"
+            aria-label="Shake the 404 digits"
+            onClick={() => setShakeCount((count) => count + 1)}
+          >
+            <span className="not-found-digit" key={`${shakeCount}-first`}>4</span>
+            <span className="not-found-digit" key={`${shakeCount}-middle`}>0</span>
+            <span className="not-found-digit" key={`${shakeCount}-last`}>4</span>
+          </button>
           <h2 id="not-found-title">This page left the game.</h2>
           <p>
             The link may be wrong, or this page may have moved. Let’s get you
