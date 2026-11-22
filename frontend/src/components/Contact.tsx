@@ -176,7 +176,7 @@ const Contact = () => {
                   font-semibold
                 "
               >
-                Arka Prava Mukhopadhyay
+                Arkaprava Mukhopadhyay
               </p>
 
               <p

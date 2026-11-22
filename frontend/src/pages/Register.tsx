@@ -387,7 +387,7 @@ const Register = () => {
                 aria-describedby="department-format"
                 value={form.department}
                 onChange={handleChange}
-                placeholder="e.g. CSE, ECE, IT"
+                placeholder="e.g. CSE, ECE, IT, EE, ME, CE, etc."
                 className={inputClass}
                 required
               />
