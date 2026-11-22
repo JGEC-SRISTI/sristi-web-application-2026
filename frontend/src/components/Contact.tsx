@@ -142,40 +142,6 @@ const Contact = () => {
                   font-semibold
                 "
               >
-                Arka Prava Mukhopadhyay
-              </p>
-
-              <p
-                className="
-                  mt-1
-                  font-mono
-                  text-xs
-                  tracking-widest
-                  text-white/40
-                "
-              >
-                GENERAL QUERIES
-              </p>
-            </div>
-
-            <a
-              href="tel:+919123329667"
-              className="contact-phone"
-            >
-              +91 91233 29667
-            </a>
-          </div>
-
-          <div className="contact-card">
-            <div>
-              <p
-                className="
-                  font-ui
-                  text-lg
-                  sm:text-xl
-                  font-semibold
-                "
-              >
                 Biswanath Das
               </p>
 
@@ -197,6 +163,40 @@ const Contact = () => {
               className="contact-phone"
             >
               +91 83880 11868
+            </a>
+          </div>
+
+          <div className="contact-card">
+            <div>
+              <p
+                className="
+                  font-ui
+                  text-lg
+                  sm:text-xl
+                  font-semibold
+                "
+              >
+                Arka Prava Mukhopadhyay
+              </p>
+
+              <p
+                className="
+                  mt-1
+                  font-mono
+                  text-xs
+                  tracking-widest
+                  text-white/40
+                "
+              >
+                GENERAL QUERIES
+              </p>
+            </div>
+
+            <a
+              href="tel:+919123329667"
+              className="contact-phone"
+            >
+              +91 91233 29667
             </a>
           </div>
         </div>
