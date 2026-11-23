@@ -148,7 +148,7 @@ const sponsors: Sponsor[] = [
     id: 20,
     name: "Triumph",
     logo: sponsor20,
-    URI: "https://www.triumph.com/",
+    URI: "https://www.triumphmotorcyclesindia.com/",
   },
   {
     id: 21,
