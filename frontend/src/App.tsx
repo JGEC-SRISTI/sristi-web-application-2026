@@ -1,5 +1,12 @@
 import { useEffect, useLayoutEffect } from "react";
-import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
+import {
+  BrowserRouter,
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+  useParams,
+} from "react-router-dom";
 import "boxicons/css/boxicons.min.css";
 import { trackPageView } from "./lib/analytics.ts";
 
@@ -16,6 +23,37 @@ import CustomCursor from "./components/CustomCursor.tsx";
 import Register from "./pages/Register.tsx";
 import Dev from "./pages/Dev.tsx";
 import NotFound from "./pages/NotFound.tsx";
+
+type PaymentsPage = "verification" | "records";
+
+function AdminPaymentsRoute() {
+  const { paymentPage } = useParams();
+  if (!paymentPage) {
+    let lastPage: PaymentsPage = "verification";
+    try {
+      const savedPage = window.localStorage.getItem(
+        "sristi-admin-payments-last-page",
+      );
+      if (savedPage === "records" || savedPage === "verification") {
+        lastPage = savedPage;
+      }
+    } catch {
+      // Keep the default page if browser storage is unavailable.
+    }
+    return <Navigate to={`/admin/payments/${lastPage}`} replace />;
+  }
+
+  if (paymentPage !== "verification" && paymentPage !== "records") {
+    return <NotFound />;
+  }
+
+  return (
+    <AdminSectionPlaceholder
+      section="payments"
+      paymentPage={paymentPage as PaymentsPage}
+    />
+  );
+}
 
 function AppRoutes() {
   const { pathname } = useLocation();
@@ -57,8 +95,8 @@ function AppRoutes() {
           element={<AdminSectionPlaceholder section="results" />}
         />
         <Route
-          path="/admin/payments"
-          element={<AdminSectionPlaceholder section="payments" />}
+          path="/admin/payments/:paymentPage?"
+          element={<AdminPaymentsRoute />}
         />
         <Route
           path="/admin/admins"
