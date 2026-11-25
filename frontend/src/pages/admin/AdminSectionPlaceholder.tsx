@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import type { User } from "@supabase/supabase-js";
 import {
   CalendarDays,
@@ -117,8 +117,10 @@ const sectionDetails: Record<
 
 export default function AdminSectionPlaceholder({
   section,
+  paymentPage,
 }: {
   section: AdminSection;
+  paymentPage?: "verification" | "records";
 }) {
   const [accessState, setAccessState] = useState<
     "loading" | "config" | "signed-out" | "checking" | "denied" | "ready"
@@ -855,7 +857,7 @@ export default function AdminSectionPlaceholder({
           ) : section === "admins" ? (
             <AdminManagementSection />
           ) : section === "payments" ? (
-            <AdminPaymentsSection />
+            <AdminPaymentsSection page={paymentPage ?? "verification"} />
           ) : section === "settings" ? (
             <AdminFestSettingsSection />
           ) : (
@@ -1260,10 +1262,16 @@ type PaymentView = PaymentRecordRow & {
   code: PaymentCode | null;
 };
 
-function AdminPaymentsSection() {
+function AdminPaymentsSection({
+  page,
+}: {
+  page: "verification" | "records";
+}) {
   const [payments, setPayments] = useState<PaymentView[]>([]);
   const [participants, setParticipants] = useState<PaymentParticipant[]>([]);
   const [search, setSearch] = useState("");
+  const [participantSearch, setParticipantSearch] = useState("");
+  const [participantPage, setParticipantPage] = useState(0);
   const [statusFilter, setStatusFilter] = useState("all");
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingParticipants, setIsLoadingParticipants] = useState(false);
@@ -1363,10 +1371,9 @@ function AdminPaymentsSection() {
     };
   }, [reload]);
 
-  const loadParticipants = async () => {
+  const loadParticipants = useCallback(async () => {
     if (!supabase) return;
     setIsLoadingParticipants(true);
-    setError("");
     const { data, error: queryError } = await supabase
       .from("profiles")
       .select("id,full_name,college_roll,college_name,department,phone")
@@ -1377,7 +1384,19 @@ function AdminPaymentsSection() {
       return;
     }
     setParticipants((data ?? []) as PaymentParticipant[]);
-  };
+  }, []);
+
+  useEffect(() => {
+    if (page === "verification") void loadParticipants();
+  }, [loadParticipants, page]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("sristi-admin-payments-last-page", page);
+    } catch {
+      // The URL still preserves the selected page when storage is unavailable.
+    }
+  }, [page]);
 
   const visiblePayments = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -1401,7 +1420,7 @@ function AdminPaymentsSection() {
   }, [payments, search, statusFilter]);
 
   const matchingParticipants = useMemo(() => {
-    const query = search.trim().toLowerCase();
+    const query = participantSearch.trim().toLowerCase();
     const alreadyVerified = new Set(
       payments
         .filter((row) => row.status === "verified")
@@ -1418,7 +1437,21 @@ function AdminPaymentsSection() {
         ].some((value) => value.toLowerCase().includes(query));
       return matchesQuery && !alreadyVerified.has(participant.id);
     });
-  }, [participants, payments, search]);
+  }, [participants, payments, participantSearch]);
+
+  const participantPageSize = 10;
+  const participantPageCount = Math.ceil(
+    matchingParticipants.length / participantPageSize,
+  );
+  const visibleParticipants = matchingParticipants.slice(
+    participantPage * participantPageSize,
+    (participantPage + 1) * participantPageSize,
+  );
+
+  useEffect(() => {
+    const lastPage = Math.max(0, participantPageCount - 1);
+    if (participantPage > lastPage) setParticipantPage(lastPage);
+  }, [participantPage, participantPageCount]);
 
   const verifyOfflinePayment = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -1562,6 +1595,14 @@ function AdminPaymentsSection() {
     URL.revokeObjectURL(url);
   };
 
+  const openCodeIssue = (payment: PaymentView) => {
+    setError("");
+    setNotice("");
+    setIssuedCode("");
+    setIsCodeCopied(false);
+    setCodePayment(payment);
+  };
+
   return (
     <div className="mt-7 space-y-5">
       {paymentToast && (
@@ -1586,6 +1627,70 @@ function AdminPaymentsSection() {
           </div>
         </div>
       )}
+      <div className="flex flex-col gap-2 border-l-4 border-pink-500 pl-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-700">
+            Payment workspace
+          </p>
+          <h2 className="mt-1 text-2xl font-bold tracking-tight text-slate-900">
+            {page === "verification"
+              ? "Offline payment verification"
+              : "Payment records & verification codes"}
+          </h2>
+          <p className="mt-1 max-w-2xl text-sm text-slate-600">
+            {page === "verification"
+              ? "Find a participant, confirm cash was received, and record the payment."
+              : "Review verified payments, issue participant codes, and export records."}
+          </p>
+        </div>
+      </div>
+      <nav
+        className="grid gap-3 sm:grid-cols-2"
+        aria-label="Payment tasks"
+      >
+        <Link
+          to="/admin/payments/verification"
+          aria-current={page === "verification" ? "page" : undefined}
+          className={`group flex min-h-24 items-center gap-4 rounded-2xl border p-4 transition duration-200 hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 ${page === "verification" ? "border-emerald-500 bg-emerald-50 shadow-sm" : "border-slate-200 bg-white/70 hover:border-emerald-300"}`}
+        >
+          <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl ${page === "verification" ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600 group-hover:bg-emerald-100 group-hover:text-emerald-700"}`}>
+            <CircleCheck size={22} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold text-slate-900">
+              Offline verification
+            </span>
+            <span className="mt-1 block text-xs leading-5 text-slate-600">
+              Search participants and confirm cash payments
+            </span>
+          </span>
+          <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-bold ${page === "verification" ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600"}`}>
+            {isLoading || isLoadingParticipants
+              ? "Loading"
+              : matchingParticipants.length}
+          </span>
+        </Link>
+        <Link
+          to="/admin/payments/records"
+          aria-current={page === "records" ? "page" : undefined}
+          className={`group flex min-h-24 items-center gap-4 rounded-2xl border p-4 transition duration-200 hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 ${page === "records" ? "border-emerald-500 bg-emerald-50 shadow-sm" : "border-slate-200 bg-white/70 hover:border-emerald-300"}`}
+        >
+          <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl ${page === "records" ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600 group-hover:bg-emerald-100 group-hover:text-emerald-700"}`}>
+            <Wallet size={22} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold text-slate-900">
+              Payment records &amp; codes
+            </span>
+            <span className="mt-1 block text-xs leading-5 text-slate-600">
+              Review payments, issue codes, and export records
+            </span>
+          </span>
+          <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-bold ${page === "records" ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600"}`}>
+            {isLoading ? "Loading" : payments.length}
+          </span>
+        </Link>
+      </nav>
       <div className="grid gap-4 sm:grid-cols-3">
         <RegistrationSummary label="Payment records" value={payments.length} />
         <RegistrationSummary
@@ -1600,43 +1705,6 @@ function AdminPaymentsSection() {
         />
       </div>
 
-      <div className="flex flex-col gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-3 md:flex-row">
-        <label className="flex min-w-0 flex-1 items-center gap-3 rounded-lg border border-white/10 bg-[#0b121c] px-3">
-          <Search size={17} className="shrink-0 text-slate-500" />
-          <input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search participant, roll number, college, reference…"
-            className="h-11 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-slate-500"
-            aria-label="Search payments"
-          />
-        </label>
-        <select
-          value={statusFilter}
-          onChange={(event) => setStatusFilter(event.target.value)}
-          className="h-11 rounded-lg border border-white/10 bg-[#0b121c] px-3 text-sm text-slate-200 outline-none"
-          aria-label="Filter payments by status"
-        >
-          <option value="all">All statuses</option>
-          <option value="pending">Pending</option>
-          <option value="verified">Verified</option>
-          <option value="rejected">Rejected</option>
-        </select>
-        <button
-          type="button"
-          onClick={() => {
-            setNotice("");
-            setError("");
-            setVerifyParticipant(null);
-            setSearch("");
-            void loadParticipants();
-          }}
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-emerald-300 px-4 text-sm font-semibold text-slate-950 transition hover:bg-emerald-200"
-        >
-          <Plus size={16} /> Record cash payment
-        </button>
-      </div>
-
       {(error || notice) && (
         <p
           role={error ? "alert" : "status"}
@@ -1646,41 +1714,228 @@ function AdminPaymentsSection() {
         </p>
       )}
 
-      <div className="overflow-hidden rounded-xl border border-white/10 bg-[#0d1520]">
-        <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+      {page === "verification" && <section
+        className="overflow-hidden rounded-xl border border-white/10 bg-[#0d1520]"
+        aria-labelledby="offline-verification-title"
+      >
+        <div className="flex flex-col gap-4 border-b border-white/10 px-5 py-4 2xl:flex-row 2xl:items-center 2xl:justify-between">
           <div>
-            <h2 className="font-semibold">Payment records</h2>
-            <p className="mt-1 text-xs text-slate-500" aria-live="polite">
-              {isLoading
-                ? "Loading payments…"
-                : `${visiblePayments.length} shown · ${verifiedCount} verified`}
+            <h2 id="offline-verification-title" className="font-semibold">
+              Participants available for offline verification
+            </h2>
+            <p className="mt-1 text-xs text-slate-500">
+              {isLoadingParticipants || isLoading
+                ? "Loading participant profiles…"
+                : `${matchingParticipants.length} participants without a verified payment. Confirm cash received before verifying.`}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 flex-col gap-2 2xl:flex-row">
+            <label className="flex min-h-11 w-full min-w-0 items-center gap-3 rounded-lg border border-white/10 bg-[#0b121c] px-3 2xl:w-[28rem]">
+              <Search size={17} className="shrink-0 text-slate-500" />
+              <input
+                value={participantSearch}
+                onChange={(event) => {
+                  setParticipantSearch(event.target.value);
+                  setParticipantPage(0);
+                }}
+                placeholder="Search name, roll, college, phone…"
+                className="h-11 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-slate-500"
+                aria-label="Search participants available for offline verification"
+              />
+              {participantSearch && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setParticipantSearch("");
+                    setParticipantPage(0);
+                  }}
+                  className="grid size-8 shrink-0 place-items-center rounded-md text-slate-500 transition hover:bg-white/10 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
+                  aria-label="Clear participant search"
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </label>
             <button
               type="button"
-              onClick={exportVerifiedPayments}
-              disabled={isLoading || verifiedCount === 0}
-              className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-emerald-200/30 bg-emerald-300 px-3 py-2 text-xs font-bold text-[#08251d] transition hover:bg-emerald-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d1520] disabled:cursor-not-allowed disabled:opacity-45"
-            >
-              <Download size={14} />
-              Export verified ({verifiedCount})
-            </button>
-            <button
-              type="button"
-              onClick={() => setReload((value) => value + 1)}
-              disabled={isLoading}
-              className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-xs font-medium text-slate-300 transition hover:bg-white/5 disabled:opacity-50"
+              onClick={() => void loadParticipants()}
+              disabled={isLoadingParticipants}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-white/10 px-3 text-sm font-medium text-slate-300 transition hover:bg-white/5 disabled:cursor-wait disabled:opacity-50"
             >
               <RefreshCw
-                size={14}
-                className={isLoading ? "animate-spin" : ""}
+                size={15}
+                className={isLoadingParticipants ? "animate-spin" : ""}
               />
-              Refresh
+              Refresh list
             </button>
           </div>
         </div>
-        <div className="overflow-x-auto" aria-busy={isLoading}>
+        {isLoadingParticipants || isLoading ? (
+          <p role="status" className="px-5 py-8 text-center text-sm text-slate-400">
+            Loading participants…
+          </p>
+        ) : visibleParticipants.length > 0 ? (
+          <>
+            <div className="divide-y divide-white/[0.07]">
+              {visibleParticipants.map((participant) => (
+                <div
+                  key={participant.id}
+                  className="flex flex-wrap items-center justify-between gap-4 px-5 py-4 transition-colors hover:bg-white/[0.025]"
+                >
+                  <div className="min-w-0">
+                    <p className="font-medium text-white">
+                      {participant.full_name}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-400">
+                      {participant.college_roll} · {participant.college_name} · {participant.phone}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setError("");
+                      setNotice("");
+                      setPaymentReference("");
+                      setVerifyParticipant(participant);
+                    }}
+                    className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-emerald-300 px-4 py-2 text-sm font-semibold text-slate-950 shadow-sm shadow-emerald-950/30 transition duration-150 hover:-translate-y-0.5 hover:bg-emerald-200 hover:shadow-md hover:shadow-emerald-950/40 active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d1520]"
+                  >
+                    <CircleCheck size={16} strokeWidth={2.3} />
+                    Verify cash
+                  </button>
+                </div>
+              ))}
+            </div>
+            {participantPageCount > 1 && (
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 px-5 py-3">
+                <p className="text-xs text-slate-400" aria-live="polite">
+                  Showing {participantPage * participantPageSize + 1}–
+                  {Math.min((participantPage + 1) * participantPageSize, matchingParticipants.length)} of {matchingParticipants.length}
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setParticipantPage((page) => Math.max(0, page - 1))}
+                    disabled={participantPage === 0}
+                    className="min-h-9 rounded-lg border border-white/10 px-3 text-xs font-medium text-slate-300 transition hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setParticipantPage((page) => Math.min(participantPageCount - 1, page + 1))}
+                    disabled={participantPage >= participantPageCount - 1}
+                    className="min-h-9 rounded-lg border border-white/10 px-3 text-xs font-medium text-slate-300 transition hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="px-5 py-12 text-center">
+            {participants.length === 0 ? (
+              <CircleCheck size={24} className="mx-auto text-emerald-700" />
+            ) : (
+              <Search size={24} className="mx-auto text-slate-400" />
+            )}
+            <p className="mt-3 font-semibold text-slate-800">
+              {participants.length === 0
+                ? "Everyone is up to date"
+                : "No matching participants"}
+            </p>
+            <p className="mt-1 text-sm text-slate-500">
+              {participants.length === 0
+                ? "There are no participants waiting for offline payment verification."
+                : "Try another name, roll number, college, or phone number."}
+            </p>
+            {participants.length > 0 && participantSearch && (
+              <button
+                type="button"
+                onClick={() => {
+                  setParticipantSearch("");
+                  setParticipantPage(0);
+                }}
+                className="mt-4 rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-white"
+              >
+                Clear search
+              </button>
+            )}
+          </div>
+        )}
+      </section>}
+
+      {page === "records" && <div className="overflow-hidden rounded-xl border border-white/10 bg-[#0d1520]">
+        <div className="space-y-4 border-b border-white/10 px-5 py-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="font-semibold">Payment records</h2>
+              <p className="mt-1 text-xs text-slate-500" aria-live="polite">
+                {isLoading
+                  ? "Loading payments…"
+                  : `${visiblePayments.length} shown · ${verifiedCount} verified`}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={exportVerifiedPayments}
+                disabled={isLoading || verifiedCount === 0}
+                className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-emerald-200/30 bg-emerald-300 px-3 py-2 text-xs font-bold text-[#08251d] transition hover:bg-emerald-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d1520] disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                <Download size={14} />
+                Export verified ({verifiedCount})
+              </button>
+              <button
+                type="button"
+                onClick={() => setReload((value) => value + 1)}
+                disabled={isLoading}
+                className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-xs font-medium text-slate-300 transition hover:bg-white/5 disabled:opacity-50"
+              >
+                <RefreshCw
+                  size={14}
+                  className={isLoading ? "animate-spin" : ""}
+                />
+                Refresh
+              </button>
+            </div>
+          </div>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <label className="flex min-w-0 flex-1 items-center gap-3 rounded-lg border border-white/10 bg-[#0b121c] px-3">
+              <Search size={17} className="shrink-0 text-slate-500" />
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search payments by participant, roll, college, or reference…"
+                className="h-11 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-slate-500"
+                aria-label="Search payment records"
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  className="grid size-8 shrink-0 place-items-center rounded-md text-slate-500 transition hover:bg-white/10 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
+                  aria-label="Clear payment search"
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </label>
+            <select
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value)}
+              className="h-11 rounded-lg border border-white/10 bg-[#0b121c] px-3 text-sm text-slate-200 outline-none"
+              aria-label="Filter payment records by status"
+            >
+              <option value="all">All statuses</option>
+              <option value="pending">Pending</option>
+              <option value="verified">Verified</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </div>
+        </div>
+        <div className="hidden overflow-x-auto xl:block" aria-busy={isLoading}>
           <table className="w-full min-w-[1050px] text-left text-sm">
             <thead className="bg-white/[0.03] text-xs uppercase tracking-wide text-slate-400">
               <tr>
@@ -1767,13 +2022,7 @@ function AdminPaymentsSection() {
                       payment.code?.status !== "issued" ? (
                         <button
                           type="button"
-                          onClick={() => {
-                            setError("");
-                            setNotice("");
-                            setIssuedCode("");
-                            setIsCodeCopied(false);
-                            setCodePayment(payment);
-                          }}
+                          onClick={() => openCodeIssue(payment)}
                           className="inline-flex min-h-10 items-center justify-center rounded-lg border border-cyan-100 bg-cyan-200 px-3 py-2 text-xs font-bold text-[#07131b] shadow-sm shadow-cyan-950/30 transition hover:-translate-y-0.5 hover:bg-cyan-100 hover:shadow-md hover:shadow-cyan-950/40 active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-100 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d1520]"
                         >
                           Issue code
@@ -1790,79 +2039,132 @@ function AdminPaymentsSection() {
                     colSpan={6}
                     className="px-5 py-14 text-center text-slate-400"
                   >
-                    {payments.length === 0
-                      ? "No payment records yet."
-                      : "No payments match those filters."}
+                    <div className="mx-auto flex max-w-sm flex-col items-center">
+                      <Search size={22} className="text-slate-400" />
+                      <p className="mt-3 font-semibold text-slate-800">
+                        {payments.length === 0
+                          ? "No payment records yet"
+                          : "No matching payments"}
+                      </p>
+                      <p className="mt-1 text-sm text-slate-500">
+                        {payments.length === 0
+                          ? "Verified and pending payments will appear here."
+                          : "Try another search or change the status filter."}
+                      </p>
+                      {payments.length > 0 && (search || statusFilter !== "all") && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSearch("");
+                            setStatusFilter("all");
+                          }}
+                          className="mt-4 rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-white"
+                        >
+                          Clear filters
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
-      </div>
-
-      {participants.length > 0 && (
-        <div className="overflow-hidden rounded-xl border border-white/10 bg-[#0d1520]">
-          <div className="border-b border-white/10 px-5 py-4">
-            <h2 className="font-semibold">
-              Participants available for offline verification
-            </h2>
-            <p className="mt-1 text-xs text-slate-500">
-              Confirm cash received before recording a verified offline payment.
-            </p>
-          </div>
-          <div className="max-h-72 divide-y divide-white/[0.07] overflow-y-auto">
-            {matchingParticipants.slice(0, 50).map((participant) => (
+        <div className="divide-y divide-slate-300 xl:hidden" aria-busy={isLoading}>
+          {isLoading &&
+            Array.from({ length: 3 }, (_, index) => (
               <div
-                key={participant.id}
-                className="flex flex-wrap items-center justify-between gap-4 px-5 py-4 transition-colors hover:bg-white/[0.025]"
+                key={`payment-card-skeleton-${index}`}
+                className="space-y-3 p-4"
+                aria-hidden="true"
               >
+                <span className="admin-skeleton block h-4 w-40 rounded" />
+                <span className="admin-skeleton block h-4 w-56 rounded" />
+                <span className="admin-skeleton block h-10 w-full rounded-lg" />
+              </div>
+            ))}
+          {!isLoading && visiblePayments.map((payment) => (
+            <article key={payment.id} className="space-y-4 p-4">
+              <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="font-medium text-white">
-                    {participant.full_name}
-                  </p>
-                  <p className="mt-1 text-xs text-slate-400">
-                    {participant.college_roll}{" "}
-                    <span className="px-1 text-slate-600">·</span>{" "}
-                    {participant.college_name}{" "}
-                    <span className="px-1 text-slate-600">·</span>{" "}
-                    {participant.phone}
+                  <h3 className="truncate font-semibold text-slate-900">
+                    {payment.participant?.full_name ?? "Profile unavailable"}
+                  </h3>
+                  <p className="mt-1 break-words text-xs leading-5 text-slate-500">
+                    {payment.participant?.college_roll ?? "—"} · {payment.participant?.college_name ?? "—"}
                   </p>
                 </div>
+                <span
+                  className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${payment.status === "verified" ? "bg-emerald-100 text-emerald-800" : payment.status === "pending" ? "bg-sky-100 text-sky-800" : "bg-rose-100 text-rose-800"}`}
+                >
+                  {payment.status}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-3 rounded-xl bg-white/60 p-3">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Amount</p>
+                  <p className="mt-1 font-semibold text-slate-900">
+                    ₹{Number(payment.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                  </p>
+                  <p className="mt-0.5 text-xs capitalize text-slate-500">{payment.payment_method}</p>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Reference</p>
+                  <p className="mt-1 break-all text-sm text-slate-700">
+                    {payment.payment_reference || "—"}
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Verification code</p>
+                  {payment.code ? (
+                    <p className="mt-1 font-mono text-sm font-bold tracking-wider text-emerald-800">
+                      {payment.code.code} <span className="font-sans text-xs uppercase tracking-normal">· {payment.code.status}</span>
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-sm text-slate-500">Not issued</p>
+                  )}
+                </div>
+                {payment.status === "verified" && payment.code?.status !== "issued" && (
+                  <button
+                    type="button"
+                    onClick={() => openCodeIssue(payment)}
+                    className="inline-flex min-h-10 items-center justify-center rounded-lg border border-cyan-200 bg-cyan-100 px-3 py-2 text-xs font-bold text-slate-900 transition hover:bg-cyan-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-600"
+                  >
+                    Issue code
+                  </button>
+                )}
+              </div>
+            </article>
+          ))}
+          {!isLoading && visiblePayments.length === 0 && (
+            <div className="px-5 py-12 text-center">
+              <Search size={22} className="mx-auto text-slate-400" />
+              <p className="mt-3 font-semibold text-slate-800">
+                {payments.length === 0 ? "No payment records yet" : "No matching payments"}
+              </p>
+              <p className="mt-1 text-sm text-slate-500">
+                {payments.length === 0
+                  ? "Verified and pending payments will appear here."
+                  : "Try another search or change the status filter."}
+              </p>
+              {payments.length > 0 && (search || statusFilter !== "all") && (
                 <button
                   type="button"
                   onClick={() => {
-                    setError("");
-                    setNotice("");
-                    setPaymentReference("");
-                    setVerifyParticipant(participant);
+                    setSearch("");
+                    setStatusFilter("all");
                   }}
-                  className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-emerald-300 px-4 py-2 text-sm font-semibold text-slate-950 shadow-sm shadow-emerald-950/30 transition duration-150 hover:-translate-y-0.5 hover:bg-emerald-200 hover:shadow-md hover:shadow-emerald-950/40 active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d1520]"
+                  className="mt-4 rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-white"
                 >
-                  <CircleCheck size={16} strokeWidth={2.3} />
-                  Verify cash
+                  Clear filters
                 </button>
-              </div>
-            ))}
-            {matchingParticipants.length === 0 && (
-              <p className="px-5 py-8 text-center text-sm text-slate-500">
-                No participants match this search or all have verified payments.
-              </p>
-            )}
-            {matchingParticipants.length > 50 && (
-              <p className="px-5 py-3 text-xs text-slate-500">
-                Showing first 50 matches. Refine the search to find a
-                participant.
-              </p>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </div>
-      )}
-      {isLoadingParticipants && (
-        <p role="status" className="text-sm text-slate-400">
-          Loading participant profiles…
-        </p>
-      )}
+      </div>}
 
       {verifyParticipant && (
         <div
@@ -1875,7 +2177,7 @@ function AdminPaymentsSection() {
         >
           <form
             onSubmit={verifyOfflinePayment}
-            className="w-full max-w-md rounded-2xl border border-white/10 bg-[#101a27] p-6 shadow-2xl"
+            className="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-2xl border border-white/10 bg-[#101a27] p-6 shadow-2xl"
           >
             <h2 className="text-lg font-semibold text-white">
               Confirm cash payment
@@ -1934,7 +2236,7 @@ function AdminPaymentsSection() {
         >
           <form
             onSubmit={issueCode}
-            className="w-full max-w-md rounded-2xl border border-cyan-200/20 bg-[#101a27] p-6 shadow-2xl shadow-black/50"
+            className="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-2xl border border-cyan-200/20 bg-[#101a27] p-6 shadow-2xl shadow-black/50"
           >
             <div className="flex items-start gap-3">
               <span className="grid size-10 shrink-0 place-items-center rounded-xl border border-cyan-200/20 bg-cyan-300/10 text-cyan-100">
@@ -1950,6 +2252,42 @@ function AdminPaymentsSection() {
                     {codePayment.participant?.full_name ?? "participant"}
                   </span>
                 </p>
+              </div>
+            </div>
+            <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.04] p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                  Verified payment details
+                </h3>
+                <span className="rounded-full bg-emerald-300/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-200">
+                  Verified
+                </span>
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <p className="text-xs text-slate-500">Roll number</p>
+                  <p className="mt-1 break-words font-medium text-slate-200">
+                    {codePayment.participant?.college_roll ?? "—"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500">Amount</p>
+                  <p className="mt-1 font-medium text-slate-200">
+                    ₹{Number(codePayment.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500">Method</p>
+                  <p className="mt-1 capitalize font-medium text-slate-200">
+                    {codePayment.payment_method}
+                  </p>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs text-slate-500">Reference</p>
+                  <p className="mt-1 break-all font-medium text-slate-200">
+                    {codePayment.payment_reference || "—"}
+                  </p>
+                </div>
               </div>
             </div>
             {issuedCode ? (
