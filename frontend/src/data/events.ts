@@ -145,9 +145,6 @@ const categoryIcons: Record<EventCategory, string> = {
 };
 
 export const externalRegistrationUrls: Partial<Record<string, string>> = {
-  "code-chronicles": "https://www.unstop.com/#code-chronicles",
-  "j-icpc": "https://www.unstop.com/#j-icpc",
-  "css-battle": "https://www.unstop.com/#css-battle",
   "case-study-competition": "https://www.unstop.com/#case-study-competition",
   stratedgex: "https://www.unstop.com/#stratedgex",
   "shark-tank-jolu": "https://www.unstop.com/#shark-tank-jolu",
