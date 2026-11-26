@@ -145,9 +145,8 @@ const categoryIcons: Record<EventCategory, string> = {
 };
 
 export const externalRegistrationUrls: Partial<Record<string, string>> = {
-  "case-study-competition": "https://www.unstop.com/#case-study-competition",
-  stratedgex: "https://www.unstop.com/#stratedgex",
-  "shark-tank-jolu": "https://www.unstop.com/#shark-tank-jolu",
+  "case-study-competition": "https://unstop.com/o/KvYWLq2?lb=iqMDeZRe&utm_medium=Share&utm_source=competitions&utm_campaign=Reeddhyf92100",
+  stratedgex: "https://unstop.com/o/2q01Eip?lb=iqMDeZRe&utm_medium=Share&utm_source=competitions&utm_campaign=Reeddhyf92100",
 };
 
 export const mockEvents: Event[] = mockEventRecords.map((record) => ({
