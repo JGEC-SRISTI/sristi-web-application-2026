@@ -1,8 +1,8 @@
 import os
 from PIL import Image
 
-s = "C:\\Users\\HP\\Desktop\\proj_github\\sristi-web-application-2026\\frontend\\src\\assets\\images\\gallery"
-d = "C:\\Users\\HP\\Desktop\\proj_github\\sristi-web-application-2026\\frontend\\src\\assets\\images\\gallery_compressed"
+s = "D:\\New folder (2)"
+d = "D:\\New folder\\compressed"
 os.makedirs(d, exist_ok=True)
 
 for f in os.listdir(s):

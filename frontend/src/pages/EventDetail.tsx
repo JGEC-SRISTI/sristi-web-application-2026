@@ -16,6 +16,7 @@ import {
   externalRegistrationUrls,
   getEventImage,
   mockEvents,
+  type EventRecord,
   type Event,
   type EventCategory,
 } from "../data/events";
@@ -424,6 +425,12 @@ const EventDetailContent = ({ event }: { event: Event }) => {
 
   const coordinators = getEventCoordinators(event.id);
   const accent = categoryAccent[event.category] ?? "#a78bfa";
+  const longDescription =
+    registrationEvent?.description?.trim() || event.description.trim();
+  const shortDescription =
+    registrationEvent?.short_description?.trim() || event.short_description.trim();
+  const description =
+    longDescription.length > 20 ? longDescription : shortDescription;
   const cardMetadata: EventCardMetadata = eventCardMetadata ?? {
     venue: event.venue,
     event_type: event.participation === "TEAM" ? "team" : "solo",
@@ -527,7 +534,7 @@ const EventDetailContent = ({ event }: { event: Event }) => {
 
             <section className="event-detail-info relative text-left">
               <p className="mt-5 font-space-mono text-xs uppercase leading-6 tracking-[0.1em] text-white/65 sm:text-sm">
-                {registrationEvent?.short_description?.trim() || event.short_description}
+                {description}
               </p>
 
               {coordinators.length > 0 && (
@@ -733,8 +740,68 @@ const EventDetailContent = ({ event }: { event: Event }) => {
 
 const EventDetail = () => {
   const { eventSlug } = useParams();
-  const event = mockEvents.find((item) => item.slug === eventSlug);
+  const staticEvent = mockEvents.find((item) => item.slug === eventSlug);
+  const [loadedEvent, setLoadedEvent] = useState<Event | null>(null);
+  const [lookupComplete, setLookupComplete] = useState(false);
 
+  useEffect(() => {
+    if (!eventSlug || staticEvent || !supabase) {
+      setLoadedEvent(null);
+      setLookupComplete(true);
+      return;
+    }
+
+    let active = true;
+    const client = supabase;
+    setLookupComplete(false);
+    const loadEvent = async () => {
+      try {
+        const { data } = await client
+          .from("events")
+          .select("id,name,slug,short_description,description,event_type,category,venue,min_team_size,max_team_size,created_at,updated_at")
+          .eq("slug", eventSlug)
+          .maybeSingle();
+        if (!active) return;
+        if (data) {
+          const record = data as EventRecord;
+          setLoadedEvent({
+            id: record.id,
+            slug: record.slug,
+            title: record.name,
+            image: getEventImage(record.name),
+            category: record.category,
+            participation: record.event_type.toUpperCase() as Event["participation"],
+            short_description: record.short_description,
+            description: record.description,
+            date: "",
+            venue: record.venue,
+            prize_pool: "",
+            team_size: "",
+            registration_open: true,
+            icon: "",
+          });
+        } else {
+          setLoadedEvent(null);
+        }
+        setLookupComplete(true);
+      } catch {
+        if (!active) return;
+        setLoadedEvent(null);
+        setLookupComplete(true);
+      }
+    };
+    void loadEvent();
+
+    return () => {
+      active = false;
+    };
+  }, [eventSlug, staticEvent]);
+
+  const event = staticEvent ?? (loadedEvent?.slug === eventSlug ? loadedEvent : null);
+
+  if (!event && !lookupComplete) {
+    return <main className="events-page grid min-h-screen place-items-center text-white">Loading event...</main>;
+  }
   if (!event) return <Navigate to="/events" replace />;
   return <EventDetailContent key={event.slug} event={event} />;
 };
