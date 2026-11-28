@@ -61,14 +61,14 @@ const eventContacts: Partial<Record<string, EventContact>> = {
   },
   a5: {
     coordinator1: {
-      name: "Amarttan Roy Chowdhury ",
-      email: "ar2826@ce.jgec.ac.in",
-      phone: "+91 9064484855",
+      name: "Pushan Mondal",
+      email: "pm2875@ce.jgec.ac.in",
+      phone: "+91 9433941076",
     },
     coordinator2: {
-      name: "P Jaya Vardhan ",
-      email: "pj2824@ce.jgec.ac.in",
-      phone: "+91 9907849494",
+      name: "Wasir Ahmed",
+      email: "wa2810@ce.jgec.ac.in",
+      phone: "+91 9748879863",
     },
   },
   a6: {
@@ -145,6 +145,18 @@ const eventContacts: Partial<Record<string, EventContact>> = {
   },
   a12: {
     coordinator1: {
+      name: "Ramiz Raza",
+      email: "rr2856@ece.jgec.ac.in",
+    phone: "+91 8918890669",
+    },
+    coordinator2: {
+      name: "Priyangshu Mukherjee",
+      email: "pm2804@it.jgec.ac.in",
+      phone: "+91 9007313817",
+    },
+  },
+  a13: {
+    coordinator1: {
       name: "Sukrit Majumdar",
       email: "sm2809@it.jgec.in",
       phone: "+91 7811808906",
@@ -155,7 +167,7 @@ const eventContacts: Partial<Record<string, EventContact>> = {
       phone: "+91 7001012788",
     },
   },
-  a13: {
+  a14: {
     coordinator1: {
       name: "Biraj Roy",
       email: "br2842@cse.jgec.ac.in",
@@ -167,7 +179,7 @@ const eventContacts: Partial<Record<string, EventContact>> = {
       phone: "+91 9907304214",
     },
   },
-  a14: {
+  a15: {
     coordinator1: {
       name: "Mrinmoy Mahato",
       email: "mm2802@cse.jgec.ac.in",
@@ -179,7 +191,7 @@ const eventContacts: Partial<Record<string, EventContact>> = {
       phone: "+91 7364090654",
     },
   },
-  a15: {
+  a16: {
     coordinator1: {
       name: "Sayan Majumdar",
       email: "sm2817@ece.jgec.ac.in",
@@ -191,7 +203,7 @@ const eventContacts: Partial<Record<string, EventContact>> = {
       phone: "+91 8670861828",
     },
   },
-  a16: {
+  a17: {
     coordinator1: {
       name: "Sagnik Ghosh",
       email: "sg2812@cse.jgec.ac.in",
@@ -208,7 +220,7 @@ const eventContacts: Partial<Record<string, EventContact>> = {
       phone: "+91 7908606962",
     },
   },
-  a17: {
+  a18: {
     coordinator1: {
       name: "Ananya Sinhababu ",
       email: "as2807@cse.jgec.ac.in",
@@ -220,7 +232,7 @@ const eventContacts: Partial<Record<string, EventContact>> = {
       phone: "+91 9748098603",
     },
   },
-  a18: {
+  a19: {
     coordinator1: {
       name: "Sani Pal",
       email: "sp2865@ce.jgec.ac.in",
@@ -232,7 +244,7 @@ const eventContacts: Partial<Record<string, EventContact>> = {
       phone: "+91 7865997544",
     },
   },
-  a19: {
+  a20: {
     coordinator1: {
       name: "Dipesh Das",
       email: "dd2874@cse.jgec.ac.in",
@@ -244,7 +256,7 @@ const eventContacts: Partial<Record<string, EventContact>> = {
       phone: "+91 9434232157",
     },
   },
-  a20: {
+  a21: {
     coordinator1: {
       name: "Debajyoti Ghosh",
       email: "dg2867@ce.jgec.ac.in",
@@ -256,7 +268,7 @@ const eventContacts: Partial<Record<string, EventContact>> = {
       phone: "+91 9064390871",
     },
   },
-  a21: {
+  a22: {
     coordinator1: {
       name: "DEBAPRIYA MAJI ",
       email: "dm2843@ee.jgec.ac.in",
@@ -268,7 +280,7 @@ const eventContacts: Partial<Record<string, EventContact>> = {
       phone: "+91 9734193989",
     },
   },
-  a22: {
+  a23: {
     coordinator1: {
       name: "Aniket Mandal ",
       email: "am2870@ee.jgec.ac.in",
@@ -280,7 +292,20 @@ const eventContacts: Partial<Record<string, EventContact>> = {
       phone: "+91 9641239940",
     },
   },
-  a23: {
+  a24: {
+    coordinator1: {
+      name: "Sabyasachi Ghosh",
+      email: "sg2806@me.jgec.ac.in",
+      phone: "+91 7001523015",
+    },
+    coordinator2: {
+      name: "Debjit Paul",
+      email: "dp2809@me.jgec.ac.in",
+      phone: "+91 9875528124",
+    },
+  },
+
+  a25: {
     coordinator1: {
       name: "Tanay Roy",
       email: "tr2840@me.jgec.ac.in",
@@ -292,7 +317,7 @@ const eventContacts: Partial<Record<string, EventContact>> = {
       phone: "+91 7449584512",
     },
   },
-  a24: {
+  a26: {
     coordinator1: {
       name: "Kunal Nag",
       email: "kn2807@me.jgec.ac.in",
@@ -304,7 +329,7 @@ const eventContacts: Partial<Record<string, EventContact>> = {
       phone: "+91 81164 28183",
     },
   },
-  a25: {
+  a27: {
     coordinator1: {
       name: "Rana Dutta",
       email: "rd2869@cse.jgec.ac.in",
@@ -316,7 +341,7 @@ const eventContacts: Partial<Record<string, EventContact>> = {
       phone: "+91 7872876575",
     },
   },
-  a26: {
+  a28: {
     coordinator1: {
       name: "PUSHAN MONDAL ",
       email: "pm2875@ce.jgec.ac.in",
@@ -328,7 +353,7 @@ const eventContacts: Partial<Record<string, EventContact>> = {
       phone: "+91 7003875680",
     },
   },
-  a27: {
+  a29: {
     coordinator1: {
       name: "Md Meftanul Hoque",
       email: "mm2856@it.jgec.ac.in",
