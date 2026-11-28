@@ -425,6 +425,12 @@ const EventDetailContent = ({ event }: { event: Event }) => {
 
   const coordinators = getEventCoordinators(event.id);
   const accent = categoryAccent[event.category] ?? "#a78bfa";
+  const longDescription =
+    registrationEvent?.description?.trim() || event.description.trim();
+  const shortDescription =
+    registrationEvent?.short_description?.trim() || event.short_description.trim();
+  const description =
+    longDescription.length > 20 ? longDescription : shortDescription;
   const cardMetadata: EventCardMetadata = eventCardMetadata ?? {
     venue: event.venue,
     event_type: event.participation === "TEAM" ? "team" : "solo",
@@ -528,7 +534,7 @@ const EventDetailContent = ({ event }: { event: Event }) => {
 
             <section className="event-detail-info relative text-left">
               <p className="mt-5 font-space-mono text-xs uppercase leading-6 tracking-[0.1em] text-white/65 sm:text-sm">
-                {registrationEvent?.short_description?.trim() || event.short_description}
+                {description}
               </p>
 
               {coordinators.length > 0 && (

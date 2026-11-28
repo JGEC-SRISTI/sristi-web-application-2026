@@ -116,7 +116,7 @@ export const mockEventRecords: EventRecord[] = [
   event("a9", "RoboSoccer", "Robotics", "team", "Turn teamwork into precise robotic play.", "Robo-Soccer brings autonomous or remotely controlled machines onto the field for a fast, technical match."),
   event("a10", "Chess", "Gaming", "solo", "Think ahead and outplay your opponent.", "CHESS brings together players for focused, strategic matches where patience and calculation decide the result."),
   event("a11", "Free Fire", "Gaming", "team", "Coordinate your squad and survive the final circle.", "FREEFIRE is a team battle built around communication, timing, and adaptable tactics.",4,4),
-  event("a12", "E-Football", "Gaming", "team", "Score goals and defend your ground in a fast-paced match.", "E-FOOTBALL is a team gaming event that tests coordination, strategy, and quick decision-making.",4,4),
+  event("a12", "E-Football", "Gaming", "solo", "Score goals and defend your ground in a fast-paced match.", "E-FOOTBALL is a team gaming event that tests coordination, strategy, and quick decision-making."),
   event("a13", "Code Chronicles", "Technical", "solo", "Solve a story told through code and logic.", "CODE CHRONICLES is a programming challenge built around layered problems and changing clues."),
   event("a14", "J-ICPC", "Technical", "team", "Solve demanding problems as one programming unit.", "J-ICPC is a team programming contest that rewards communication and algorithmic depth.", 5, 5),
   event("a15", "CSS Battle", "Technical", "solo", "Style, structure, and precision in a front-end showdown.", "CSS BATTLE asks participants to recreate visual targets with elegant, accurate HTML and CSS."),
